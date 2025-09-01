@@ -251,3 +251,35 @@ class BotManager:
 
 # Global bot manager instance
 bot_manager = BotManager()
+
+def validate_telegram_token(token):
+    """Telegram bot tokenini tekshirish"""
+    import requests
+    try:
+        response = requests.get(f"https://api.telegram.org/bot{token}/getMe")
+        if response.status_code == 200:
+            return True
+        return False
+    except:
+        return False
+
+def start_bot_automatically(bot_id, bot_token):
+    """Botni avtomatik ishga tushirish"""
+    try:
+        # Token validatsiyasi
+        if not validate_telegram_token(bot_token):
+            logger.error(f"Invalid token for bot {bot_id}")
+            return False
+            
+        # Botni ishga tushirish
+        success = bot_manager.start_bot(bot_id, bot_token)
+        if success:
+            logger.info(f"Bot {bot_id} started automatically")
+            return True
+        else:
+            logger.error(f"Failed to start bot {bot_id}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Auto start error for bot {bot_id}: {str(e)}")
+        return False

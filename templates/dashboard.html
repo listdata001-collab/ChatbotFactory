@@ -186,6 +186,21 @@
                                 <td>{{ bot.created_at.strftime('%d.%m.%Y') }}</td>
                                 <td>
                                     <div class="btn-group btn-group-sm">
+                                        <!-- Start/Stop tugmalari -->
+                                        {% if bot.is_active %}
+                                        <form method="POST" action="{{ url_for('main.stop_bot', bot_id=bot.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-danger" title="To'xtatish">
+                                                <i class="fas fa-stop"></i>
+                                            </button>
+                                        </form>
+                                        {% else %}
+                                        <form method="POST" action="{{ url_for('main.start_bot', bot_id=bot.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-outline-success" title="Ishga tushirish">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        
                                         <a href="{{ url_for('main.edit_bot', bot_id=bot.id) }}" 
                                            class="btn btn-outline-primary" title="Tahrirlash">
                                             <i class="fas fa-edit"></i>

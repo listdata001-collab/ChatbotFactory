@@ -81,7 +81,22 @@ def create_bot():
         db.session.add(bot)
         db.session.commit()
         
-        flash('Bot muvaffaqiyatli yaratildi!', 'success')
+        # Telegram bot uchun avtomatik ishga tushirish
+        if platform == 'Telegram' and telegram_token:
+            try:
+                from telegram_bot import start_bot_automatically
+                success = start_bot_automatically(bot.id, telegram_token)
+                if success:
+                    bot.is_active = True
+                    db.session.commit()
+                    flash('Bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
+                else:
+                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
+            except Exception as e:
+                flash(f'Bot yaratildi, lekin aktivlashtirish xatoligi: {str(e)}', 'warning')
+        else:
+            flash('Bot muvaffaqiyatli yaratildi!', 'success')
+        
         return redirect(url_for('main.dashboard'))
     
     return render_template('bot_create.html')
@@ -100,11 +115,75 @@ def edit_bot(bot_id):
         bot.platform = request.form.get('platform', bot.platform)
         bot.telegram_token = request.form.get('telegram_token', bot.telegram_token)
         
+        # Agar Telegram bot token o'zgargan bo'lsa, qayta ishga tushirish
+        if bot.platform == 'Telegram' and bot.telegram_token:
+            try:
+                from telegram_bot import start_bot_automatically
+                success = start_bot_automatically(bot.id, bot.telegram_token)
+                if success:
+                    bot.is_active = True
+                else:
+                    bot.is_active = False
+                    flash('Bot ma\'lumotlari yangilandi, lekin token noto\'g\'ri!', 'warning')
+            except Exception as e:
+                flash(f'Bot yangilandi, lekin qayta ishga tushirishda xatolik: {str(e)}', 'warning')
+        
         db.session.commit()
         flash('Bot ma\'lumotlari yangilandi!', 'success')
         return redirect(url_for('main.dashboard'))
     
     return render_template('bot_edit.html', bot=bot)
+
+@main_bp.route('/bot/<int:bot_id>/start', methods=['POST'])
+@login_required
+def start_bot(bot_id):
+    """Botni qo'lbola ishga tushirish"""
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu botni ishga tushirish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    if bot.platform == 'Telegram' and bot.telegram_token:
+        try:
+            from telegram_bot import start_bot_automatically
+            success = start_bot_automatically(bot.id, bot.telegram_token)
+            if success:
+                bot.is_active = True
+                db.session.commit()
+                flash('Bot muvaffaqiyatli ishga tushirildi!', 'success')
+            else:
+                flash('Bot ishga tushirishda muammo yuz berdi!', 'error')
+        except Exception as e:
+            flash(f'Xatolik: {str(e)}', 'error')
+    else:
+        flash('Bot tokenini tekshiring!', 'error')
+    
+    return redirect(url_for('main.dashboard'))
+
+@main_bp.route('/bot/<int:bot_id>/stop', methods=['POST'])
+@login_required
+def stop_bot(bot_id):
+    """Botni to'xtatish"""
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu botni to\'xtatish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from telegram_bot import bot_manager
+        success = bot_manager.stop_bot(bot.id)
+        if success:
+            bot.is_active = False
+            db.session.commit()
+            flash('Bot to\'xtatildi!', 'success')
+        else:
+            flash('Bot to\'xtatishda muammo yuz berdi!', 'error')
+    except Exception as e:
+        flash(f'Xatolik: {str(e)}', 'error')
+    
+    return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/bot/<int:bot_id>/knowledge', methods=['POST'])
 @login_required
