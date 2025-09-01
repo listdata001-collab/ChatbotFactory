@@ -1,0 +1,301 @@
+{% extends "base.html" %}
+
+{% block title %}Admin panel - BotFactory AI{% endblock %}
+
+{% block content %}
+<!-- Admin Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-cog me-2"></i>Admin paneli</h2>
+        <p class="text-muted">Tizim boshqaruvi va statistika</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title">Jami foydalanuvchilar</h6>
+                        <h3 class="mb-0">{{ stats.total_users }}</h3>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-users"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title">Faol obunalar</h6>
+                        <h3 class="mb-0">{{ stats.active_subscriptions }}</h3>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title">Jami botlar</h6>
+                        <h3 class="mb-0">{{ stats.total_bots }}</h3>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h6 class="card-title">To'lovlar</h6>
+                        <h3 class="mb-0">{{ stats.total_payments }}</h3>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<ul class="nav nav-tabs mb-4" id="adminTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users" type="button">
+            <i class="fas fa-users me-2"></i>Foydalanuvchilar
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button">
+            <i class="fas fa-credit-card me-2"></i>To'lovlar
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="bots-tab" data-bs-toggle="tab" data-bs-target="#bots" type="button">
+            <i class="fas fa-robot me-2"></i>Botlar
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="adminTabsContent">
+    <!-- Users Tab -->
+    <div class="tab-pane fade show active" id="users" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users me-2"></i>Foydalanuvchilar ro'yxati</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Foydalanuvchi</th>
+                                <th>Email</th>
+                                <th>Obuna</th>
+                                <th>Holati</th>
+                                <th>Ro'yxatdan o'tgan</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>{{ user.id }}</td>
+                                <td>
+                                    <strong>{{ user.username }}</strong>
+                                    {% if user.is_admin %}
+                                    <span class="badge bg-danger ms-1">Admin</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td>
+                                    {% if user.subscription_type == 'free' %}
+                                    <span class="badge bg-secondary">Bepul</span>
+                                    {% elif user.subscription_type == 'basic' %}
+                                    <span class="badge bg-primary">Basic</span>
+                                    {% elif user.subscription_type == 'premium' %}
+                                    <span class="badge bg-warning">Premium</span>
+                                    {% elif user.subscription_type == 'admin' %}
+                                    <span class="badge bg-success">Admin</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                    <span class="badge bg-success">Faol</span>
+                                    {% else %}
+                                    <span class="badge bg-danger">Bloklangan</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.created_at.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" title="Ko'rish">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="btn btn-outline-warning" title="Tahrirlash">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payments Tab -->
+    <div class="tab-pane fade" id="payments" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>To'lovlar tarixi</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Foydalanuvchi</th>
+                                <th>Miqdor</th>
+                                <th>Usul</th>
+                                <th>Holat</th>
+                                <th>Sana</th>
+                                <th>Tranzaksiya ID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for payment in payments %}
+                            <tr>
+                                <td>{{ payment.id }}</td>
+                                <td>{{ payment.user.username }}</td>
+                                <td><strong>{{ "{:,.0f}".format(payment.amount) }} so'm</strong></td>
+                                <td>
+                                    {% if payment.method == 'Payme' %}
+                                    <span class="badge bg-info">Payme</span>
+                                    {% elif payment.method == 'Click' %}
+                                    <span class="badge bg-warning">Click</span>
+                                    {% elif payment.method == 'Uzum' %}
+                                    <span class="badge bg-success">Uzum</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if payment.status == 'completed' %}
+                                    <span class="badge bg-success">Muvaffaqiyatli</span>
+                                    {% elif payment.status == 'pending' %}
+                                    <span class="badge bg-warning">Kutilmoqda</span>
+                                    {% elif payment.status == 'failed' %}
+                                    <span class="badge bg-danger">Muvaffaqiyatsiz</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ payment.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                <td>
+                                    {% if payment.transaction_id %}
+                                    <code>{{ payment.transaction_id }}</code>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bots Tab -->
+    <div class="tab-pane fade" id="bots" role="tabpanel">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-robot me-2"></i>Barcha botlar</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nomi</th>
+                                <th>Egasi</th>
+                                <th>Platforma</th>
+                                <th>Holati</th>
+                                <th>Yaratilgan</th>
+                                <th>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bot in bots %}
+                            <tr>
+                                <td>{{ bot.id }}</td>
+                                <td><strong>{{ bot.name }}</strong></td>
+                                <td>{{ bot.owner.username }}</td>
+                                <td>
+                                    {% if bot.platform == 'Telegram' %}
+                                    <span class="badge bg-info">
+                                        <i class="fab fa-telegram me-1"></i>Telegram
+                                    </span>
+                                    {% elif bot.platform == 'Instagram' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fab fa-instagram me-1"></i>Instagram
+                                    </span>
+                                    {% elif bot.platform == 'WhatsApp' %}
+                                    <span class="badge bg-success">
+                                        <i class="fab fa-whatsapp me-1"></i>WhatsApp
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if bot.is_active %}
+                                    <span class="badge bg-success">Faol</span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">To'xtatilgan</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ bot.created_at.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('main.edit_bot', bot_id=bot.id) }}" 
+                                           class="btn btn-outline-primary" title="Tahrirlash">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button class="btn btn-outline-warning" title="Boshqarish">
+                                            <i class="fas fa-cog"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

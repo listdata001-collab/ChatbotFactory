@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Boshqaruv paneli - BotFactory AI{% endblock %}
+
+{% block content %}
+<!-- Dashboard Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-tachometer-alt me-2"></i>Boshqaruv paneli</h2>
+                <p class="text-muted mb-0">Salom, {{ current_user.username }}! 👋</p>
+            </div>
+            <div>
+                {% if subscription_info.can_create %}
+                <a href="{{ url_for('main.create_bot') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Yangi bot
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Subscription Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-start border-4 
+                    {% if subscription_info.type == 'free' %}border-secondary
+                    {% elif subscription_info.type == 'basic' %}border-primary
+                    {% elif subscription_info.type == 'premium' %}border-warning
+                    {% else %}border-success{% endif %}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="card-title mb-1">
+                            <i class="fas fa-crown me-2"></i>Joriy obuna: 
+                            {% if subscription_info.type == 'free' %}
+                                <span class="badge bg-secondary">Bepul</span>
+                            {% elif subscription_info.type == 'basic' %}
+                                <span class="badge bg-primary">Basic</span>
+                            {% elif subscription_info.type == 'premium' %}
+                                <span class="badge bg-warning">Premium</span>
+                            {% elif subscription_info.type == 'admin' %}
+                                <span class="badge bg-success">Admin</span>
+                            {% endif %}
+                        </h5>
+                        {% if subscription_info.end_date %}
+                        <p class="card-text text-muted mb-0">
+                            <i class="fas fa-calendar me-1"></i>
+                            Tugash sanasi: {{ subscription_info.end_date.strftime('%d.%m.%Y') }}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        {% if subscription_info.type == 'free' %}
+                        <a href="{{ url_for('main.subscription') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-arrow-up me-1"></i>Yangilash
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Jami botlar</h5>
+                        <h2 class="mb-0">{{ bot_count }}</h2>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Faol botlar</h5>
+                        <h2 class="mb-0">{{ bots|selectattr('is_active')|list|length }}</h2>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Maksimal</h5>
+                        <h2 class="mb-0">
+                            {% if subscription_info.type == 'free' %}1
+                            {% elif subscription_info.type == 'basic' %}1
+                            {% elif subscription_info.type == 'premium' %}5
+                            {% else %}∞{% endif %}
+                        </h2>
+                    </div>
+                    <div class="fs-1 opacity-50">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bots List -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-robot me-2"></i>Mening botlarim
+                </h5>
+                {% if subscription_info.can_create %}
+                <a href="{{ url_for('main.create_bot') }}" class="btn btn-sm btn-primary">
+                    <i class="fas fa-plus me-1"></i>Yangi bot
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if bots %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th><i class="fas fa-robot me-1"></i>Nomi</th>
+                                <th><i class="fas fa-mobile-alt me-1"></i>Platforma</th>
+                                <th><i class="fas fa-toggle-on me-1"></i>Holati</th>
+                                <th><i class="fas fa-calendar me-1"></i>Yaratilgan</th>
+                                <th><i class="fas fa-cogs me-1"></i>Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bot in bots %}
+                            <tr>
+                                <td>
+                                    <strong>{{ bot.name }}</strong>
+                                    {% if bot.telegram_username %}
+                                    <br><small class="text-muted">@{{ bot.telegram_username }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if bot.platform == 'Telegram' %}
+                                    <span class="badge bg-info">
+                                        <i class="fab fa-telegram me-1"></i>Telegram
+                                    </span>
+                                    {% elif bot.platform == 'Instagram' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fab fa-instagram me-1"></i>Instagram
+                                    </span>
+                                    {% elif bot.platform == 'WhatsApp' %}
+                                    <span class="badge bg-success">
+                                        <i class="fab fa-whatsapp me-1"></i>WhatsApp
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if bot.is_active %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Faol
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-pause me-1"></i>To'xtatilgan
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ bot.created_at.strftime('%d.%m.%Y') }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('main.edit_bot', bot_id=bot.id) }}" 
+                                           class="btn btn-outline-primary" title="Tahrirlash">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form method="POST" action="{{ url_for('main.delete_bot', bot_id=bot.id) }}" 
+                                              class="d-inline" onsubmit="return confirm('Bu botni o\'chirishni xohlaysizmi?')">
+                                            <button type="submit" class="btn btn-outline-danger" title="O'chirish">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-robot fs-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Hali botlaringiz yo'q</h5>
+                    <p class="text-muted mb-4">Birinchi botingizni yaratish uchun quyidagi tugmani bosing</p>
+                    {% if subscription_info.can_create %}
+                    <a href="{{ url_for('main.create_bot') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Birinchi botni yaratish
+                    </a>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Siz maksimal bot soni yaratdingiz. Yangi bot yaratish uchun obunangizni yangilang.
+                    </div>
+                    <a href="{{ url_for('main.subscription') }}" class="btn btn-warning">
+                        <i class="fas fa-crown me-2"></i>Obunani yangilash
+                    </a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

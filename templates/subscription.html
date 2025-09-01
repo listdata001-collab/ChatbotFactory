@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% block title %}Obuna boshqaruvi - BotFactory AI{% endblock %}
+
+{% block content %}
+<!-- Subscription Header -->
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-crown me-2"></i>Obuna boshqaruvi</h2>
+        <p class="text-muted">O'zingizga mos tarifni tanlang va AI botlar yaratishni boshlang!</p>
+    </div>
+</div>
+
+<!-- Current Subscription Status -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card border-start border-4 
+                    {% if current_user.subscription_type == 'free' %}border-secondary
+                    {% elif current_user.subscription_type == 'basic' %}border-primary
+                    {% elif current_user.subscription_type == 'premium' %}border-warning
+                    {% else %}border-success{% endif %}">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h5 class="card-title mb-1">
+                            <i class="fas fa-info-circle me-2"></i>Joriy obuna holati
+                        </h5>
+                        <div class="d-flex align-items-center mb-2">
+                            <span class="me-2">Tarif:</span>
+                            {% if current_user.subscription_type == 'free' %}
+                                <span class="badge bg-secondary fs-6">Bepul (Test)</span>
+                            {% elif current_user.subscription_type == 'basic' %}
+                                <span class="badge bg-primary fs-6">Basic</span>
+                            {% elif current_user.subscription_type == 'premium' %}
+                                <span class="badge bg-warning fs-6">Premium</span>
+                            {% elif current_user.subscription_type == 'admin' %}
+                                <span class="badge bg-success fs-6">Admin</span>
+                            {% endif %}
+                        </div>
+                        {% if current_user.subscription_end_date %}
+                        <p class="card-text text-muted mb-0">
+                            <i class="fas fa-calendar me-1"></i>
+                            {% if current_user.subscription_active() %}
+                                Tugash sanasi: {{ current_user.subscription_end_date.strftime('%d.%m.%Y') }}
+                                {% set days_left = (current_user.subscription_end_date - moment.utcnow()).days %}
+                                <span class="ms-2 badge bg-warning">{{ days_left }} kun qoldi</span>
+                            {% else %}
+                                <span class="text-danger">Obuna tugagan: {{ current_user.subscription_end_date.strftime('%d.%m.%Y') }}</span>
+                            {% endif %}
+                        </p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4 text-md-end">
+                        {% if current_user.subscription_type == 'free' %}
+                        <small class="text-success d-block">
+                            <i class="fas fa-gift me-1"></i>14 kunlik bepul sinov faol
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pricing Plans -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h3 class="text-center mb-4">
+            <i class="fas fa-star me-2"></i>Tariflarni taqqoslang
+        </h3>
+    </div>
+    
+    <!-- Free Plan -->
+    <div class="col-lg-4 mb-4">
+        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'free' %}border-secondary border-2{% endif %}">
+            <div class="card-header text-center bg-secondary text-white">
+                <h4 class="my-2">
+                    <i class="fas fa-gift me-2"></i>Test (Bepul)
+                </h4>
+                {% if current_user.subscription_type == 'free' %}
+                <small class="badge bg-light text-dark">Joriy tarif</small>
+                {% endif %}
+            </div>
+            <div class="card-body text-center">
+                <h2 class="card-title pricing-title text-secondary">
+                    Bepul
+                    <small class="text-muted fs-6">/14 kun</small>
+                </h2>
+                
+                <ul class="list-unstyled mt-4 mb-4">
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>1 ta bot</strong>
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Faqat <strong>Telegram</strong> platforma
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Faqat <strong>o'zbek</strong> tili
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Bilim bazasi yuklash
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Asosiy AI javoblar
+                    </li>
+                    <li class="py-2 text-muted">
+                        <i class="fas fa-times text-danger me-2"></i>
+                        Texnik yordam
+                    </li>
+                </ul>
+                
+                {% if current_user.subscription_type != 'free' %}
+                <button class="btn btn-outline-secondary" disabled>
+                    Joriy tarif emas
+                </button>
+                {% else %}
+                <button class="btn btn-secondary" disabled>
+                    <i class="fas fa-star me-2"></i>Faol tarif
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Basic Plan -->
+    <div class="col-lg-4 mb-4">
+        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'basic' %}border-primary border-2{% endif %}">
+            <div class="card-header text-center bg-primary text-white">
+                <h4 class="my-2">
+                    <i class="fas fa-star me-2"></i>Basic
+                </h4>
+                {% if current_user.subscription_type == 'basic' %}
+                <small class="badge bg-light text-dark">Joriy tarif</small>
+                {% endif %}
+            </div>
+            <div class="card-body text-center">
+                <h2 class="card-title pricing-title text-primary">
+                    290,000 so'm
+                    <small class="text-muted fs-6">/oy</small>
+                </h2>
+                
+                <ul class="list-unstyled mt-4 mb-4">
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>1 ta bot</strong>
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Barcha platformalar</strong> (Telegram, Instagram, WhatsApp)
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>3 ta til</strong> (o'zbek/rus/ingliz)
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Bilim bazasi yuklash
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Kengaytirilgan AI javoblar
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Texnik yordam
+                    </li>
+                </ul>
+                
+                {% if current_user.subscription_type == 'basic' %}
+                <button class="btn btn-primary" disabled>
+                    <i class="fas fa-star me-2"></i>Faol tarif
+                </button>
+                {% elif current_user.subscription_type in ['premium', 'admin'] %}
+                <button class="btn btn-outline-primary" disabled>
+                    Yuqori tarif faol
+                </button>
+                {% else %}
+                <button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentModal" 
+                        data-subscription="basic" data-amount="290000">
+                    <i class="fas fa-arrow-up me-2"></i>Basic ga o'tish
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Premium Plan -->
+    <div class="col-lg-4 mb-4">
+        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'premium' %}border-warning border-2{% endif %} position-relative">
+            <!-- Popular Badge -->
+            <div class="popular-badge">
+                <span class="badge bg-warning text-dark">
+                    <i class="fas fa-star me-1"></i>Ommabop
+                </span>
+            </div>
+            
+            <div class="card-header text-center bg-warning text-dark">
+                <h4 class="my-2">
+                    <i class="fas fa-crown me-2"></i>Premium
+                </h4>
+                {% if current_user.subscription_type == 'premium' %}
+                <small class="badge bg-dark text-light">Joriy tarif</small>
+                {% endif %}
+            </div>
+            <div class="card-body text-center">
+                <h2 class="card-title pricing-title text-warning">
+                    590,000 so'm
+                    <small class="text-muted fs-6">/oy</small>
+                </h2>
+                
+                <ul class="list-unstyled mt-4 mb-4">
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>5 ta bot</strong>
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>Barcha platformalar</strong> (Telegram, Instagram, WhatsApp)
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        <strong>3 ta til</strong> (o'zbek/rus/ingliz)
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Cheksiz bilim bazasi
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Premium AI javoblar
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Prioritet texnik yordam
+                    </li>
+                    <li class="py-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Kengaytirilgan analitika
+                    </li>
+                </ul>
+                
+                {% if current_user.subscription_type == 'premium' %}
+                <button class="btn btn-warning btn-lg w-100" disabled>
+                    <i class="fas fa-crown me-2"></i>Faol tarif
+                </button>
+                {% elif current_user.subscription_type == 'admin' %}
+                <button class="btn btn-outline-warning" disabled>
+                    Admin tarif faol
+                </button>
+                {% else %}
+                <button class="btn btn-warning btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentModal" 
+                        data-subscription="premium" data-amount="590000">
+                    <i class="fas fa-crown me-2"></i>Premium ga o'tish
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Comparison -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h3 class="text-center mb-4">
+            <i class="fas fa-table me-2"></i>Batafsil taqqoslash
+        </h3>
+        <div class="table-responsive">
+            <table class="table table-bordered comparison-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Imkoniyatlar</th>
+                        <th class="text-center">Test</th>
+                        <th class="text-center">Basic</th>
+                        <th class="text-center">Premium</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><i class="fas fa-robot me-2"></i>Botlar soni</td>
+                        <td class="text-center">1 ta</td>
+                        <td class="text-center">1 ta</td>
+                        <td class="text-center"><strong>5 ta</strong></td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-mobile-alt me-2"></i>Platformalar</td>
+                        <td class="text-center">Faqat Telegram</td>
+                        <td class="text-center">Hammasi</td>
+                        <td class="text-center">Hammasi</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-language me-2"></i>Tillar</td>
+                        <td class="text-center">Faqat o'zbek</td>
+                        <td class="text-center">O'zbek, Rus, Ingliz</td>
+                        <td class="text-center">O'zbek, Rus, Ingliz</td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-book me-2"></i>Bilim bazasi</td>
+                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-headset me-2"></i>Texnik yordam</td>
+                        <td class="text-center"><i class="fas fa-times text-danger"></i></td>
+                        <td class="text-center">Standart</td>
+                        <td class="text-center"><strong>Prioritet</strong></td>
+                    </tr>
+                    <tr>
+                        <td><i class="fas fa-chart-bar me-2"></i>Analitika</td>
+                        <td class="text-center">Asosiy</td>
+                        <td class="text-center">Asosiy</td>
+                        <td class="text-center"><strong>Kengaytirilgan</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-credit-card me-2"></i>To'lov usulini tanlang
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentDetails" class="alert alert-info">
+                    <!-- Payment details will be filled by JavaScript -->
+                </div>
+                
+                <form id="paymentForm" method="POST">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label class="payment-method">
+                                <input type="radio" name="method" value="Payme" required>
+                                <div class="payment-card text-center">
+                                    <i class="fas fa-mobile-alt fs-1 text-primary mb-2"></i>
+                                    <h6>Payme</h6>
+                                    <small class="text-muted">Mobil to'lovlar</small>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="payment-method">
+                                <input type="radio" name="method" value="Click" required>
+                                <div class="payment-card text-center">
+                                    <i class="fas fa-credit-card fs-1 text-warning mb-2"></i>
+                                    <h6>Click</h6>
+                                    <small class="text-muted">Bank kartalar</small>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label class="payment-method">
+                                <input type="radio" name="method" value="Uzum" required>
+                                <div class="payment-card text-center">
+                                    <i class="fas fa-wallet fs-1 text-success mb-2"></i>
+                                    <h6>Uzum</h6>
+                                    <small class="text-muted">Uzum Bank</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Bekor qilish
+                </button>
+                <button type="submit" form="paymentForm" class="btn btn-primary">
+                    <i class="fas fa-credit-card me-2"></i>To'lovni amalga oshirish
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentModal = document.getElementById('paymentModal');
+    const paymentForm = document.getElementById('paymentForm');
+    const paymentDetails = document.getElementById('paymentDetails');
+    
+    // Handle payment modal
+    paymentModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const subscription = button.getAttribute('data-subscription');
+        const amount = button.getAttribute('data-amount');
+        
+        // Update form action
+        paymentForm.action = `/payment/${subscription}`;
+        
+        // Update payment details
+        const subscriptionNames = {
+            'basic': 'Basic',
+            'premium': 'Premium'
+        };
+        
+        paymentDetails.innerHTML = `
+            <strong>Tarif:</strong> ${subscriptionNames[subscription]}<br>
+            <strong>Narx:</strong> ${parseInt(amount).toLocaleString('uz-UZ')} so'm/oy<br>
+            <strong>Muddati:</strong> 30 kun
+        `;
+    });
+    
+    // Style payment method cards
+    const paymentMethods = document.querySelectorAll('.payment-method');
+    paymentMethods.forEach(method => {
+        method.addEventListener('click', function() {
+            // Remove active class from all
+            paymentMethods.forEach(m => m.classList.remove('active'));
+            // Add active class to clicked
+            this.classList.add('active');
+        });
+    });
+});
+</script>
+{% endblock %}

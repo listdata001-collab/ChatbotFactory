@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Yangi bot yaratish - BotFactory AI{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-plus me-2"></i>Yangi bot yaratish
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Telegram bot yaratish uchun:</strong>
+                    <ol class="mb-0 mt-2">
+                        <li>Telegramda <a href="https://t.me/BotFather" target="_blank" class="text-decoration-none">@BotFather</a> ga yozing</li>
+                        <li><code>/newbot</code> buyrug'ini yuboring</li>
+                        <li>Bot nomini kiriting (masalan: "Mening Bot")</li>
+                        <li>Bot username kiriting (masalan: "meningbot_bot")</li>
+                        <li>BotFather sizga token beradi - uni quyida kiriting</li>
+                    </ol>
+                </div>
+                
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-robot me-1"></i>Bot nomi *
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               required placeholder="Masalan: Mijozlar xizmati boti" autofocus>
+                        <div class="form-text">Bu nom faqat sizning panelingizda ko'rinadi</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="platform" class="form-label">
+                            <i class="fas fa-mobile-alt me-1"></i>Platforma *
+                        </label>
+                        <select class="form-select" id="platform" name="platform" required>
+                            <option value="Telegram">
+                                <i class="fab fa-telegram"></i> Telegram
+                            </option>
+                            {% if current_user.subscription_type in ['basic', 'premium', 'admin'] %}
+                            <option value="Instagram">
+                                <i class="fab fa-instagram"></i> Instagram (tez orada)
+                            </option>
+                            <option value="WhatsApp">
+                                <i class="fab fa-whatsapp"></i> WhatsApp (tez orada)
+                            </option>
+                            {% endif %}
+                        </select>
+                        {% if current_user.subscription_type == 'free' %}
+                        <div class="form-text text-warning">
+                            <i class="fas fa-lock me-1"></i>
+                            Instagram va WhatsApp Basic/Premium obunada mavjud
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3" id="telegram-settings">
+                        <label for="telegram_token" class="form-label">
+                            <i class="fab fa-telegram me-1"></i>Telegram Bot Token *
+                        </label>
+                        <input type="text" class="form-control font-monospace" id="telegram_token" name="telegram_token" 
+                               placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxyz" required>
+                        <div class="form-text">
+                            BotFather dan olgan tokenni kiriting. Format: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <button type="submit" class="btn btn-primary btn-lg w-100">
+                                <i class="fas fa-plus me-2"></i>Bot yaratish
+                            </button>
+                        </div>
+                        <div class="col-md-6">
+                            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary btn-lg w-100">
+                                <i class="fas fa-arrow-left me-2"></i>Bekor qilish
+                            </a>
+                        </div>
+                    </div>
+                </form>
+                
+                <!-- Help Section -->
+                <hr class="my-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-question-circle me-2"></i>BotFather qanday ishlaydi?</h6>
+                        <ol class="small">
+                            <li>Telegramda @BotFather ga yozing</li>
+                            <li>/start buyrug'ini bosing</li>
+                            <li>/newbot buyrug'ini bosing</li>
+                            <li>Bot nomini kiriting</li>
+                            <li>Bot username kiriting (bot bilan tugashi kerak)</li>
+                            <li>Token oling va bu yerga kiriting</li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-shield-alt me-2"></i>Xavfsizlik</h6>
+                        <ul class="small">
+                            <li>Tokenni hech kimga bermang</li>
+                            <li>Token maxfiy ma'lumot hisoblanadi</li>
+                            <li>Agar token oshkor bo'lsa, BotFather orqali yangilang</li>
+                            <li>Biz tokeningizni xavfsiz saqlaymiz</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const platformSelect = document.getElementById('platform');
+    const telegramSettings = document.getElementById('telegram-settings');
+    const tokenInput = document.getElementById('telegram_token');
+    
+    function toggleTelegramSettings() {
+        if (platformSelect.value === 'Telegram') {
+            telegramSettings.style.display = 'block';
+            tokenInput.required = true;
+        } else {
+            telegramSettings.style.display = 'none';
+            tokenInput.required = false;
+        }
+    }
+    
+    platformSelect.addEventListener('change', toggleTelegramSettings);
+    toggleTelegramSettings(); // Initial call
+    
+    // Token validation
+    tokenInput.addEventListener('input', function() {
+        const token = this.value;
+        const tokenPattern = /^\d+:[A-Za-z0-9_-]+$/;
+        
+        if (token && !tokenPattern.test(token)) {
+            this.setCustomValidity('Token formati noto\'g\'ri. Format: 123456:ABC-DEF1234ghIkl');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

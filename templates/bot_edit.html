@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot.name }} - Botni tahrirlash{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-edit me-2"></i>{{ bot.name }} - Tahrirlash
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">
+                            <i class="fas fa-robot me-1"></i>Bot nomi *
+                        </label>
+                        <input type="text" class="form-control" id="name" name="name" 
+                               value="{{ bot.name }}" required autofocus>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="platform" class="form-label">
+                            <i class="fas fa-mobile-alt me-1"></i>Platforma *
+                        </label>
+                        <select class="form-select" id="platform" name="platform" required>
+                            <option value="Telegram" {% if bot.platform == 'Telegram' %}selected{% endif %}>
+                                Telegram
+                            </option>
+                            {% if current_user.subscription_type in ['basic', 'premium', 'admin'] %}
+                            <option value="Instagram" {% if bot.platform == 'Instagram' %}selected{% endif %}>
+                                Instagram (tez orada)
+                            </option>
+                            <option value="WhatsApp" {% if bot.platform == 'WhatsApp' %}selected{% endif %}>
+                                WhatsApp (tez orada)
+                            </option>
+                            {% endif %}
+                        </select>
+                    </div>
+                    
+                    {% if bot.platform == 'Telegram' %}
+                    <div class="mb-3">
+                        <label for="telegram_token" class="form-label">
+                            <i class="fab fa-telegram me-1"></i>Telegram Bot Token
+                        </label>
+                        <input type="text" class="form-control font-monospace" id="telegram_token" name="telegram_token" 
+                               value="{{ bot.telegram_token or '' }}" placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxyz">
+                        <div class="form-text">
+                            Token o'zgartirish uchun BotFather dan yangi token oling
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-2"></i>Saqlash
+                    </button>
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Orqaga
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Bot Status -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Bot holati</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2">Holat:</span>
+                    {% if bot.is_active %}
+                    <span class="badge bg-success">
+                        <i class="fas fa-check me-1"></i>Faol
+                    </span>
+                    {% else %}
+                    <span class="badge bg-secondary">
+                        <i class="fas fa-pause me-1"></i>To'xtatilgan
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center mb-2">
+                    <span class="me-2">Platforma:</span>
+                    {% if bot.platform == 'Telegram' %}
+                    <span class="badge bg-info">
+                        <i class="fab fa-telegram me-1"></i>Telegram
+                    </span>
+                    {% elif bot.platform == 'Instagram' %}
+                    <span class="badge bg-danger">
+                        <i class="fab fa-instagram me-1"></i>Instagram
+                    </span>
+                    {% elif bot.platform == 'WhatsApp' %}
+                    <span class="badge bg-success">
+                        <i class="fab fa-whatsapp me-1"></i>WhatsApp
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="me-2">Yaratilgan:</span>
+                    <span class="text-muted">{{ bot.created_at.strftime('%d.%m.%Y') }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Knowledge Base -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0"><i class="fas fa-book me-2"></i>Bilim bazasi</h6>
+            </div>
+            <div class="card-body">
+                <p class="card-text small">
+                    Bot sizning kompaniya haqida ko'proq bilishi uchun .txt yoki .docx fayl yuklang.
+                </p>
+                
+                <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}" 
+                      enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <input type="file" class="form-control form-control-sm" name="file" 
+                               accept=".txt,.docx" required>
+                        <div class="form-text">Maksimal: 16MB</div>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-upload me-1"></i>Yuklash
+                    </button>
+                </form>
+                
+                {% if bot.knowledge_base %}
+                <hr>
+                <h6 class="small mb-2">Yuklangan fayllar:</h6>
+                {% for kb in bot.knowledge_base %}
+                <div class="d-flex justify-content-between align-items-center small mb-1">
+                    <span class="text-truncate">
+                        <i class="fas fa-file-text me-1"></i>{{ kb.filename }}
+                    </span>
+                    <span class="text-muted">{{ kb.created_at.strftime('%d.%m') }}</span>
+                </div>
+                {% endfor %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

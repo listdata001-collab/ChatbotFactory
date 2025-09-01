@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+
+{% block title %}BotFactory AI - O'zbek tili uchun AI chatbot platformasi{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section bg-gradient text-white py-5 mb-5 rounded">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-4">
+                    <i class="fas fa-robot me-3"></i>BotFactory AI
+                </h1>
+                <p class="lead mb-4">
+                    O'zbek tili uchun professional AI chatbot platformasi. 
+                    Telegram, Instagram va WhatsApp uchun aqlli botlar yarating! 🚀
+                </p>
+                {% if not current_user.is_authenticated %}
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-rocket me-2"></i>Bepul boshlash
+                    </a>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>Kirish
+                    </a>
+                </div>
+                {% else %}
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-tachometer-alt me-2"></i>Boshqaruv paneli
+                </a>
+                {% endif %}
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="fas fa-robot display-1 text-white-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-5">
+            <i class="fas fa-star me-2"></i>Nima uchun BotFactory AI?
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-brain text-primary"></i>
+                </div>
+                <h5 class="card-title">Aqlli AI</h5>
+                <p class="card-text">
+                    Google Gemini AI yordamida o'zbek, rus va ingliz tillarida 
+                    professional javoblar beruvchi botlar yarating.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-mobile-alt text-success"></i>
+                </div>
+                <h5 class="card-title">Ko'p platforma</h5>
+                <p class="card-text">
+                    Telegram, Instagram va WhatsApp uchun botlar yarating. 
+                    Bir joydan barcha platformalarni boshqaring.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 feature-card">
+            <div class="card-body text-center">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-book text-warning"></i>
+                </div>
+                <h5 class="card-title">Bilim bazasi</h5>
+                <p class="card-text">
+                    O'z ma'lumotlaringizni yuklang va botingiz sizning 
+                    kompaniya haqida batafsil ma'lumot bersin.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pricing Section -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-5">
+            <i class="fas fa-crown me-2"></i>Tariflar
+        </h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card pricing-card h-100">
+            <div class="card-header text-center bg-secondary text-white">
+                <h4 class="my-2">
+                    <i class="fas fa-gift me-2"></i>Test
+                </h4>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="card-title pricing-title">
+                    Bepul
+                    <small class="text-muted fs-6">/14 kun</small>
+                </h2>
+                <ul class="list-unstyled mt-3 mb-4">
+                    <li><i class="fas fa-check text-success me-2"></i>1 ta bot</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Faqat Telegram</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Faqat o'zbek tili</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Bilim bazasi</li>
+                </ul>
+                {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg w-100">
+                    Boshlash
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card pricing-card h-100 border-primary">
+            <div class="card-header text-center bg-primary text-white">
+                <h4 class="my-2">
+                    <i class="fas fa-star me-2"></i>Basic
+                </h4>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="card-title pricing-title">
+                    290,000 so'm
+                    <small class="text-muted fs-6">/oy</small>
+                </h2>
+                <ul class="list-unstyled mt-3 mb-4">
+                    <li><i class="fas fa-check text-success me-2"></i>1 ta bot</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Barcha platformalar</li>
+                    <li><i class="fas fa-check text-success me-2"></i>3 ta til (uz/ru/en)</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Bilim bazasi</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Texnik yordam</li>
+                </ul>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.subscription') }}" class="btn btn-primary btn-lg w-100">
+                    Tanlash
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg w-100">
+                    Boshlash
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card pricing-card h-100 border-warning">
+            <div class="card-header text-center bg-warning text-dark">
+                <h4 class="my-2">
+                    <i class="fas fa-crown me-2"></i>Premium
+                </h4>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="card-title pricing-title">
+                    590,000 so'm
+                    <small class="text-muted fs-6">/oy</small>
+                </h2>
+                <ul class="list-unstyled mt-3 mb-4">
+                    <li><i class="fas fa-check text-success me-2"></i>5 ta bot</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Barcha platformalar</li>
+                    <li><i class="fas fa-check text-success me-2"></i>3 ta til (uz/ru/en)</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Bilim bazasi</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Prioritet yordam</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Kengaytirilgan analitika</li>
+                </ul>
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.subscription') }}" class="btn btn-warning btn-lg w-100">
+                    Tanlash
+                </a>
+                {% else %}
+                <a href="{{ url_for('auth.register') }}" class="btn btn-warning btn-lg w-100">
+                    Boshlash
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How it works -->
+<div class="row mb-5">
+    <div class="col-12">
+        <h2 class="text-center mb-5">
+            <i class="fas fa-cogs me-2"></i>Qanday ishlaydi?
+        </h2>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">1</div>
+            <h5>Ro'yxatdan o'ting</h5>
+            <p class="text-muted">
+                14 kunlik bepul sinov davri bilan 
+                tizimda ro'yxatdan o'ting
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">2</div>
+            <h5>Bot yarating</h5>
+            <p class="text-muted">
+                Oddiy interfeys orqali o'z 
+                chatbotingizni sozlang
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">3</div>
+            <h5>Ma'lumot yuklang</h5>
+            <p class="text-muted">
+                Kompaniya ma'lumotlarini yuklang 
+                va botni o'qiting
+            </p>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="text-center">
+            <div class="step-number mb-3">4</div>
+            <h5>Ishga tushiring</h5>
+            <p class="text-muted">
+                Botingiz tayyor! Mijozlar bilan 
+                24/7 muloqot qiling
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
