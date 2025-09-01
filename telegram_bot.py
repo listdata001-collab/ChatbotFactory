@@ -493,7 +493,9 @@ Masalan:
                     await update.message.reply_text("❌ Javob berishda xatolik yuz berdi!")
                     
             except Exception as e:
-                logger.error(f"Message handling error: {str(e)}")
+                # Safe error logging to prevent encoding issues
+                error_msg = str(e).encode('utf-8', errors='ignore').decode('utf-8')
+                logger.error(f"Message handling error: {error_msg}")
                 await update.message.reply_text("❌ Xatolik yuz berdi! Iltimos, keyinroq urinib ko'ring.")
     
     async def handle_voice_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

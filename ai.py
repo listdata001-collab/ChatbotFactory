@@ -45,7 +45,9 @@ def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language
             return get_fallback_response(user_language)
             
     except Exception as e:
-        logging.error(f"AI response error: {str(e)}")
+        # Safe error logging to prevent encoding issues  
+        error_msg = str(e).encode('utf-8', errors='ignore').decode('utf-8')
+        logging.error(f"AI response error: {error_msg}")
         return get_fallback_response(user_language)
 
 def get_fallback_response(language: str = "uz") -> str:
