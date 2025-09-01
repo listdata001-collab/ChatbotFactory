@@ -381,8 +381,8 @@ class TelegramBot:
             
             # Generate AI response
             try:
-                # Show typing indicator
-                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+                # Skip typing indicator for now (context implementation needed)
+                # await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
                 
                 ai_response = get_ai_response(
                     message=message_text,
@@ -481,11 +481,17 @@ def validate_telegram_token(token):
     """Telegram bot tokenini tekshirish"""
     import requests
     try:
-        response = requests.get(f"https://api.telegram.org/bot{token}/getMe")
+        # Basic token format check
+        if not token or len(token) < 20:
+            return False
+            
+        response = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=10)
         if response.status_code == 200:
-            return True
+            data = response.json()
+            return data.get('ok', False)
         return False
-    except:
+    except Exception as e:
+        logger.warning(f"Token validation error: {e}")
         return False
 
 def start_bot_automatically(bot_id, bot_token):
