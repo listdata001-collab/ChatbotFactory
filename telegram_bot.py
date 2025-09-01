@@ -3,15 +3,39 @@ import logging
 from typing import Optional
 
 try:
-    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram._update import Update
+    from telegram._keyboardbutton import InlineKeyboardButton
+    from telegram._reply import InlineKeyboardMarkup
     from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
     TELEGRAM_AVAILABLE = True
-except ImportError:
-    TELEGRAM_AVAILABLE = False
-    logging.warning("python-telegram-bot library not available. Install with: pip install python-telegram-bot")
-from ai import get_ai_response, process_knowledge_base
-from models import User, Bot, ChatHistory
-from app import db, app
+    # If imports are problematic, define dummy classes
+except ImportError as e1:
+    try:
+        # Backup import style
+        from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+        from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+        TELEGRAM_AVAILABLE = True
+    except ImportError as e2:
+        logging.warning(f"Telegram imports failed: {e1}, {e2}")
+        # Define dummy classes to avoid NameErrors
+        TELEGRAM_AVAILABLE = False
+        
+        class Update: pass
+        class InlineKeyboardButton: pass
+        class InlineKeyboardMarkup: pass
+        class Application: pass
+        class CommandHandler: pass
+        class MessageHandler: pass
+        class CallbackQueryHandler: pass
+        class filters: pass
+        class ContextTypes: 
+            DEFAULT_TYPE = None
+# Circular import muammosini oldini olish uchun lazy import
+def get_dependencies():
+    from ai import get_ai_response, process_knowledge_base
+    from models import User, Bot, ChatHistory
+    from app import db, app
+    return get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -39,6 +63,7 @@ class TelegramBot:
         """Handle /start command"""
         user = update.effective_user
         
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
             # Get or create user
             db_user = User.query.filter_by(telegram_id=str(user.id)).first()
@@ -88,6 +113,7 @@ class TelegramBot:
         """Handle /language command"""
         user_id = str(update.effective_user.id)
         
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
             db_user = User.query.filter_by(telegram_id=user_id).first()
             if not db_user:
@@ -134,6 +160,7 @@ class TelegramBot:
         if not language:
             return
         
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
             db_user = User.query.filter_by(telegram_id=user_id).first()
             if db_user and db_user.can_use_language(language):
@@ -156,6 +183,7 @@ class TelegramBot:
         user_id = str(update.effective_user.id)
         message_text = update.message.text
         
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
             # Get user info
             db_user = User.query.filter_by(telegram_id=user_id).first()
