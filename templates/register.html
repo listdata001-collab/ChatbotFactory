@@ -21,16 +21,16 @@
                 <form method="POST">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="username" class="form-label">
-                                <i class="fas fa-user me-1"></i>Foydalanuvchi nomi *
+                            <label for="username" class="form-label fw-bold text-dark">
+                                <i class="fas fa-user me-1 text-success"></i>Foydalanuvchi nomi *
                             </label>
                             <input type="text" class="form-control" id="username" name="username" 
                                    required autofocus placeholder="Foydalanuvchi nomi">
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="email" class="form-label">
-                                <i class="fas fa-envelope me-1"></i>Email *
+                            <label for="email" class="form-label fw-bold text-dark">
+                                <i class="fas fa-envelope me-1 text-success"></i>Email *
                             </label>
                             <input type="email" class="form-control" id="email" name="email" 
                                    required placeholder="example@email.com">
@@ -39,16 +39,16 @@
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="password" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Parol *
+                            <label for="password" class="form-label fw-bold text-dark">
+                                <i class="fas fa-lock me-1 text-success"></i>Parol *
                             </label>
                             <input type="password" class="form-control" id="password" name="password" 
                                    required placeholder="Kamida 6 ta belgi">
                         </div>
                         
                         <div class="col-md-6 mb-3">
-                            <label for="confirm_password" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Parolni takrorlang *
+                            <label for="confirm_password" class="form-label fw-bold text-dark">
+                                <i class="fas fa-lock me-1 text-success"></i>Parolni takrorlang *
                             </label>
                             <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
                                    required placeholder="Parolni qayta kiriting">
@@ -58,9 +58,9 @@
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="agree_terms" required>
-                            <label class="form-check-label" for="agree_terms">
-                                Men <a href="#" class="text-decoration-none">foydalanish shartlari</a> va 
-                                <a href="#" class="text-decoration-none">maxfiylik siyosati</a> bilan tanishib chiqdim va roziman
+                            <label class="form-check-label fw-bold text-dark" for="agree_terms">
+                                Men <a href="#" class="text-success fw-bold">foydalanish shartlari</a> va 
+                                <a href="#" class="text-success fw-bold">maxfiylik siyosati</a> bilan tanishib chiqdim va roziman
                             </label>
                         </div>
                     </div>
@@ -75,8 +75,8 @@
                 <hr>
                 
                 <div class="text-center">
-                    <p class="mb-0">Allaqachon hisobingiz bormi?</p>
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-primary mt-2">
+                    <p class="mb-0 fw-bold text-dark fs-6">Allaqachon hisobingiz bormi?</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-success mt-2 fw-bold">
                         <i class="fas fa-sign-in-alt me-2"></i>Tizimga kirish
                     </a>
                 </div>
