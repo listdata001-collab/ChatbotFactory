@@ -13,6 +13,7 @@ class User(UserMixin, db.Model):
     subscription_type = db.Column(db.String(20), default='free')  # free/basic/premium/admin
     subscription_end_date = db.Column(db.DateTime)
     is_admin = db.Column(db.Boolean, default=False)
+    _is_active = db.Column('is_active', db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     telegram_id = db.Column(db.String(50), unique=True)
     instagram_id = db.Column(db.String(50), unique=True)
@@ -25,6 +26,16 @@ class User(UserMixin, db.Model):
     
     def __repr__(self):
         return f'<User {self.username}>'
+    
+    @property
+    def is_active(self):
+        """Override UserMixin's is_active property"""
+        return self._is_active
+    
+    @is_active.setter
+    def is_active(self, value):
+        """Allow setting is_active"""
+        self._is_active = value
     
     def can_create_bot(self) -> bool:
         if self.subscription_type == 'admin':
