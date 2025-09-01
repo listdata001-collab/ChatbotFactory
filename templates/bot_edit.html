@@ -112,33 +112,110 @@
                 <h6 class="mb-0"><i class="fas fa-book me-2"></i>Bilim bazasi</h6>
             </div>
             <div class="card-body">
-                <p class="card-text small">
-                    Bot sizning kompaniya haqida ko'proq bilishi uchun .txt yoki .docx fayl yuklang.
+                <p class="card-text small mb-3">
+                    Botga ma'lumot qo'shish uchun fayl yuklang, matn kiriting yoki rasm havolasini qo'shing.
                 </p>
                 
-                <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}" 
-                      enctype="multipart/form-data">
-                    <div class="mb-3">
-                        <input type="file" class="form-control form-control-sm" name="file" 
-                               accept=".txt,.docx" required>
-                        <div class="form-text">Maksimal: 16MB</div>
+                <!-- Nav tabs -->
+                <ul class="nav nav-pills nav-fill small mb-3" id="knowledgeTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="file-tab" data-bs-toggle="pill" data-bs-target="#file-content" type="button" role="tab">
+                            <i class="fas fa-upload me-1"></i>Fayl
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="text-tab" data-bs-toggle="pill" data-bs-target="#text-content" type="button" role="tab">
+                            <i class="fas fa-edit me-1"></i>Matn
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="image-tab" data-bs-toggle="pill" data-bs-target="#image-content" type="button" role="tab">
+                            <i class="fas fa-image me-1"></i>Rasm
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- Tab content -->
+                <div class="tab-content" id="knowledgeTabContent">
+                    <!-- File Upload Tab -->
+                    <div class="tab-pane fade show active" id="file-content" role="tabpanel">
+                        <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}" 
+                              enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <input type="file" class="form-control form-control-sm" name="file" 
+                                       accept=".txt,.docx" required>
+                                <div class="form-text">Maksimal: 16MB (.txt, .docx)</div>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-primary w-100">
+                                <i class="fas fa-upload me-1"></i>Fayl yuklash
+                            </button>
+                        </form>
                     </div>
-                    <button type="submit" class="btn btn-sm btn-primary w-100">
-                        <i class="fas fa-upload me-1"></i>Yuklash
-                    </button>
-                </form>
+
+                    <!-- Text Input Tab -->
+                    <div class="tab-pane fade" id="text-content" role="tabpanel">
+                        <form method="POST" action="{{ url_for('main.add_text_knowledge', bot_id=bot.id) }}">
+                            <div class="mb-3">
+                                <label for="source_name" class="form-label small">Nom (ixtiyoriy):</label>
+                                <input type="text" class="form-control form-control-sm" id="source_name" name="source_name" 
+                                       placeholder="Masalan: Kompaniya haqida">
+                            </div>
+                            <div class="mb-3">
+                                <label for="content" class="form-label small">Matn:</label>
+                                <textarea class="form-control form-control-sm" id="content" name="content" rows="4" 
+                                          placeholder="Bu yerga bot bilishi kerak bo'lgan ma'lumotlarni kiriting..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                <i class="fas fa-plus me-1"></i>Matn qo'shish
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Image Link Tab -->
+                    <div class="tab-pane fade" id="image-content" role="tabpanel">
+                        <form method="POST" action="{{ url_for('main.add_image_knowledge', bot_id=bot.id) }}">
+                            <div class="mb-3">
+                                <label for="img_source_name" class="form-label small">Nom (ixtiyoriy):</label>
+                                <input type="text" class="form-control form-control-sm" id="img_source_name" name="source_name" 
+                                       placeholder="Masalan: Mahsulot rasmi">
+                            </div>
+                            <div class="mb-3">
+                                <label for="image_url" class="form-label small">Rasm havolasi:</label>
+                                <input type="url" class="form-control form-control-sm" id="image_url" name="image_url" 
+                                       placeholder="https://example.com/image.jpg" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="description" class="form-label small">Tavsif (ixtiyoriy):</label>
+                                <textarea class="form-control form-control-sm" id="description" name="description" rows="2" 
+                                          placeholder="Rasm haqida qo'shimcha ma'lumot..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-sm btn-info w-100">
+                                <i class="fas fa-link me-1"></i>Rasm qo'shish
+                            </button>
+                        </form>
+                    </div>
+                </div>
                 
                 {% if bot.knowledge_base %}
                 <hr>
-                <h6 class="small mb-2">Yuklangan fayllar:</h6>
+                <h6 class="small mb-2">Qo'shilgan ma'lumotlar:</h6>
+                <div style="max-height: 200px; overflow-y: auto;">
                 {% for kb in bot.knowledge_base %}
-                <div class="d-flex justify-content-between align-items-center small mb-1">
-                    <span class="text-truncate">
-                        <i class="fas fa-file-text me-1"></i>{{ kb.filename }}
-                    </span>
+                <div class="d-flex justify-content-between align-items-center small mb-2 p-2 bg-light rounded">
+                    <div class="d-flex align-items-center">
+                        {% if kb.content_type == 'file' %}
+                            <i class="fas fa-file-text me-2 text-primary"></i>
+                        {% elif kb.content_type == 'text' %}
+                            <i class="fas fa-edit me-2 text-success"></i>
+                        {% elif kb.content_type == 'image_link' %}
+                            <i class="fas fa-image me-2 text-info"></i>
+                        {% endif %}
+                        <span class="text-truncate">{{ kb.source_name or kb.filename }}</span>
+                    </div>
                     <span class="text-muted">{{ kb.created_at.strftime('%d.%m') }}</span>
                 </div>
                 {% endfor %}
+                </div>
                 {% endif %}
             </div>
         </div>

@@ -93,10 +93,12 @@ class KnowledgeBase(db.Model):
     bot_id = db.Column(db.Integer, db.ForeignKey('bot.id'), nullable=False)
     content = db.Column(Text, nullable=False)
     filename = db.Column(db.String(200))
+    content_type = db.Column(db.String(20), default='file')  # file, text, image_link
+    source_name = db.Column(db.String(200))  # Custom name for text/image entries
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
-        return f'<KnowledgeBase {self.filename}>'
+        return f'<KnowledgeBase {self.source_name or self.filename}>'
 
 class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)

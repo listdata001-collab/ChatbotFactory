@@ -284,7 +284,13 @@ def upload_knowledge(bot_id):
         
         try:
             if filename.endswith('.txt'):
-                content = file.read().decode('utf-8')
+                # Handle different encodings for text files
+                try:
+                    content = file.read().decode('utf-8')
+                except UnicodeDecodeError:
+                    # Try with different encoding if UTF-8 fails
+                    file.seek(0)
+                    content = file.read().decode('latin-1')
             elif filename.endswith('.docx'):
                 doc = docx.Document(file.stream)
                 content = '\n'.join([paragraph.text for paragraph in doc.paragraphs])
@@ -296,13 +302,103 @@ def upload_knowledge(bot_id):
             knowledge.bot_id = bot_id
             knowledge.content = content
             knowledge.filename = filename
+            knowledge.content_type = 'file'
             
             db.session.add(knowledge)
             db.session.commit()
             
             flash('Bilim bazasi muvaffaqiyatli yuklandi!', 'success')
         except Exception as e:
-            flash(f'Fayl yuklashda xatolik: {str(e)}', 'error')
+            # Safe error message handling to prevent encoding issues
+            error_msg = 'Fayl yuklashda xatolik yuz berdi.'
+            try:
+                error_details = str(e).encode('utf-8', errors='ignore').decode('utf-8')
+                if error_details:
+                    error_msg = f'Fayl yuklashda xatolik: {error_details}'
+            except:
+                pass
+            flash(error_msg, 'error')
+    
+    return redirect(url_for('main.edit_bot', bot_id=bot_id))
+
+@main_bp.route('/bot/<int:bot_id>/knowledge/text', methods=['POST'])
+@login_required
+def add_text_knowledge(bot_id):
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu botga ma\'lumot qo\'shish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    content = request.form.get('content', '').strip()
+    source_name = request.form.get('source_name', '').strip()
+    
+    if not content:
+        flash('Matn maydoni bo\'sh bo\'lishi mumkin emas!', 'error')
+        return redirect(url_for('main.edit_bot', bot_id=bot_id))
+    
+    if not source_name:
+        source_name = f'Matn kirish - {datetime.utcnow().strftime("%d.%m.%Y %H:%M")}'
+    
+    try:
+        knowledge = KnowledgeBase()
+        knowledge.bot_id = bot_id
+        knowledge.content = content
+        knowledge.content_type = 'text'
+        knowledge.source_name = source_name
+        
+        db.session.add(knowledge)
+        db.session.commit()
+        
+        flash('Matn muvaffaqiyatli qo\'shildi!', 'success')
+    except Exception as e:
+        flash('Matn qo\'shishda xatolik yuz berdi.', 'error')
+    
+    return redirect(url_for('main.edit_bot', bot_id=bot_id))
+
+@main_bp.route('/bot/<int:bot_id>/knowledge/image', methods=['POST'])
+@login_required
+def add_image_knowledge(bot_id):
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu botga rasm qo\'shish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    image_url = request.form.get('image_url', '').strip()
+    source_name = request.form.get('source_name', '').strip()
+    description = request.form.get('description', '').strip()
+    
+    if not image_url:
+        flash('Rasm havolasi bo\'sh bo\'lishi mumkin emas!', 'error')
+        return redirect(url_for('main.edit_bot', bot_id=bot_id))
+    
+    # Basic URL validation
+    if not (image_url.startswith('http://') or image_url.startswith('https://')):
+        flash('Yaroqli rasm havolasi kiriting (http:// yoki https:// bilan boshlanishi kerak)!', 'error')
+        return redirect(url_for('main.edit_bot', bot_id=bot_id))
+    
+    if not source_name:
+        source_name = f'Rasm havolasi - {datetime.utcnow().strftime("%d.%m.%Y %H:%M")}'
+    
+    # Combine image URL and description for content
+    content = f"Rasm havolasi: {image_url}"
+    if description:
+        content += f"\nTavsif: {description}"
+    
+    try:
+        knowledge = KnowledgeBase()
+        knowledge.bot_id = bot_id
+        knowledge.content = content
+        knowledge.content_type = 'image_link'
+        knowledge.source_name = source_name
+        
+        db.session.add(knowledge)
+        db.session.commit()
+        
+        flash('Rasm havolasi muvaffaqiyatli qo\'shildi!', 'success')
+    except Exception as e:
+        flash('Rasm havolasini qo\'shishda xatolik yuz berdi.', 'error')
     
     return redirect(url_for('main.edit_bot', bot_id=bot_id))
 
