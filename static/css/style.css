@@ -433,6 +433,7 @@ footer {
     :root {
         --bs-body-bg: #1a1a1a;
         --bs-body-color: #fff;
+        --dark-color: #fff;
     }
     
     body {
@@ -443,6 +444,7 @@ footer {
     .card {
         background-color: #2d2d2d;
         border-color: #404040;
+        color: #fff;
     }
     
     .table {
@@ -454,6 +456,37 @@ footer {
         background-color: #2d2d2d;
         border-color: #404040;
         color: #fff;
+    }
+    
+    .form-label {
+        color: #fff !important;
+    }
+    
+    .text-body {
+        color: #fff !important;
+    }
+    
+    .text-muted {
+        color: #adb5bd !important;
+    }
+    
+    h1, h2, h3, h4, h5, h6 {
+        color: #fff;
+    }
+    
+    .alert-info {
+        background-color: rgba(13, 202, 240, 0.1);
+        border-color: rgba(13, 202, 240, 0.2);
+        color: #fff;
+    }
+    
+    .modal-content {
+        background-color: #2d2d2d;
+        border-color: #404040;
+    }
+    
+    .modal-header, .modal-footer {
+        border-color: #404040;
     }
 }
 
