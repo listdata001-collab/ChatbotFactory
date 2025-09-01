@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify, url_for
 from app import db, app
 from models import User, Bot, ChatHistory
 from ai import get_ai_response, process_knowledge_base
+from audio_processor import download_and_process_audio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -224,6 +225,79 @@ class InstagramBot:
                 
         except Exception as e:
             logger.error(f"Instagram message handling error: {str(e)}")
+            return False
+    
+    def handle_audio_message(self, sender_id: str, audio_attachment: Dict[str, Any]) -> bool:
+        """Handle audio messages - convert to text and get AI response"""
+        try:
+            audio_url = audio_attachment.get('payload', {}).get('url')
+            if not audio_url:
+                logger.error("Audio URL not found in attachment")
+                self.send_message(sender_id, "❌ Audio fayl URL topilmadi!")
+                return False
+            
+            # Send processing message
+            self.send_message(sender_id, "🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
+            
+            with app.app_context():
+                # Get user info
+                db_user = User.query.filter_by(instagram_id=sender_id).first()
+                if not db_user:
+                    self.send_message(sender_id, "❌ Foydalanuvchi topilmadi! Bot bilan birinchi marta gaplashing.")
+                    return False
+                
+                # Get bot info
+                bot = Bot.query.get(self.bot_id)
+                if not bot:
+                    self.send_message(sender_id, "❌ Bot topilmadi!")
+                    return False
+                
+                # Check subscription
+                if not db_user.subscription_active():
+                    self.send_message(sender_id, "❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+                    return False
+                
+                # Process audio
+                ai_response = download_and_process_audio(
+                    audio_url=audio_url,
+                    user_id=sender_id,
+                    language=db_user.language,
+                    file_extension='.m4a'  # Instagram audio format
+                )
+                
+                # Extract the text part and AI response
+                if "🎤 Sizning xabaringiz:" in ai_response:
+                    parts = ai_response.split("\n\n", 1)
+                    if len(parts) == 2:
+                        user_text = parts[0].replace("🎤 Sizning xabaringiz: \"", "").replace("\"", "")
+                        ai_text = parts[1]
+                    else:
+                        user_text = "Audio xabar"
+                        ai_text = ai_response
+                else:
+                    user_text = "Audio xabar"
+                    ai_text = ai_response
+                
+                # Save chat history
+                chat_history = ChatHistory()
+                chat_history.bot_id = self.bot_id
+                chat_history.user_instagram_id = sender_id
+                chat_history.message = f"[AUDIO] {user_text}"
+                chat_history.response = ai_text
+                chat_history.language = db_user.language
+                chat_history.created_at = datetime.utcnow()
+                db.session.add(chat_history)
+                db.session.commit()
+                
+                # Send response
+                self.send_message(sender_id, ai_response)
+                
+                logger.info(f"Instagram audio message processed for user {sender_id}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Instagram audio handling error: {str(e)}")
+            self.send_message(sender_id, "❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
             return False
     
     def handle_postback(self, sender_id: str, payload: str) -> bool:

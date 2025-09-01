@@ -2,7 +2,9 @@ import os
 import logging
 import asyncio
 import requests
+import tempfile
 from typing import Optional
+from audio_processor import download_and_process_audio, process_audio_message
 
 # Set telegram as available and use real bot implementation
 TELEGRAM_AVAILABLE = True
@@ -417,6 +419,104 @@ class TelegramBot:
             except Exception as e:
                 logger.error(f"Message handling error: {str(e)}")
                 await update.message.reply_text("❌ Xatolik yuz berdi! Iltimos, keyinroq urinib ko'ring.")
+    
+    async def handle_voice_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle voice messages - convert to text and get AI response"""
+        user_id = str(update.effective_user.id)
+        
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+        with app.app_context():
+            # Get user info
+            db_user = User.query.filter_by(telegram_id=user_id).first()
+            if not db_user:
+                await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
+                return
+            
+            # Get bot info
+            bot = Bot.query.get(self.bot_id)
+            if not bot:
+                await update.message.reply_text("❌ Bot topilmadi!")
+                return
+            
+            # Check subscription
+            if not db_user.subscription_active():
+                await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+                return
+            
+            try:
+                # Send processing message
+                processing_msg = await update.message.reply_text("🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
+                
+                # Get voice file
+                voice = update.message.voice
+                if not voice:
+                    await processing_msg.edit_text("❌ Ovozli xabar topilmadi!")
+                    return
+                
+                # Get file URL from Telegram API
+                file_url = await self._get_telegram_file_url(voice.file_id)
+                if not file_url:
+                    await processing_msg.edit_text("❌ Audio faylni yuklab olishda xatolik yuz berdi!")
+                    return
+                
+                # Process audio
+                ai_response = download_and_process_audio(
+                    audio_url=file_url,
+                    user_id=user_id,
+                    language=db_user.language,
+                    file_extension='.ogg'
+                )
+                
+                # Extract the text part and AI response
+                if "🎤 Sizning xabaringiz:" in ai_response:
+                    parts = ai_response.split("\n\n", 1)
+                    if len(parts) == 2:
+                        user_text = parts[0].replace("🎤 Sizning xabaringiz: \"", "").replace("\"", "")
+                        ai_text = parts[1]
+                    else:
+                        user_text = "Audio xabar"
+                        ai_text = ai_response
+                else:
+                    user_text = "Audio xabar"
+                    ai_text = ai_response
+                
+                # Save chat history
+                chat_history = ChatHistory()
+                chat_history.bot_id = self.bot_id
+                chat_history.user_telegram_id = user_id
+                chat_history.message = f"[AUDIO] {user_text}"
+                chat_history.response = ai_text
+                chat_history.language = db_user.language
+                db.session.add(chat_history)
+                db.session.commit()
+                
+                # Send final response
+                await processing_msg.edit_text(ai_response)
+                
+            except Exception as e:
+                logger.error(f"Voice message handling error: {str(e)}")
+                try:
+                    await processing_msg.edit_text("❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
+                except:
+                    await update.message.reply_text("❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
+    
+    async def _get_telegram_file_url(self, file_id):
+        """Get file URL from Telegram API"""
+        try:
+            url = f"https://api.telegram.org/bot{self.token}/getFile"
+            response = requests.get(url, params={'file_id': file_id})
+            data = response.json()
+            
+            if data.get('ok') and 'result' in data:
+                file_path = data['result']['file_path']
+                return f"https://api.telegram.org/file/bot{self.token}/{file_path}"
+            else:
+                logger.error(f"Telegram getFile API error: {data}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error getting Telegram file URL: {str(e)}")
+            return None
     
     def run(self):
         """Start the bot"""

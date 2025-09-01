@@ -8,6 +8,7 @@ from flask import Blueprint, request, jsonify, url_for
 from app import db, app
 from models import User, Bot, ChatHistory
 from ai import get_ai_response, process_knowledge_base
+from audio_processor import download_and_process_audio
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -302,6 +303,118 @@ Yangi obunani BotFactory.uz saytidan sotib oling.
         except Exception as e:
             logger.error(f"WhatsApp message handling error: {str(e)}")
             return False
+    
+    def handle_audio_message(self, from_number: str, audio_data: Dict[str, Any]) -> bool:
+        """Handle audio messages - convert to text and get AI response"""
+        try:
+            # Get audio URL and metadata
+            audio_id = audio_data.get('id')
+            mime_type = audio_data.get('mime_type', 'audio/ogg')
+            
+            if not audio_id:
+                logger.error("Audio ID not found in message")
+                self.send_message(from_number, "❌ Audio fayl ID topilmadi!")
+                return False
+            
+            # Get audio file URL
+            audio_url = self._get_media_url(audio_id)
+            if not audio_url:
+                self.send_message(from_number, "❌ Audio faylni yuklab olishda xatolik yuz berdi!")
+                return False
+            
+            # Send processing message
+            self.send_message(from_number, "🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
+            
+            with app.app_context():
+                # Get user info
+                db_user = User.query.filter_by(whatsapp_id=from_number).first()
+                if not db_user:
+                    self.send_message(from_number, "❌ Foydalanuvchi topilmadi! Bot bilan birinchi marta gaplashing.")
+                    return False
+                
+                # Get bot info
+                bot = Bot.query.get(self.bot_id)
+                if not bot:
+                    self.send_message(from_number, "❌ Bot topilmadi!")
+                    return False
+                
+                # Check subscription
+                if not db_user.subscription_active():
+                    self.send_message(from_number, "❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+                    return False
+                
+                # Determine file extension from mime type
+                file_ext = '.ogg'
+                if 'mp4' in mime_type:
+                    file_ext = '.mp4'
+                elif 'mpeg' in mime_type:
+                    file_ext = '.mp3'
+                elif 'wav' in mime_type:
+                    file_ext = '.wav'
+                
+                # Process audio
+                ai_response = download_and_process_audio(
+                    audio_url=audio_url,
+                    user_id=from_number,
+                    language=db_user.language,
+                    file_extension=file_ext
+                )
+                
+                # Extract the text part and AI response
+                if "🎤 Sizning xabaringiz:" in ai_response:
+                    parts = ai_response.split("\n\n", 1)
+                    if len(parts) == 2:
+                        user_text = parts[0].replace("🎤 Sizning xabaringiz: \"", "").replace("\"", "")
+                        ai_text = parts[1]
+                    else:
+                        user_text = "Audio xabar"
+                        ai_text = ai_response
+                else:
+                    user_text = "Audio xabar"
+                    ai_text = ai_response
+                
+                # Save chat history
+                chat_history = ChatHistory()
+                chat_history.bot_id = self.bot_id
+                chat_history.user_whatsapp_id = from_number
+                chat_history.message = f"[AUDIO] {user_text}"
+                chat_history.response = ai_text
+                chat_history.language = db_user.language
+                chat_history.created_at = datetime.utcnow()
+                db.session.add(chat_history)
+                db.session.commit()
+                
+                # Send response
+                self.send_message(from_number, ai_response)
+                
+                logger.info(f"WhatsApp audio message processed for user {from_number}")
+                return True
+                
+        except Exception as e:
+            logger.error(f"WhatsApp audio handling error: {str(e)}")
+            self.send_message(from_number, "❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
+            return False
+    
+    def _get_media_url(self, media_id: str) -> Optional[str]:
+        """Get media file URL from WhatsApp API"""
+        try:
+            url = f"{self.base_url}/{media_id}"
+            headers = {
+                'Authorization': f'Bearer {self.access_token}'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('url')
+            else:
+                logger.error(f"Failed to get media URL: {response.text}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Error getting media URL: {str(e)}")
+            return None
     
     def handle_button_click(self, from_number, button_id, button_text):
         """Tugma bosilgan holni qayta ishlash"""

@@ -1,0 +1,295 @@
+otFactory AI Platformasiga quyidagi funksiyani qo'shing:
+
+Audio xabarlarni matnga o'girish va AI javob berish
+
+Foydalanuvchi Telegram/Instagram/WhatsApp orqali audio xabar yuborsa
+Audio faylni serverga yuklash
+Audio faylni Google Speech-to-Text API yordamida matnga o'girish
+Olingan matn asosida Google Gemini AI dan javob olish
+Javobni foydalanuvchiga text formatda yuborish
+Iltimos, quyidagi fayllarga kerakli o'zgarishlarni kiritib bering:
+
+telegram_bot.py - audio xabar qabul qilish
+instagram_bot.py - audio xabar qabul qilish
+whatsapp_bot.py - audio xabar qabul qilish
+audio_processor.py - yangi fayl yaratish (audio to text + AI javob)
+requirements.txt - kerakli kutubxonalar
+Har bir faylni tushuntirib yozing. Kodni to'liq, ishlashga tayyor holatda bering." 
+
+🎧 Audio Processing uchun kod namunasi
+Yangi fayl: audio_processor.py
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+import os
+import io
+import logging
+from google.cloud import speech
+import google.generativeai as genai
+from ai import get_ai_response
+
+logger = logging.getLogger(__name__)
+
+# Google Cloud Speech-to-Text konfiguratsiyasi
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'path/to/your/google-credentials.json'
+
+def process_audio_message(audio_file_path, user_id):
+    """
+    Audio faylni matnga o'girish va AI javob berish
+    """
+    try:
+        # 1. Audio faylni matnga o'girish
+        text_from_audio = transcribe_audio(audio_file_path)
+        
+        if not text_from_audio:
+            return "❌ Audio faylni tushunib bo'lmadi. Iltimos, aniqroq gapiring!"
+        
+        # 2. AI javob olish
+        ai_response = get_ai_response(text_from_audio, user_id)
+        
+        return ai_response
+        
+    except Exception as e:
+        logger.error(f"Audio processingda xato: {str(e)}")
+        return "❌ Audio xabarni qayta ishlashda xatolik yuz berdi!"
+
+def transcribe_audio(audio_file_path):
+    """
+    Audio faylni matnga o'girish (Google Speech-to-Text)
+    """
+    try:
+        client = speech.SpeechClient()
+        
+        with io.open(audio_file_path, "rb") as audio_file:
+            content = audio_file.read()
+        
+        audio = speech.RecognitionAudio(content=content)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.OGG_OPUS,
+            sample_rate_hertz=16000,
+            language_code="uz-UZ",  # O'zbek tili
+            alternative_language_codes=["ru-RU", "en-US"]  # Qo'shimcha tillar
+        )
+        
+        response = client.recognize(config=config, audio=audio)
+        
+        if response.results:
+            return response.results[0].alternatives[0].transcript
+        else:
+            return None
+            
+    except Exception as e:
+        logger.error(f"Audio transkripsiyada xato: {str(e)}")
+        return None
+🤖 Telegram Botga audio qo'shish
+telegram_bot.py ga quyidagilarni qo'shing:
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+⌄
+⌄
+⌄
+⌄
+from telegram.ext import MessageHandler, filters
+import tempfile
+import os
+from audio_processor import process_audio_message
+
+async def handle_voice_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Ovozli xabarlarni qayta ishlash"""
+    try:
+        # Audio faylni yuklash
+        voice = update.message.voice
+        file = await context.bot.get_file(voice.file_id)
+        
+        # Vaqtincha fayl yaratish
+        with tempfile.NamedTemporaryFile(suffix='.ogg', delete=False) as temp_file:
+            await file.download_to_memory(temp_file)
+            temp_file_path = temp_file.name
+        
+        # Audio faylni qayta ishlash
+        user_id = update.message.from_user.id
+        response = process_audio_message(temp_file_path, user_id)
+        
+        # Javob yuborish
+        await update.message.reply_text(response)
+        
+        # Vaqtincha faylni o'chirish
+        os.unlink(temp_file_path)
+        
+    except Exception as e:
+        logger.error(f"Ovozli xabarni qayta ishlashda xato: {str(e)}")
+        await update.message.reply_text("❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
+
+# Handler qo'shish
+app.add_handler(MessageHandler(filters.VOICE, handle_voice_message))
+📱 Instagram va WhatsApp uchun audio
+instagram_bot.py va whatsapp_bot.py ga quyidagilarni qo'shing:
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+⌄
+⌄
+⌄
+⌄
+def handle_audio_message(sender_id, audio_url):
+    """Audio xabarni qayta ishlash"""
+    try:
+        # Audio faylni yuklash
+        import requests
+        import tempfile
+        
+        response = requests.get(audio_url)
+        with tempfile.NamedTemporaryFile(suffix='.ogg', delete=False) as temp_file:
+            temp_file.write(response.content)
+            temp_file_path = temp_file.name
+        
+        # Audio faylni qayta ishlash
+        response_text = process_audio_message(temp_file_path, sender_id)
+        
+        # Javob yuborish
+        send_message(sender_id, response_text)
+        
+        # Vaqtincha faylni o'chirish
+        os.unlink(temp_file_path)
+        
+    except Exception as e:
+        logger.error(f"Instagram/WhatsApp audio processingda xato: {str(e)}")
+        send_message(sender_id, "❌ Audio xabarni qayta ishlashda xatolik yuz berdi!")
+📦 Requirements.txt ga qo'shimcha kutubxonalar
+txt
+
+
+1
+2
+google-cloud-speech==2.20.0
+pydub==0.25.1

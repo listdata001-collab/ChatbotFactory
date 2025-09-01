@@ -24,4 +24,6 @@ dependencies = [
     "apscheduler>=3.11.0",
     "python-telegram-bot[all]>=22.3",
     "telegram>=0.0.1",
+    "google-cloud-speech>=2.33.0",
+    "pydub>=0.25.1",
 ]
