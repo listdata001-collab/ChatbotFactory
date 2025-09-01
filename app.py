@@ -79,7 +79,6 @@ with app.app_context():
         admin.password_hash = generate_password_hash('Gisobot20141920*')
         admin.language = 'uz'
         admin.subscription_type = 'admin'
-        admin.is_active = True
         admin.is_admin = True
         db.session.add(admin)
         db.session.commit()

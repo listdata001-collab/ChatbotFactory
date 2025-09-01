@@ -436,7 +436,7 @@ def whatsapp_webhook(bot_id):
                                             bot.handle_button_click(from_number, button_id, button_title)
                                     
                                     # Mark message as read
-                                    self._mark_message_as_read(bot, message_id)
+                                    _mark_message_as_read(bot, message_id)
             
             return 'OK', 200
     

@@ -12,7 +12,6 @@ class User(UserMixin, db.Model):
     language = db.Column(db.String(2), default='uz')  # uz/ru/en
     subscription_type = db.Column(db.String(20), default='free')  # free/basic/premium/admin
     subscription_end_date = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     telegram_id = db.Column(db.String(50), unique=True)

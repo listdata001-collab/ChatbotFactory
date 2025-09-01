@@ -28,6 +28,15 @@ class Config:
     # Telegram
     TELEGRAM_API_URL = 'https://api.telegram.org/bot'
     
+    # Instagram Bot API
+    INSTAGRAM_ACCESS_TOKEN = os.environ.get('INSTAGRAM_ACCESS_TOKEN', '')
+    INSTAGRAM_VERIFY_TOKEN = os.environ.get('INSTAGRAM_VERIFY_TOKEN', 'botfactory_instagram_2024')
+    
+    # WhatsApp Business API
+    WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN', '')
+    WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'botfactory_whatsapp_2024')
+    WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '')
+    
     # Payment
     PAYME_MERCHANT_ID = os.environ.get('PAYME_MERCHANT_ID', '')
     CLICK_MERCHANT_ID = os.environ.get('CLICK_MERCHANT_ID', '')
