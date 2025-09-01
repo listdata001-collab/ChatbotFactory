@@ -280,6 +280,20 @@ def process_payment(subscription_type):
     flash('To\'lov muvaffaqiyatli amalga oshirildi!', 'success')
     return redirect(url_for('main.dashboard'))
 
+@main_bp.route('/api/dashboard/refresh')
+@login_required
+def dashboard_api():
+    """API endpoint for dashboard data refresh"""
+    bots = Bot.query.filter_by(user_id=current_user.id).all()
+    active_bots = sum(1 for bot in bots if bot.status == 'active')
+    
+    return jsonify({
+        'bot_count': len(bots),
+        'active_bots': active_bots,
+        'subscription_type': current_user.subscription_type,
+        'subscription_active': current_user.subscription_active()
+    })
+
 @main_bp.route('/bot/<int:bot_id>/delete', methods=['POST'])
 @login_required
 def delete_bot(bot_id):

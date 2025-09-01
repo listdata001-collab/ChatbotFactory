@@ -426,10 +426,11 @@ Masalan:
                 'admin': 'Admin'
             }
             
+            unknown_text = "Noma'lum"
             success_message = f"""✅ Hisoblar muvaffaqiyatli bog'landi!
 
 👤 Foydalanuvchi: {web_user.username}
-📦 Obuna: {subscription_names.get(web_user.subscription_type, 'Noma\'lum')}"""
+📦 Obuna: {subscription_names.get(web_user.subscription_type, unknown_text)}"""
             
             if web_user.subscription_type in ['starter', 'basic', 'premium', 'admin']:
                 success_message += "\n\n🌐 Endi /language buyrug'i bilan tilni tanlashingiz mumkin!"
