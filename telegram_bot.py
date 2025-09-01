@@ -1,8 +1,10 @@
 import os
 import logging
+import asyncio
+import requests
 from typing import Optional
 
-# Set telegram as available and use simple bot implementation
+# Set telegram as available and use real bot implementation
 TELEGRAM_AVAILABLE = True
 
 # Import basic modules directly 
@@ -10,14 +12,163 @@ from telegram._update import Update
 from telegram._inline.inlinekeyboardbutton import InlineKeyboardButton
 from telegram._inline.inlinekeyboardmarkup import InlineKeyboardMarkup
 
-# Simple implementation for basic bot functionality
+# Real Telegram Bot implementation using HTTP API
 class ContextTypes:
     DEFAULT_TYPE = None
 
-class SimpleApplication:
+class TelegramHTTPBot:
     def __init__(self, token):
         self.token = token
+        self.handlers = {}
+        self.running = False
+        self.base_url = f"https://api.telegram.org/bot{token}"
         
+    def add_handler(self, handler):
+        if isinstance(handler, tuple):
+            cmd_type, func = handler
+            if cmd_type not in self.handlers:
+                self.handlers[cmd_type] = []
+            self.handlers[cmd_type].append(func)
+        
+    def send_message(self, chat_id, text, reply_markup=None):
+        url = f"{self.base_url}/sendMessage"
+        data = {
+            'chat_id': chat_id,
+            'text': text
+        }
+        if reply_markup:
+            data['reply_markup'] = reply_markup
+        
+        try:
+            response = requests.post(url, json=data)
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error sending message: {e}")
+            return None
+    
+    def get_updates(self, offset=None):
+        url = f"{self.base_url}/getUpdates"
+        params = {'timeout': 10}
+        if offset:
+            params['offset'] = offset
+            
+        try:
+            response = requests.get(url, params=params)
+            return response.json()
+        except Exception as e:
+            logger.error(f"Error getting updates: {e}")
+            return {'ok': False, 'result': []}
+            
+    async def process_update(self, update_data):
+        # Create simplified Update object
+        class SimpleUpdate:
+            def __init__(self, data):
+                self.data = data
+                self.message = None
+                self.callback_query = None
+                self.effective_user = None
+                self.effective_chat = None
+                
+                if 'message' in data:
+                    self.message = SimpleMessage(data['message'])
+                    self.effective_user = SimpleUser(data['message']['from'])
+                    self.effective_chat = SimpleChat(data['message']['chat'])
+                elif 'callback_query' in data:
+                    self.callback_query = SimpleCallbackQuery(data['callback_query'])
+                    self.effective_user = SimpleUser(data['callback_query']['from'])
+        
+        class SimpleMessage:
+            def __init__(self, data):
+                self.data = data
+                self.text = data.get('text', '')
+                self.chat = SimpleChat(data['chat'])
+                
+            async def reply_text(self, text, reply_markup=None):
+                return bot_instance.send_message(self.chat.id, text, reply_markup)
+        
+        class SimpleUser:
+            def __init__(self, data):
+                self.data = data
+                self.id = data['id']
+                self.username = data.get('username', '')
+                self.first_name = data.get('first_name', '')
+                
+        class SimpleChat:
+            def __init__(self, data):
+                self.data = data
+                self.id = data['id']
+                
+        class SimpleCallbackQuery:
+            def __init__(self, data):
+                self.data = data
+                self.from_user = SimpleUser(data['from'])
+                
+            async def answer(self):
+                pass  # Placeholder
+                
+            async def edit_message_text(self, text):
+                pass  # Placeholder
+        
+        # Process update
+        update = SimpleUpdate(update_data)
+        
+        # Handle commands
+        if update.message and update.message.text:
+            text = update.message.text
+            if text.startswith('/'):
+                cmd = text.split()[0][1:]  # Remove '/'
+                if 'start' in self.handlers and cmd == 'start':
+                    for handler in self.handlers['start']:
+                        await handler(update, None)
+                elif 'help' in self.handlers and cmd == 'help':
+                    for handler in self.handlers['help']:
+                        await handler(update, None)
+                elif 'language' in self.handlers and cmd == 'language':
+                    for handler in self.handlers['language']:
+                        await handler(update, None)
+            else:
+                # Regular message
+                if 'message' in self.handlers:
+                    for handler in self.handlers['message']:
+                        await handler(update, None)
+        
+        # Handle callback queries
+        if update.callback_query and 'callback' in self.handlers:
+            for handler in self.handlers['callback']:
+                await handler(update, None)
+
+class TelegramApplication:
+    def __init__(self, token):
+        self.bot = TelegramHTTPBot(token)
+        
+    def add_handler(self, handler):
+        self.bot.add_handler(handler)
+        
+    def run_polling(self):
+        # Simple polling implementation
+        offset = None
+        global bot_instance
+        bot_instance = self.bot
+        
+        logger.info("Starting bot polling...")
+        while True:
+            try:
+                updates = self.bot.get_updates(offset)
+                if updates.get('ok') and updates.get('result'):
+                    for update in updates['result']:
+                        asyncio.run(self.bot.process_update(update))
+                        offset = update['update_id'] + 1
+                        
+                # Small delay to prevent API spam
+                import time
+                time.sleep(1)
+                
+            except Exception as e:
+                logger.error(f"Polling error: {e}")
+                import time
+                time.sleep(5)
+
+class Application:
     @staticmethod
     def builder():
         class Builder:
@@ -27,18 +178,32 @@ class SimpleApplication:
                 self._token = token
                 return self
             def build(self):
-                return SimpleApplication(self._token)
+                return TelegramApplication(self._token)
         return Builder()
 
-# Use simple implementations
-Application = SimpleApplication
-CommandHandler = lambda cmd, func: (cmd, func)
-MessageHandler = lambda filters, func: ('message', func)  
-CallbackQueryHandler = lambda func: ('callback', func)
+# Handler creators
+def CommandHandler(command, func):
+    return (command, func)
+
+def MessageHandler(filters_obj, func):  
+    return ('message', func)
+
+def CallbackQueryHandler(func):
+    return ('callback', func)
+
+class FilterType:
+    def __init__(self, name):
+        self.name = name
+    
+    def __and__(self, other):
+        return FilterType(f"{self.name} & {other.name}")
+    
+    def __invert__(self):
+        return FilterType(f"~{self.name}")
 
 class filters:
-    TEXT = 'text'
-    COMMAND = 'command'
+    TEXT = FilterType('text')
+    COMMAND = FilterType('command')
 # Circular import muammosini oldini olish uchun lazy import
 def get_dependencies():
     from ai import get_ai_response, process_knowledge_base
@@ -274,8 +439,14 @@ class BotManager:
             
         if bot_id not in self.running_bots:
             try:
+                import threading
                 bot = TelegramBot(bot_token, bot_id)
-                self.running_bots[bot_id] = bot
+                
+                # Start bot in a separate thread
+                bot_thread = threading.Thread(target=bot.run, daemon=True)
+                bot_thread.start()
+                
+                self.running_bots[bot_id] = {'bot': bot, 'thread': bot_thread}
                 logger.info(f"Bot {bot_id} started successfully")
                 return True
             except Exception as e:
@@ -287,7 +458,9 @@ class BotManager:
         """Stop a bot"""
         if bot_id in self.running_bots:
             try:
-                self.running_bots[bot_id].application.stop()
+                bot_info = self.running_bots[bot_id]
+                if isinstance(bot_info, dict):
+                    bot_info['bot'].application.bot.running = False
                 del self.running_bots[bot_id]
                 logger.info(f"Bot {bot_id} stopped")
                 return True
