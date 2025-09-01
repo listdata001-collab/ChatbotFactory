@@ -42,7 +42,7 @@
                             <i class="fas fa-calendar me-1"></i>
                             {% if current_user.subscription_active() %}
                                 Tugash sanasi: {{ current_user.subscription_end_date.strftime('%d.%m.%Y') }}
-                                {% set days_left = (current_user.subscription_end_date - moment.utcnow()).days %}
+                                {% set days_left = (current_user.subscription_end_date - datetime.utcnow()).days %}
                                 <span class="ms-2 badge bg-warning">{{ days_left }} kun qoldi</span>
                             {% else %}
                                 <span class="text-danger">Obuna tugagan: {{ current_user.subscription_end_date.strftime('%d.%m.%Y') }}</span>

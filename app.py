@@ -1,5 +1,6 @@
 import os
 import logging
+from datetime import datetime
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
@@ -42,6 +43,9 @@ login_manager.init_app(app)
 login_manager.login_view = 'auth.login'  # type: ignore
 login_manager.login_message = 'Iltimos, tizimga kiring.'
 login_manager.login_message_category = 'info'
+
+# Make datetime available in templates
+app.jinja_env.globals['datetime'] = datetime
 
 # Import routes after app creation to avoid circular imports
 from routes import main_bp
