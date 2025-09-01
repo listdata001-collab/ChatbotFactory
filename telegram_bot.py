@@ -37,7 +37,14 @@ class TelegramHTTPBot:
             'text': text
         }
         if reply_markup:
-            data['reply_markup'] = reply_markup
+            import json
+            # Convert reply_markup to JSON if it's an object
+            if hasattr(reply_markup, 'to_dict'):
+                data['reply_markup'] = json.dumps(reply_markup.to_dict())
+            elif isinstance(reply_markup, dict):
+                data['reply_markup'] = json.dumps(reply_markup)
+            else:
+                data['reply_markup'] = reply_markup
         
         try:
             response = requests.post(url, json=data)
