@@ -1,0 +1,136 @@
+"Siz yuqoridagi BotFactory AI Chatbot Platformasi loyihasini 100% gacha olib chiqishingiz kerak. Hozirgi holatda:
+
+✅ Bajarilgan:
+
+Flask MVC arxitektura
+Foydalanuvchi tizimi
+Telegram bot CRUD
+AI integratsiya
+Admin panel
+Tariflar tizimi
+❌ Bajarilmagan:
+
+Real to'lov tizimlari (Payme/Click/Uzum)
+Instagram/WhatsApp botlar
+Marketing xabarlar tizimi
+Email/SMS eslatmalar
+Production database
+Endi quyidagilarni bajaring:
+
+payments.py faylini to'liq real API bilan yozing: 
+Payme API integratsiyasi (create payment, webhook handler)
+Click API integratsiyasi (signature verification)
+Uzum API integratsiyasi
+To'lov holatini kuzatish
+instagram_bot.py va whatsapp_bot.py fayllarini yarating: 
+Instagram bot SDK integratsiyasi
+WhatsApp Business API integratsiyasi
+AI javoblar o'zbek/rus/ingliz tillarida
+marketing.py faylini yarating: 
+Email xabarlar yuborish (SMTP yoki SendGrid)
+SMS xabarlar (O'zbekiston SMS servisi)
+Bepul foydalanuvchilarga marketing xabarlar
+Tarif tugashidan oldin eslatmalar
+scheduler.py faylini yarating: 
+Background tasklar uchun (cron job)
+Har kuni tarif tugashini tekshirish
+Eslatma xabarlar yuborish
+.env faylini yarating va production uchun sozlamalarni qo'shing 
+Har bir faylni tushuntirib yozing. Kodni to'liq, ishlashga tayyor holatda bering." 
+
+✅ Qo'shimcha takliflar (loyihani professional qilish uchun)
+1. Production database sozlamalari
+config.py ga quyidagilarni qo'shing:
+
+python
+
+
+1
+2
+3
+⌄
+class ProductionConfig(Config):
+    DEBUG = False
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
+2. Error handling
+Har bir faylga try/except qo'shing:
+
+python
+
+
+1
+2
+3
+4
+⌄
+⌄
+try:
+    # kod
+except Exception as e:
+    logger.error(f"Xato: {str(e)}")
+3. Logging tizimi
+utils.py ga logging qo'shing:
+
+python
+
+
+1
+2
+import logging
+logging.basicConfig(level=logging.INFO)
+4. README.md faylini yarating
+markdown
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+⌄
+⌄
+⌄
+# BotFactory AI Platformasi
+
+O'zbek tilida ishlaydigan AI chatbot yaratish platformasi.
+
+## O'rnatish
+1. requirements.txt ni o'rnating
+2. .env faylini sozlang
+3. python main.py
+
+## Foydalanish
+- Ro'yxatdan o'ting
+- Bot yarating
+- Telegram/Instagram/WhatsApp da ulang
+🚀 Loyiha 100% gacha olib chiqilgach nima bo'ladi?
+🧱 Backend
+✅
+🗃️ Database
+✅
+🔐 Auth
+✅
+💳 To'lovlar
+✅
+🤖 Barcha botlar
+✅
+📢 Marketing
+✅
+📧 Email/SMS
+✅
+⏰ Scheduler
+✅
+📱 Frontend
+✅
+📊 Admin panel
+✅
+📄 Dokumentatsiya
+✅
