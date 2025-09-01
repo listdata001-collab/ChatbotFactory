@@ -7,17 +7,6 @@ try:
     from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
     TELEGRAM_AVAILABLE = True
 except ImportError:
-    # Mock classes for development without telegram
-    class Update: pass
-    class InlineKeyboardButton: pass
-    class InlineKeyboardMarkup: pass
-    class Application: pass
-    class CommandHandler: pass
-    class MessageHandler: pass
-    class CallbackQueryHandler: pass
-    class filters: pass
-    class ContextTypes: 
-        DEFAULT_TYPE = None
     TELEGRAM_AVAILABLE = False
     logging.warning("python-telegram-bot library not available. Install with: pip install python-telegram-bot")
 from ai import get_ai_response, process_knowledge_base
@@ -30,6 +19,9 @@ logger = logging.getLogger(__name__)
 
 class TelegramBot:
     def __init__(self, bot_token, bot_id):
+        if not TELEGRAM_AVAILABLE:
+            raise ImportError("python-telegram-bot library not available")
+            
         self.bot_token = bot_token
         self.bot_id = bot_id
         self.application = Application.builder().token(bot_token).build()
@@ -239,6 +231,10 @@ class BotManager:
     
     def start_bot(self, bot_id, bot_token):
         """Start a bot"""
+        if not TELEGRAM_AVAILABLE:
+            logger.warning(f"Cannot start bot {bot_id}: telegram library not available")
+            return False
+            
         if bot_id not in self.running_bots:
             try:
                 bot = TelegramBot(bot_token, bot_id)
@@ -285,6 +281,10 @@ def validate_telegram_token(token):
 def start_bot_automatically(bot_id, bot_token):
     """Botni avtomatik ishga tushirish"""
     try:
+        if not TELEGRAM_AVAILABLE:
+            logger.warning(f"Cannot start bot {bot_id}: telegram library not available")
+            return False
+            
         # Token validatsiyasi
         if not validate_telegram_token(bot_token):
             logger.error(f"Invalid token for bot {bot_id}")
