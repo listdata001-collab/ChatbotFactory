@@ -29,13 +29,17 @@ class InstagramBot:
         try:
             url = f"{self.base_url}/me/messages"
             
-            payload = {
-                'recipient': {'id': recipient_id},
-                'message': {'text': message_text},
-                'access_token': self.access_token
+            headers = {
+                'Authorization': f'Bearer {self.access_token}',
+                'Content-Type': 'application/json'
             }
             
-            response = requests.post(url, json=payload, timeout=30)
+            payload = {
+                'recipient': {'id': recipient_id},
+                'message': {'text': message_text}
+            }
+            
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
             
             if response.status_code == 200:
                 logger.info(f"Instagram message sent to {recipient_id}")
@@ -61,7 +65,7 @@ class InstagramBot:
                         'payload': {'url': media_url}
                     }
                 },
-                'access_token': self.access_token
+
             }
             
             if caption:
@@ -86,7 +90,7 @@ class InstagramBot:
             url = f"{self.base_url}/{user_id}"
             params = {
                 'fields': 'name,profile_pic',
-                'access_token': self.access_token
+
             }
             
             response = requests.get(url, params=params, timeout=30)
@@ -120,7 +124,7 @@ class InstagramBot:
                     'text': message_text,
                     'quick_replies': quick_replies_data
                 },
-                'access_token': self.access_token
+
             }
             
             response = requests.post(url, json=payload, timeout=30)

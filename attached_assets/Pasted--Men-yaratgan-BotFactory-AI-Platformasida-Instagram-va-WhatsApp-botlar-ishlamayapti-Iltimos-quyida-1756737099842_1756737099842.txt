@@ -1,0 +1,401 @@
+"Men yaratgan BotFactory AI Platformasida Instagram va WhatsApp botlar ishlamayapti. Iltimos, quyidagilarni tekshiring:
+
+instagram_bot.py faylini tahlil qiling
+whatsapp_bot.py faylini tahlil qiling
+API kalitlar to'g'ri kiritilganmi?
+Webhook sozlamalari to'g'rimi?
+Import errorlar bormi?
+AI integratsiyada xatolar bormi?
+Database bilan bog'lanishda muammo bormi?
+Iltimos, quyidagi shaklda javob bering:
+
+🔍 Tekshirilgan fayl: instagram_bot.py va whatsapp_bot.py
+❌ Topilgan xatolar: 
+
+...
+✅ To'g'rilangan kod:
+...
+📝 Tavsiyalar:
+...
+"
+📱 Instagram Bot - Tez Yordam
+Asosiy muammolar:
+Instagram Graph API talab qilinadi
+Business account bo'lishi kerak
+Facebook Developer App yaratilgan bo'lishi kerak
+To'g'ri kod namunasi (instagram_bot.py):
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+import os
+import requests
+import logging
+from flask import Blueprint, request, jsonify
+from ai import get_ai_response
+
+instagram_bp = Blueprint('instagram', __name__)
+logger = logging.getLogger(__name__)
+
+# Konfiguratsiya
+INSTAGRAM_TOKEN = os.getenv('INSTAGRAM_ACCESS_TOKEN')
+INSTAGRAM_API_URL = "https://graph.instagram.com"
+
+def send_instagram_message(recipient_id, message_text):
+    """Instagram orqali xabar yuborish"""
+    try:
+        url = f"{INSTAGRAM_API_URL}/me/messages"
+        payload = {
+            'recipient': {'id': recipient_id},
+            'message': {'text': message_text},
+            'access_token': INSTAGRAM_TOKEN
+        }
+        response = requests.post(url, json=payload)
+        return response.json()
+    except Exception as e:
+        logger.error(f"Instagram xabar yuborishda xato: {str(e)}")
+        return None
+
+@instagram_bp.route('/webhook', methods=['GET', 'POST'])
+def instagram_webhook():
+    """Instagram webhook handler"""
+    if request.method == 'GET':
+        # Webhook verification
+        mode = request.args.get('hub.mode')
+        token = request.args.get('hub.verify_token')
+        challenge = request.args.get('hub.challenge')
+        
+        if mode == 'subscribe' and token == 'botfactory_verify_token':
+            return challenge
+        else:
+            return 'Verification failed', 403
+    
+    elif request.method == 'POST':
+        # Xabar qabul qilish
+        try:
+            data = request.get_json()
+            if data.get('object') == 'instagram':
+                for entry in data.get('entry', []):
+                    for messaging in entry.get('messaging', []):
+                        sender_id = messaging['sender']['id']
+                        message_text = messaging.get('message', {}).get('text', '')
+                        
+                        if message_text:
+                            # AI javob olish
+                            ai_response = get_ai_response(message_text, sender_id)
+                            # Xabar yuborish
+                            send_instagram_message(sender_id, ai_response)
+            
+            return jsonify({'status': 'ok'})
+        except Exception as e:
+            logger.error(f"Instagram webhookda xato: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
+def start_instagram_bot():
+    """Instagram botni ishga tushirish"""
+    logger.info("Instagram bot tayyor")
+    # Webhook avtomatik sozlanmaydi, manual sozlash talab qilinadi
+📞 WhatsApp Bot - Tez Yordam
+Asosiy muammolar:
+WhatsApp Business API talab qilinadi
+Meta for Developers account kerak
+Phone number ID va Access token kerak
+To'g'ri kod namunasi (whatsapp_bot.py):
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+⌄
+import os
+import requests
+import logging
+from flask import Blueprint, request, jsonify
+from ai import get_ai_response
+
+whatsapp_bp = Blueprint('whatsapp', __name__)
+logger = logging.getLogger(__name__)
+
+# Konfiguratsiya
+WHATSAPP_API_URL = "https://graph.facebook.com/v17.0"
+WHATSAPP_PHONE_ID = os.getenv('WHATSAPP_PHONE_ID')
+WHATSAPP_ACCESS_TOKEN = os.getenv('WHATSAPP_ACCESS_TOKEN')
+
+def send_whatsapp_message(phone_number, message_text):
+    """WhatsApp orqali xabar yuborish"""
+    try:
+        url = f"{WHATSAPP_API_URL}/{WHATSAPP_PHONE_ID}/messages"
+        headers = {
+            'Authorization': f'Bearer {WHATSAPP_ACCESS_TOKEN}',
+            'Content-Type': 'application/json'
+        }
+        payload = {
+            'messaging_product': 'whatsapp',
+            'to': phone_number,
+            'type': 'text',
+            'text': {'body': message_text}
+        }
+        response = requests.post(url, headers=headers, json=payload)
+        return response.json()
+    except Exception as e:
+        logger.error(f"WhatsApp xabar yuborishda xato: {str(e)}")
+        return None
+
+@whatsapp_bp.route('/webhook', methods=['GET', 'POST'])
+def whatsapp_webhook():
+    """WhatsApp webhook handler"""
+    if request.method == 'GET':
+        # Webhook verification
+        mode = request.args.get('hub.mode')
+        token = request.args.get('hub.verify_token')
+        challenge = request.args.get('hub.challenge')
+        
+        if mode == 'subscribe' and token == 'botfactory_verify_token':
+            return challenge
+        else:
+            return 'Verification failed', 403
+    
+    elif request.method == 'POST':
+        # Xabar qabul qilish
+        try:
+            data = request.get_json()
+            if data.get('object') == 'whatsapp_business_account':
+                for entry in data.get('entry', []):
+                    for change in entry.get('changes', []):
+                        if change.get('field') == 'messages':
+                            messages = change.get('value', {}).get('messages', [])
+                            for message in messages:
+                                phone_number = message['from']
+                                message_text = message.get('text', {}).get('body', '')
+                                
+                                if message_text:
+                                    # AI javob olish
+                                    ai_response = get_ai_response(message_text, phone_number)
+                                    # Xabar yuborish
+                                    send_whatsapp_message(phone_number, ai_response)
+            
+            return jsonify({'status': 'ok'})
+        except Exception as e:
+            logger.error(f"WhatsApp webhookda xato: {str(e)}")
+            return jsonify({'error': str(e)}), 500
+
+def start_whatsapp_bot():
+    """WhatsApp botni ishga tushirish"""
+    logger.info("WhatsApp bot tayyor")
+    # Webhook avtomatik sozlanmaydi, manual sozlash talab qilinadi
+⚙️ Konfiguratsiya (.env fayl)
+env
+
+
+1
+2
+3
+4
+5
+6
+# Instagram
+INSTAGRAM_ACCESS_TOKEN=your_instagram_access_token_here
+
+# WhatsApp
+WHATSAPP_PHONE_ID=your_phone_id_here
+WHATSAPP_ACCESS_TOKEN=your_whatsapp_access_token_here
+🔧 Webhook sozlash (Manual)
+Instagram uchun:
+Facebook Developer sahifasiga kiring
+App yarating
+Instagram Graph API ni qo'shing
+Webhook URL: https://yourdomain.com/instagram/webhook
+WhatsApp uchun:
+Meta for Developers sahifasiga kiring
+WhatsApp Business API ni sozlang
+Webhook URL: https://yourdomain.com/whatsapp/webhook
+🚀 Botlarni routes.py ga qo'shish
+python
+
+
+1
+2
+3
+4
+5
+6
+# routes.py ga qo'shing:
+from instagram_bot import instagram_bp
+from whatsapp_bot import whatsapp_bp
+
+app.register_blueprint(instagram_bp, url_prefix='/instagram')
+app.register_blueprint(whatsapp_bp, url_prefix='/whatsapp')

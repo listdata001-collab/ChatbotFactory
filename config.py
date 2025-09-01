@@ -30,11 +30,11 @@ class Config:
     
     # Instagram Bot API
     INSTAGRAM_ACCESS_TOKEN = os.environ.get('INSTAGRAM_ACCESS_TOKEN', '')
-    INSTAGRAM_VERIFY_TOKEN = os.environ.get('INSTAGRAM_VERIFY_TOKEN', 'botfactory_instagram_2024')
+    INSTAGRAM_VERIFY_TOKEN = os.environ.get('INSTAGRAM_VERIFY_TOKEN', 'botfactory_verify_token')
     
     # WhatsApp Business API
     WHATSAPP_ACCESS_TOKEN = os.environ.get('WHATSAPP_ACCESS_TOKEN', '')
-    WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'botfactory_whatsapp_2024')
+    WHATSAPP_VERIFY_TOKEN = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'botfactory_verify_token')
     WHATSAPP_PHONE_NUMBER_ID = os.environ.get('WHATSAPP_PHONE_NUMBER_ID', '')
     
     # Payment

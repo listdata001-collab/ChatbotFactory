@@ -424,16 +424,20 @@ def whatsapp_webhook(bot_id):
                                         continue
                                     
                                     # Text messages
-                                    if message['type'] == 'text':
-                                        message_text = message['text']['body']
-                                        bot.handle_message(from_number, message_text)
+                                    if message.get('type') == 'text':
+                                        message_text = message.get('text', {}).get('body', '')
+                                        if message_text:
+                                            bot.handle_message(from_number, message_text)
                                     
                                     # Button interactions
-                                    elif message['type'] == 'interactive':
-                                        if message['interactive']['type'] == 'button_reply':
-                                            button_id = message['interactive']['button_reply']['id']
-                                            button_title = message['interactive']['button_reply']['title']
-                                            bot.handle_button_click(from_number, button_id, button_title)
+                                    elif message.get('type') == 'interactive':
+                                        interactive_data = message.get('interactive', {})
+                                        if interactive_data.get('type') == 'button_reply':
+                                            button_reply = interactive_data.get('button_reply', {})
+                                            button_id = button_reply.get('id', '')
+                                            button_title = button_reply.get('title', '')
+                                            if button_id and button_title:
+                                                bot.handle_button_click(from_number, button_id, button_title)
                                     
                                     # Mark message as read
                                     _mark_message_as_read(bot, message_id)
