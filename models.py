@@ -11,10 +11,13 @@ class User(UserMixin, db.Model):
     language = db.Column(db.String(2), default='uz')  # uz/ru/en
     subscription_type = db.Column(db.String(20), default='free')  # free/basic/premium/admin
     subscription_end_date = db.Column(db.DateTime)
-    is_active = db.Column(db.Boolean, default=True)  # type: ignore
+    is_active = db.Column(db.Boolean, default=True)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     telegram_id = db.Column(db.String(50), unique=True)
+    instagram_id = db.Column(db.String(50), unique=True)
+    whatsapp_number = db.Column(db.String(20), unique=True)
+    phone_number = db.Column(db.String(20))
     
     # Relationships
     bots = db.relationship('Bot', backref='owner', lazy=True, cascade='all, delete-orphan')
@@ -26,7 +29,7 @@ class User(UserMixin, db.Model):
     def can_create_bot(self):
         if self.subscription_type == 'admin':
             return True
-        bot_count = len(list(self.bots))
+        bot_count = len(self.bots)
         if self.subscription_type == 'free' and bot_count >= 1:
             return False
         elif self.subscription_type == 'basic' and bot_count >= 1:
@@ -56,6 +59,12 @@ class Bot(db.Model):
     platform = db.Column(db.String(20), default='Telegram')  # Telegram/Instagram/WhatsApp
     telegram_token = db.Column(db.String(200))
     telegram_username = db.Column(db.String(100))
+    instagram_token = db.Column(db.String(200))
+    whatsapp_token = db.Column(db.String(200))
+    whatsapp_phone_id = db.Column(db.String(100))
+    daily_messages = db.Column(db.Integer, default=0)
+    weekly_messages = db.Column(db.Integer, default=0)
+    last_updated = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -91,7 +100,9 @@ class Payment(db.Model):
 class ChatHistory(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bot_id = db.Column(db.Integer, db.ForeignKey('bot.id'), nullable=False)
-    user_telegram_id = db.Column(db.String(50), nullable=False)
+    user_telegram_id = db.Column(db.String(50))
+    user_instagram_id = db.Column(db.String(50))
+    user_whatsapp_number = db.Column(db.String(20))
     message = db.Column(Text)
     response = db.Column(Text)
     language = db.Column(db.String(2), default='uz')

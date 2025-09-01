@@ -234,7 +234,7 @@ class PaymentProcessor:
             db.session.commit()
             
             # Return URL
-            return_url = url_for('payment.payment_success', payment_id=payment.id, _external=True)
+            return_url = f'https://botfactory.uz/payment/success/{payment.id}'
             
             # To'lov yaratish
             if payment_method == 'payme':

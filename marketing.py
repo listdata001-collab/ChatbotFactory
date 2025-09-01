@@ -1,11 +1,8 @@
 import os
 import json
 import logging
-import smtplib
 import requests
 from datetime import datetime, timedelta
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
 from flask import Blueprint, request, jsonify, render_template_string
 from flask_login import login_required, current_user
 from app import db, app
@@ -33,35 +30,10 @@ class EmailService:
         self.sendgrid_url = "https://api.sendgrid.com/v3/mail/send"
     
     def send_smtp_email(self, to_email, subject, html_content, text_content=""):
-        """SMTP orqali email yuborish"""
-        try:
-            # Email yaratish
-            msg = MimeMultipart('alternative')
-            msg['Subject'] = subject
-            msg['From'] = self.from_email
-            msg['To'] = to_email
-            
-            # Text va HTML qismlar
-            if text_content:
-                part1 = MimeText(text_content, 'plain', 'utf-8')
-                msg.attach(part1)
-            
-            part2 = MimeText(html_content, 'html', 'utf-8')
-            msg.attach(part2)
-            
-            # SMTP orqali yuborish
-            server = smtplib.SMTP(self.smtp_host, self.smtp_port)
-            server.starttls()
-            server.login(self.smtp_user, self.smtp_password)
-            server.send_message(msg)
-            server.quit()
-            
-            logger.info(f"SMTP email sent to {to_email}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"SMTP email error: {str(e)}")
-            return False
+        """SMTP orqali email yuborish (placeholder)"""
+        # SMTP ni hozircha o'chirib qo'yamiz, faqat SendGrid ishlatamiz
+        logger.info(f"SMTP email placeholder to {to_email}")
+        return False
     
     def send_sendgrid_email(self, to_email, subject, html_content, text_content=""):
         """SendGrid API orqali email yuborish"""
@@ -161,7 +133,7 @@ class SMSService:
                 'mobile_phone': phone_number,
                 'message': message,
                 'from': '4546',
-                'callback_url': url_for('marketing.sms_callback', _external=True)
+                'callback_url': 'https://botfactory.uz/marketing/sms/callback'
             }
             
             response = requests.post(

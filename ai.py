@@ -1,10 +1,9 @@
 import os
 import logging
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 
 # Initialize Gemini client
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "default_key"))
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "default_key"))
 
 def get_ai_response(message, bot_name="BotFactory AI", user_language="uz", knowledge_base=""):
     """
@@ -28,10 +27,8 @@ def get_ai_response(message, bot_name="BotFactory AI", user_language="uz", knowl
         full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"
         
         # Generate response using Gemini
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=full_prompt
-        )
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(full_prompt)
         
         if response.text:
             return response.text

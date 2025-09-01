@@ -37,9 +37,17 @@ login_manager.login_message_category = 'info'
 # Import routes after app creation to avoid circular imports
 from routes import main_bp
 from auth import auth_bp
+from payments import payment_bp
+from instagram_bot import instagram_bp
+from whatsapp_bot import whatsapp_bp
+from marketing import marketing_bp
 
 app.register_blueprint(main_bp)
 app.register_blueprint(auth_bp, url_prefix='/auth')
+app.register_blueprint(payment_bp, url_prefix='/payment')
+app.register_blueprint(instagram_bp, url_prefix='/instagram')
+app.register_blueprint(whatsapp_bp, url_prefix='/whatsapp')
+app.register_blueprint(marketing_bp, url_prefix='/marketing')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -62,7 +70,8 @@ with app.app_context():
         admin.password_hash = generate_password_hash('Gisobot20141920*')
         admin.language = 'uz'
         admin.subscription_type = 'admin'
-        admin.is_active = True
+        # is_active maydonini to'g'ridan-to'g'ri belgilaymiz
+        setattr(admin, 'is_active', True)
         admin.is_admin = True
         db.session.add(admin)
         db.session.commit()

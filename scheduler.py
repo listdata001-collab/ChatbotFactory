@@ -112,8 +112,8 @@ class TaskScheduler:
                         db.session.commit()
                         expired_count += 1
                         
-                        # Tugash xabari
-                        self.campaigns.send_subscription_expired_notification(user)
+                        # Tugash xabari (placeholder)
+                        logger.info(f"Subscription expired for user {user.id}")
                         
                     except Exception as e:
                         logger.error(f"Expiry processing error for user {user.id}: {str(e)}")
@@ -167,7 +167,7 @@ class TaskScheduler:
                 free_users = User.query.filter(
                     User.subscription_type == 'free',
                     User.created_at <= week_ago,
-                    User.is_active == True
+                    User.is_active.is_(True)
                 ).all()
                 
                 marketing_count = 0
@@ -210,7 +210,7 @@ class TaskScheduler:
                 
                 # O'chirilgan foydalanuvchilarning ma'lumotlari
                 inactive_users = User.query.filter(
-                    User.is_active == False,
+                    User.is_active.is_(False),
                     User.created_at < thirty_days_ago
                 ).count()
                 
