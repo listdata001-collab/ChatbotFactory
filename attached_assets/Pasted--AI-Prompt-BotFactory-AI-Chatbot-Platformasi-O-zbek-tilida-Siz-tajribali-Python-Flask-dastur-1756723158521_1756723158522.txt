@@ -1,0 +1,163 @@
+🧠 AI Prompt: BotFactory AI Chatbot Platformasi (O'zbek tilida)
+Siz — tajribali Python Flask dasturchi. Quyidagi talablarga mos, sodda va professional Telegram AI chatbot platformasini yozing. Hamma narsa o'zbek tilida bo'lishi kerak.
+
+📌 Umumiy talablarning qisqacha mazmuni:
+Backend: Python Flask (MVC arxitektura)
+Frontend: Bootstrap 5 + Jinja2 templates
+Database: SQLAlchemy ORM + PostgreSQL/SQLite
+AI: Google Gemini API (gemini-2.5-flash)
+Messaging: python-telegram-bot
+Auth: Flask-Login + bcrypt
+Server: Gunicorn
+🎯 Asosiy funksiyalar:
+1. Foydalanuvchi tizimi
+Ro'yxatdan o'tish / Kirish (o'zbek tilida)
+Admin panel (username: Akramjon, password: Gisobot20141920*)
+Tariflar:
+Test (14 kun) – 1 ta bot, faqat Telegram, faqat o'zbek tilida AI javoblari
+Basic (290,000 so'm/oy) – 1 ta bot, Telegram/Instagram/WhatsApp, AI javoblari: o'zbek/rus/ingliz
+Premium (590,000 so'm/oy) – 5 ta bot, barcha platformalar, AI javoblari: o'zbek/rus/ingliz
+2. Bot boshqaruvi
+Bot yaratish / tahrirlash
+Telegram integratsiyasi
+Bilim bazasi yuklash (.txt, .docx)
+AI so'rovlariga javob berish (faqat o'zbek tilida bepulda)
+3. AI integratsiyasi
+Google Gemini API orqali javob berish
+AI har doim o'zbek tilida javob beradi (bepul uchun majburiy)
+Basic/Premium foydalanuvchilar uchun til tanlash: o'zbek/rus/ingliz
+Emoji bilan bezatilgan oddiy matnli javoblar
+4. Interfeys
+Hamma narsa o'zbek tilida:
+Kirish / Ro'yxatdan o'tish
+Boshqaruv paneli
+Bot yaratish / sozlamalar
+Telegramda til tanlash tugmalari (Basic/Premium uchun)
+5. Database modellar
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+User:
+  - id
+  - username
+  - email
+  - password_hash
+  - language (uz/ru/en) – bepul uchun faqat uz
+  - subscription_type (free/basic/premium)
+  - subscription_end_date
+  - is_active
+
+Bot:
+  - id
+  - user_id
+  - name
+  - platform (Telegram/Instagram/WhatsApp)
+  - created_at
+
+KnowledgeBase:
+  - id
+  - bot_id
+  - content (text)
+
+Payment:
+  - id
+  - user_id
+  - amount
+  - method (Payme/Click/Uzum)
+  - status
+  - created_at
+6. Admin panel
+Foydalanuvchilarni boshqarish
+Tarif tugashidan 3 kun oldin va tugash kuni eslatma yuborish
+Bepul foydalanuvchilarga marketing xabarlar yuborish
+Statistika paneli (foydalanuvchilar, to'lovlar, botlar)
+7. Telegram bot
+Til tanlash tugmalari (Basic/Premium)
+AI javoblar o'zbek/rus/ingliz
+Inline tugmalar, emoji, dostona uslub
+Har bir foydalanuvchi uchun til saqlanadi
+⚠️ Majburiy qoidalar:
+❌ Ko'p tillilik yo'q (faqat o'zbek tilida interfeys)
+❌ Flask-Babel ishlatilmasin
+✅ Faqat o'zbek tili (kirill/lotin)
+✅ AI javoblari bepul tarifda faqat o'zbek
+✅ Markdown ishlatilmasin
+✅ Emoji ishlating
+🎯 AI uchun tizim buyrug'i (system prompt):
+text
+
+
+1
+2
+3
+Sen {bot_nomi} nomli chatbot san. Har doim {user.language} tilida javob ber.
+Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating.
+Markdown formatini ishlamang, faqat oddiy matn.
+🧪 Loyihani yaratish ketma-ketligi:
+Modellar (User, Bot, KnowledgeBase, Payment)
+Auth tizimi (Ro'yxatdan o'tish, login, logout)
+Admin panel (dashboard, foydalanuvchilar, to'lovlar)
+Telegram bot (til tanlash, AI javoblar)
+AI integratsiyasi (Google Gemini API)
+Frontend (Bootstrap + Jinja2)
+To'lov tizimi (Payme/Click/Uzum)
+Avtomatik eslatmalar (tarif tugashi)
+Marketing xabarlar (bepul foydalanuvchilarga)
+🧾 Loyiha fayl tuzilmasi:
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+botfactory/
+├── app/
+│   ├── __init__.py
+│   ├── models.py
+│   ├── routes.py
+│   ├── auth.py
+│   └── ai.py
+├── static/
+├── templates/
+├── config.py
+├── requirements.txt
+└── run.py
+🧠 Replit AI dan so'rang:
+"Python Flask loyihasini yarat: AI chatbot platformasi o'zbek tilida. Batafsil tushuntirib, kod yoz." 
