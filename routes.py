@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import db
-from models import User, Bot, KnowledgeBase, Payment, ChatHistory
+from models import User, Bot, KnowledgeBase, Payment, ChatHistory, BroadcastMessage
 from werkzeug.utils import secure_filename
 import os
 from datetime import datetime, timedelta
@@ -45,7 +45,7 @@ def admin():
     # Statistics
     stats = {
         'total_users': User.query.count(),
-        'active_subscriptions': User.query.filter(User.subscription_type.in_(['basic', 'premium'])).count(),
+        'active_subscriptions': User.query.filter(User.subscription_type.in_(['starter', 'basic', 'premium'])).count(),
         'total_bots': Bot.query.count(),
         'total_payments': Payment.query.filter_by(status='completed').count(),
         'monthly_revenue': Payment.query.filter(
@@ -54,8 +54,82 @@ def admin():
         ).count()
     }
     
+    # Get broadcast messages
+    broadcasts = BroadcastMessage.query.order_by(BroadcastMessage.created_at.desc()).limit(10).all()
+    
     return render_template('admin.html', users=users, payments=payments, 
-                         bots=bots, stats=stats)
+                         bots=bots, stats=stats, broadcasts=broadcasts)
+
+@main_bp.route('/admin/broadcast', methods=['POST'])
+@login_required
+def send_broadcast():
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    message_text = request.form.get('message_text')
+    target_type = request.form.get('target_type', 'all')
+    
+    if not message_text:
+        flash('Xabar matni kiritilishi shart!', 'error')
+        return redirect(url_for('main.admin'))
+    
+    # Create broadcast message record
+    broadcast = BroadcastMessage()
+    broadcast.admin_id = current_user.id
+    broadcast.message_text = message_text
+    broadcast.target_type = target_type
+    broadcast.status = 'sending'
+    broadcast.sent_at = datetime.utcnow()
+    
+    db.session.add(broadcast)
+    db.session.commit()
+    
+    # Send messages
+    try:
+        sent_count = send_broadcast_messages(broadcast.id, message_text, target_type)
+        
+        # Update broadcast record
+        broadcast.sent_count = sent_count
+        broadcast.status = 'completed'
+        db.session.commit()
+        
+        flash(f'Xabar muvaffaqiyatli yuborildi! {sent_count} ta foydalanuvchiga yetkazildi.', 'success')
+    except Exception as e:
+        broadcast.status = 'failed'
+        db.session.commit()
+        flash('Xabar yuborishda xatolik yuz berdi!', 'error')
+    
+    return redirect(url_for('main.admin'))
+
+def send_broadcast_messages(broadcast_id, message_text, target_type):
+    """Send broadcast message to users"""
+    sent_count = 0
+    
+    if target_type == 'customers':
+        # Send to paying customers only
+        users = User.query.filter(User.subscription_type.in_(['starter', 'basic', 'premium'])).all()
+    else:
+        # Send to all telegram users who have interacted with bots
+        users = User.query.filter(User.telegram_id.isnot(None)).all()
+    
+    # Import telegram bot for sending messages
+    try:
+        from telegram_bot import send_admin_message_to_user
+        
+        for user in users:
+            if user.telegram_id:
+                try:
+                    success = send_admin_message_to_user(user.telegram_id, message_text)
+                    if success:
+                        sent_count += 1
+                except:
+                    continue
+                        
+    except Exception as e:
+        pass
+    
+    return sent_count
 
 @main_bp.route('/bot/create', methods=['GET', 'POST'])
 @login_required

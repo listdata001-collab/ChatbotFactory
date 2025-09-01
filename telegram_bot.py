@@ -701,3 +701,28 @@ def start_bot_automatically(bot_id, bot_token):
     except Exception as e:
         logger.error(f"Auto start error for bot {bot_id}: {str(e)}")
         return False
+
+def send_admin_message_to_user(telegram_id, message_text):
+    """Send a message from admin to a specific user"""
+    try:
+        # Get any bot token to send message (we'll use the first available bot)
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+        
+        with app.app_context():
+            bot = Bot.query.first()
+            if not bot or not bot.telegram_token:
+                return False
+            
+            # Create HTTP bot instance
+            http_bot = TelegramHTTPBot(bot.telegram_token)
+            
+            # Send message
+            response = http_bot.send_message(telegram_id, f"📢 Admin xabari:\n\n{message_text}")
+            
+            if response and response.get('ok'):
+                return True
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending admin message: {e}")
+        return False

@@ -124,3 +124,16 @@ class ChatHistory(db.Model):
     
     def __repr__(self):
         return f'<ChatHistory {self.user_telegram_id}>'
+
+class BroadcastMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    message_text = db.Column(Text, nullable=False)
+    target_type = db.Column(db.String(20), default='all')  # all/customers/bot_users
+    sent_count = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='pending')  # pending/sending/completed/failed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<BroadcastMessage {self.id}>'

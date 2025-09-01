@@ -95,6 +95,11 @@
             <i class="fas fa-robot me-2"></i>Botlar
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="marketing-tab" data-bs-toggle="tab" data-bs-target="#marketing" type="button">
+            <i class="fas fa-bullhorn me-2"></i>Marketing
+        </button>
+    </li>
 </ul>
 
 <!-- Tab Content -->
@@ -293,6 +298,98 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Marketing Tab -->
+    <div class="tab-pane fade" id="marketing" role="tabpanel">
+        <div class="row">
+            <!-- Broadcast Form -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Xabar yuborish</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST" action="{{ url_for('main.send_broadcast') }}">
+                            <div class="mb-3">
+                                <label for="target_type" class="form-label">Kimga yuborish</label>
+                                <select class="form-select" id="target_type" name="target_type" required>
+                                    <option value="all">Barcha foydalanuvchilar</option>
+                                    <option value="customers">Faqat mijozlar (obuna uchun to'lovchi)</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="message_text" class="form-label">Xabar matni</label>
+                                <textarea class="form-control" id="message_text" name="message_text" rows="6" 
+                                          placeholder="Bu yerga xabar matnini kiriting..." required></textarea>
+                                <div class="form-text">Xabar Telegram orqali yuboriladi.</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-2"></i>Xabar yuborish
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Broadcast History -->
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-history me-2"></i>Yuborilgan xabarlar tarixi</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if broadcasts %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Sana</th>
+                                        <th>Maqsad</th>
+                                        <th>Yuborildi</th>
+                                        <th>Holat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for broadcast in broadcasts %}
+                                    <tr>
+                                        <td>{{ broadcast.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+                                        <td>
+                                            {% if broadcast.target_type == 'customers' %}
+                                            <span class="badge bg-warning">Mijozlar</span>
+                                            {% else %}
+                                            <span class="badge bg-info">Hammasi</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ broadcast.sent_count }}</td>
+                                        <td>
+                                            {% if broadcast.status == 'completed' %}
+                                            <span class="badge bg-success">Yuborildi</span>
+                                            {% elif broadcast.status == 'sending' %}
+                                            <span class="badge bg-primary">Yuborish...</span>
+                                            {% elif broadcast.status == 'failed' %}
+                                            <span class="badge bg-danger">Xatolik</span>
+                                            {% else %}
+                                            <span class="badge bg-secondary">Kutish</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-bullhorn fa-3x mb-3 opacity-25"></i>
+                            <p>Hozircha hech qanday xabar yuborilmagan</p>
+                        </div>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
         </div>
