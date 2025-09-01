@@ -44,7 +44,7 @@ class User(UserMixin, db.Model):
         bot_count = Bot.query.filter_by(user_id=self.id).count()
         if self.subscription_type == 'free' and bot_count >= 1:
             return False
-        elif self.subscription_type == 'basic' and bot_count >= 1:
+        elif self.subscription_type in ['starter', 'basic'] and bot_count >= 1:
             return False
         elif self.subscription_type == 'premium' and bot_count >= 5:
             return False
@@ -53,14 +53,16 @@ class User(UserMixin, db.Model):
     def can_use_language(self, lang: str) -> bool:
         if self.subscription_type in ['free']:
             return lang == 'uz'
-        return lang in ['uz', 'ru', 'en']
+        elif self.subscription_type in ['starter', 'basic', 'premium', 'admin']:
+            return lang in ['uz', 'ru', 'en']
+        return False
     
     def subscription_active(self) -> bool:
         if self.subscription_type in ['admin']:
             return True
         if self.subscription_type == 'free':
             return True
-        if self.subscription_end_date and self.subscription_end_date > datetime.utcnow():
+        if self.subscription_type in ['starter', 'basic', 'premium'] and self.subscription_end_date and self.subscription_end_date > datetime.utcnow():
             return True
         return False
 

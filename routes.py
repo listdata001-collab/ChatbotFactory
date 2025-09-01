@@ -242,6 +242,7 @@ def process_payment(subscription_type):
     method = request.form.get('method')
     
     amounts = {
+        'starter': 165000,
         'basic': 290000,
         'premium': 590000
     }
@@ -267,7 +268,9 @@ def process_payment(subscription_type):
     
     # Update user subscription
     current_user.subscription_type = subscription_type
-    if subscription_type == 'basic':
+    if subscription_type == 'starter':
+        current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
+    elif subscription_type == 'basic':
         current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
     elif subscription_type == 'premium':
         current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)

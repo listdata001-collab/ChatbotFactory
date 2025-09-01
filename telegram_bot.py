@@ -295,8 +295,8 @@ quyidagi buyruq orqali hisobingizni bog'lang:
 
 🌐 Qo'llab-quvvatlanadigan tillar:
 • O'zbek tili (bepul)
-• Rus tili (Basic/Premium)
-• Ingliz tili (Basic/Premium)
+• Rus tili (Starter/Basic/Premium)
+• Ingliz tili (Starter/Basic/Premium)
         """
         await update.message.reply_text(help_text)
     
@@ -317,13 +317,13 @@ quyidagi buyruq orqali hisobingizni bog'lang:
             # Always show Uzbek (available for everyone)
             keyboard.append([InlineKeyboardButton("🇺🇿 O'zbek", callback_data="lang_uz")])
             
-            # Show other languages only for Basic/Premium users
-            if db_user.subscription_type in ['basic', 'premium', 'admin']:
+            # Show other languages only for Starter/Basic/Premium users
+            if db_user.subscription_type in ['starter', 'basic', 'premium', 'admin']:
                 keyboard.append([InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru")])
                 keyboard.append([InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")])
             else:
-                keyboard.append([InlineKeyboardButton("🔒 Русский (Basic/Premium)", callback_data="lang_locked")])
-                keyboard.append([InlineKeyboardButton("🔒 English (Basic/Premium)", callback_data="lang_locked")])
+                keyboard.append([InlineKeyboardButton("🔒 Русский (Starter/Basic/Premium)", callback_data="lang_locked")])
+                keyboard.append([InlineKeyboardButton("🔒 English (Starter/Basic/Premium)", callback_data="lang_locked")])
             
             reply_markup = InlineKeyboardMarkup(keyboard)
             
@@ -345,7 +345,7 @@ quyidagi buyruq orqali hisobingizni bog'lang:
         language = query.data.split('_')[1] if '_' in query.data else None
         
         if query.data == "lang_locked":
-            await query.edit_message_text("🔒 Bu til faqat Basic yoki Premium obunachi uchun mavjud!")
+            await query.edit_message_text("🔒 Bu til faqat Starter, Basic yoki Premium obunachi uchun mavjud!")
             return
         
         if not language:
@@ -420,6 +420,7 @@ Masalan:
             # Send success message with subscription info
             subscription_names = {
                 'free': 'Bepul (Test)',
+                'starter': 'Starter',
                 'basic': 'Basic',
                 'premium': 'Premium',
                 'admin': 'Admin'
@@ -430,7 +431,7 @@ Masalan:
 👤 Foydalanuvchi: {web_user.username}
 📦 Obuna: {subscription_names.get(web_user.subscription_type, 'Noma\'lum')}"""
             
-            if web_user.subscription_type in ['basic', 'premium', 'admin']:
+            if web_user.subscription_type in ['starter', 'basic', 'premium', 'admin']:
                 success_message += "\n\n🌐 Endi /language buyrug'i bilan tilni tanlashingiz mumkin!"
             
             await update.message.reply_text(success_message)
