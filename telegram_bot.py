@@ -103,7 +103,8 @@ class TelegramBot:
             current_lang = db_user.language
             lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
             
-            message = f"🌐 Joriy til: {lang_names.get(current_lang, 'O\'zbek')}\n"
+            default_lang = "O'zbek"
+            message = f"🌐 Joriy til: {lang_names.get(current_lang, default_lang)}\n"
             message += "Tilni tanlang:"
             
             await update.message.reply_text(message, reply_markup=reply_markup)
