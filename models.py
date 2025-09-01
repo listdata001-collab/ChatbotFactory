@@ -1,3 +1,4 @@
+from typing import Optional, List
 from app import db
 from flask_login import UserMixin
 from datetime import datetime, timedelta
@@ -26,10 +27,11 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
     
-    def can_create_bot(self):
+    def can_create_bot(self) -> bool:
         if self.subscription_type == 'admin':
             return True
-        bot_count = len(self.bots)
+        # Query orqali botlar sonini olish (relationship emas)
+        bot_count = Bot.query.filter_by(user_id=self.id).count()
         if self.subscription_type == 'free' and bot_count >= 1:
             return False
         elif self.subscription_type == 'basic' and bot_count >= 1:
@@ -38,12 +40,12 @@ class User(UserMixin, db.Model):
             return False
         return True
     
-    def can_use_language(self, lang):
+    def can_use_language(self, lang: str) -> bool:
         if self.subscription_type in ['free']:
             return lang == 'uz'
         return lang in ['uz', 'ru', 'en']
     
-    def subscription_active(self):
+    def subscription_active(self) -> bool:
         if self.subscription_type in ['admin']:
             return True
         if self.subscription_type == 'free':

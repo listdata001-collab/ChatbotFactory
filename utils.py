@@ -1,33 +1,34 @@
 import os
 import re
+import logging
+from typing import Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
-from models import User, Payment
+from models import User, Payment, Bot, ChatHistory
 from app import db
-import logging
 
-def allowed_file(filename):
+def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed"""
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in {'txt', 'docx'}
 
-def format_currency(amount):
+def format_currency(amount: float) -> str:
     """Format currency amount in UZS"""
     return f"{amount:,.0f} so'm"
 
-def format_date(date):
+def format_date(date: Optional[datetime]) -> str:
     """Format date for display"""
     if not date:
         return "Belgilanmagan"
     return date.strftime("%d.%m.%Y")
 
-def calculate_subscription_end(subscription_type):
+def calculate_subscription_end(subscription_type: str) -> Optional[datetime]:
     """Calculate subscription end date"""
     if subscription_type in ['basic', 'premium']:
         return datetime.utcnow() + timedelta(days=30)
     return None
 
-def get_subscription_status(user):
+def get_subscription_status(user: User) -> str:
     """Get user subscription status"""
     if user.subscription_type == 'admin':
         return 'Admin'
@@ -40,7 +41,7 @@ def get_subscription_status(user):
         return f"{days_left} kun qoldi"
     return 'Faol'
 
-def validate_telegram_token(token):
+def validate_telegram_token(token: str) -> bool:
     """Validate Telegram bot token format"""
     if not token:
         return False
@@ -49,13 +50,13 @@ def validate_telegram_token(token):
     pattern = r'^\d+:[A-Za-z0-9_-]+$'
     return bool(re.match(pattern, token))
 
-def send_notification_email(user_email, subject, message):
+def send_notification_email(user_email: str, subject: str, message: str) -> bool:
     """Send notification email (placeholder for email service)"""
     # This would integrate with an email service like SendGrid, Mailgun, etc.
     logging.info(f"Email notification sent to {user_email}: {subject}")
     return True
 
-def check_subscription_expiry():
+def check_subscription_expiry() -> None:
     """Check for expiring subscriptions and send notifications"""
     with db.session() as session:
         # Find subscriptions expiring in 3 days
@@ -90,7 +91,7 @@ def check_subscription_expiry():
         
         session.commit()
 
-def get_user_stats():
+def get_user_stats() -> Dict[str, int]:
     """Get user statistics"""
     return {
         'total_users': User.query.count(),
@@ -100,7 +101,7 @@ def get_user_stats():
         'active_users': User.query.filter_by(is_active=True).count()
     }
 
-def get_payment_stats():
+def get_payment_stats() -> Dict[str, Union[float, int]]:
     """Get payment statistics"""
     total_revenue = db.session.query(db.func.sum(Payment.amount)).filter_by(status='completed').scalar() or 0
     monthly_revenue = db.session.query(db.func.sum(Payment.amount)).filter(
@@ -115,7 +116,7 @@ def get_payment_stats():
         'pending_payments': Payment.query.filter_by(status='pending').count()
     }
 
-def sanitize_input(text, max_length=1000):
+def sanitize_input(text: str, max_length: int = 1000) -> str:
     """Sanitize user input"""
     if not text:
         return ""
@@ -129,12 +130,12 @@ def sanitize_input(text, max_length=1000):
     
     return text.strip()
 
-def generate_transaction_id(payment_id):
+def generate_transaction_id(payment_id: int) -> str:
     """Generate transaction ID"""
     timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
     return f"BF_{payment_id}_{timestamp}"
 
-def validate_subscription_upgrade(current_type, new_type):
+def validate_subscription_upgrade(current_type: str, new_type: str) -> bool:
     """Validate subscription upgrade"""
     hierarchy = ['free', 'basic', 'premium']
     

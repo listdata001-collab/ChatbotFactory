@@ -1,7 +1,25 @@
 import os
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+from typing import Optional
+
+try:
+    from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+    from telegram.ext import Application, CommandHandler, MessageHandler, CallbackQueryHandler, filters, ContextTypes
+    TELEGRAM_AVAILABLE = True
+except ImportError:
+    # Mock classes for development without telegram
+    class Update: pass
+    class InlineKeyboardButton: pass
+    class InlineKeyboardMarkup: pass
+    class Application: pass
+    class CommandHandler: pass
+    class MessageHandler: pass
+    class CallbackQueryHandler: pass
+    class filters: pass
+    class ContextTypes: 
+        DEFAULT_TYPE = None
+    TELEGRAM_AVAILABLE = False
+    logging.warning("python-telegram-bot library not available. Install with: pip install python-telegram-bot")
 from ai import get_ai_response, process_knowledge_base
 from models import User, Bot, ChatHistory
 from app import db, app

@@ -1,0 +1,153 @@
+"Siz yuqoridagi BotFactory AI Platformasi loyihasini 100% gacha olib chiqishingiz kerak. Hozirgi holatda:
+
+✅ Bajarilgan:
+
+Flask MVC arxitektura
+Foydalanuvchi tizimi
+Telegram bot to'liq ishlamoqda
+AI integratsiya
+To'lov tizimi
+Marketing tizimi
+Admin panel
+⚠️ Qisman bajarilgan:
+
+Instagram/WhatsApp botlar (API integratsiya to'liq emas)
+Scheduler (avtomatik eslatmalar to'liq ishlamaydi)
+Endi quyidagilarni bajaring:
+
+instagram_bot.py ni to'liq ishlashga tayyor qiling: 
+Instagram Graph API integratsiyasi
+Foydalanuvchi xabarlarini qabul qilish
+AI javoblar yuborish
+Media fayllar bilan ishlash
+whatsapp_bot.py ni to'liq ishlashga tayyor qiling: 
+WhatsApp Business API integratsiyasi
+Webhook handler
+Xabarlar formati (text, image, document)
+AI javoblar o'zbek/rus/ingliz tillarida
+scheduler.py faylini to'liq ishlashga tayyor qiling: 
+Har kuni soat 9:00 da tarif tugashini tekshirish
+3 kun oldin va tugash kuni eslatma yuborish
+Email/SMS orqali xabarlar
+Background tasklar uchun APScheduler
+Import va type error-larni tuzating 
+LSP diagnostics ko'rsatgan barcha xatolarni to'g'rilang
+Type hintlarni to'liq qo'shing
+Har bir faylni tushuntirib yozing. Kodni to'liq, ishlashga tayyor holatda bering." 
+
+✅ Qo'shimcha takliflar (professional darajaga olib chiqish uchun)
+1. Error handling ni kuchaytirish
+python
+
+
+1
+2
+3
+4
+5
+⌄
+⌄
+try:
+    # kod
+except SpecificException as e:
+    logger.error(f"Aniqlik bilan xato: {str(e)}")
+    return jsonify({"error": "Xatolik yuz berdi"}), 500
+2. Logging tizimini yaxshilash
+python
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+import logging
+from logging.handlers import RotatingFileHandler
+
+logging.basicConfig(
+    handlers=[RotatingFileHandler('botfactory.log', maxBytes=100000, backupCount=10)],
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(name)s %(message)s'
+)
+3. API kalitlarni .env faylga ko'chirish
+env
+
+
+1
+2
+3
+INSTAGRAM_ACCESS_TOKEN=your_token_here
+WHATSAPP_API_KEY=your_key_here
+WHATSAPP_PHONE_ID=your_phone_id_here
+4. README.md faylini to'ldirish
+markdown
+
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+⌄
+⌄
+⌄
+⌄
+# BotFactory AI Platformasi
+
+## Talablari:
+- Python 3.8+
+- PostgreSQL
+- Telegram Bot Token
+- Google Gemini API Key
+
+## O'rnatish:
+1. pip install -r requirements.txt
+2. .env faylini sozlang
+3. python main.py
+
+## Foydalanish:
+- Ro'yxatdan o'tish
+- Bot yaratish
+- Platforma tanlash (Telegram/Instagram/WhatsApp)
+🎯 Loyiha 100% gacha olib chiqilgach nima bo'ladi?
+🧱 Backend
+✅
+🗃️ Database
+✅
+🔐 Auth
+✅
+💳 To'lovlar
+✅
+🤖 Barcha botlar
+✅
+📢 Marketing
+✅
+📧 Email/SMS
+✅
+⏰ Scheduler
+✅
+📱 Frontend
+✅
+📊 Admin panel
+✅
+📄 Dokumentatsiya
+✅
+🛡️ Xavfsizlik
+✅
+⚡ Performance
+✅

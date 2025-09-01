@@ -2,8 +2,9 @@ import os
 import json
 import logging
 import requests
+from typing import Dict, List, Optional, Any, Union, Tuple
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 from app import db, app
 from models import User, Bot, ChatHistory
 from ai import get_ai_response, process_knowledge_base
@@ -17,14 +18,14 @@ whatsapp_bp = Blueprint('whatsapp', __name__)
 class WhatsAppBot:
     """WhatsApp Business API integratsiyasi"""
     
-    def __init__(self, access_token, phone_number_id, bot_id):
+    def __init__(self, access_token: str, phone_number_id: str, bot_id: int):
         self.access_token = access_token
         self.phone_number_id = phone_number_id
         self.bot_id = bot_id
         self.base_url = "https://graph.facebook.com/v18.0"
         self.verify_token = os.environ.get('WHATSAPP_VERIFY_TOKEN', 'botfactory_whatsapp_2024')
     
-    def send_message(self, to_number, message_text):
+    def send_message(self, to_number: str, message_text: str) -> bool:
         """WhatsApp xabar yuborish"""
         try:
             url = f"{self.base_url}/{self.phone_number_id}/messages"
@@ -54,7 +55,7 @@ class WhatsAppBot:
             logger.error(f"WhatsApp send message error: {str(e)}")
             return False
     
-    def send_template_message(self, to_number, template_name, language_code="uz"):
+    def send_template_message(self, to_number: str, template_name: str, language_code: str = "uz") -> bool:
         """Template xabar yuborish"""
         try:
             url = f"{self.base_url}/{self.phone_number_id}/messages"
@@ -87,7 +88,7 @@ class WhatsAppBot:
             logger.error(f"WhatsApp template error: {str(e)}")
             return False
     
-    def send_interactive_message(self, to_number, message_text, buttons):
+    def send_interactive_message(self, to_number: str, message_text: str, buttons: List[Dict[str, str]]) -> bool:
         """Interaktiv tugmalar bilan xabar yuborish"""
         try:
             url = f"{self.base_url}/{self.phone_number_id}/messages"
@@ -133,7 +134,7 @@ class WhatsAppBot:
             logger.error(f"WhatsApp interactive error: {str(e)}")
             return False
     
-    def send_media_message(self, to_number, media_type, media_url, caption=""):
+    def send_media_message(self, to_number: str, media_type: str, media_url: str, caption: str = "") -> bool:
         """Media xabar yuborish (rasm, video, document)"""
         try:
             url = f"{self.base_url}/{self.phone_number_id}/messages"
@@ -168,7 +169,42 @@ class WhatsAppBot:
             logger.error(f"WhatsApp media error: {str(e)}")
             return False
     
-    def handle_message(self, from_number, message_text, message_type="text"):
+    def send_location_message(self, to_number: str, latitude: float, longitude: float, name: str = "", address: str = "") -> bool:
+        """Joylashuv xabar yuborish"""
+        try:
+            url = f"{self.base_url}/{self.phone_number_id}/messages"
+            
+            headers = {
+                'Authorization': f'Bearer {self.access_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            payload = {
+                'messaging_product': 'whatsapp',
+                'to': to_number,
+                'type': 'location',
+                'location': {
+                    'latitude': latitude,
+                    'longitude': longitude,
+                    'name': name,
+                    'address': address
+                }
+            }
+            
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
+            
+            if response.status_code == 200:
+                logger.info(f"WhatsApp location sent to {to_number}")
+                return True
+            else:
+                logger.error(f"WhatsApp location error: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"WhatsApp location error: {str(e)}")
+            return False
+    
+    def handle_message(self, from_number: str, message_text: str, message_type: str = "text") -> bool:
         """WhatsApp xabarini qayta ishlash"""
         try:
             with app.app_context():

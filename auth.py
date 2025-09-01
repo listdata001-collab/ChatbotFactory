@@ -76,8 +76,7 @@ def register():
         user.language = 'uz'
         user.subscription_type = 'free'
         user.subscription_end_date = datetime.utcnow() + timedelta(days=14)
-        # is_active maydonini to'g'ridan-to'g'ri belgilaymiz
-        setattr(user, 'is_active', True)
+        user.is_active = True
         
         db.session.add(user)
         db.session.commit()

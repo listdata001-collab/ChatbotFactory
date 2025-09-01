@@ -1,9 +1,23 @@
 import os
 import logging
-import schedule
 import time
 import threading
+from typing import Optional, Dict, Any, List
 from datetime import datetime, timedelta
+
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from apscheduler.triggers.cron import CronTrigger
+    from apscheduler.triggers.interval import IntervalTrigger
+    from apscheduler.executors.pool import ThreadPoolExecutor
+    from apscheduler.jobstores.memory import MemoryJobStore
+    APSCHEDULER_AVAILABLE = True
+except ImportError:
+    # Fallback to simple schedule library
+    import schedule
+    APSCHEDULER_AVAILABLE = False
+    logging.warning("APScheduler not available, using simple schedule library")
+
 from app import db, app
 from models import User, Payment, Bot, ChatHistory
 from marketing import MarketingCampaigns
@@ -14,61 +28,171 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class TaskScheduler:
-    """Background vazifalar boshqaruvchisi"""
+    """Professional background vazifalar boshqaruvchisi APScheduler bilan"""
     
     def __init__(self):
         self.campaigns = MarketingCampaigns()
         self.running = False
-        self.scheduler_thread = None
+        self.scheduler = None
+        
+        if APSCHEDULER_AVAILABLE:
+            # APScheduler konfiguratsiyasi
+            jobstores = {'default': MemoryJobStore()}
+            executors = {'default': ThreadPoolExecutor(20)}
+            job_defaults = {
+                'coalesce': False,
+                'max_instances': 3,
+                'misfire_grace_time': 30
+            }
+            self.scheduler = BackgroundScheduler(
+                jobstores=jobstores,
+                executors=executors,
+                job_defaults=job_defaults,
+                timezone='Asia/Tashkent'
+            )
+        else:
+            # Fallback scheduler
+            self.scheduler_thread = None
     
-    def start(self):
+    def start(self) -> bool:
         """Scheduler ni ishga tushirish"""
         if not self.running:
-            self.running = True
-            self.setup_jobs()
-            self.scheduler_thread = threading.Thread(target=self.run_scheduler)
-            self.scheduler_thread.daemon = True
-            self.scheduler_thread.start()
-            logger.info("Task scheduler started")
+            try:
+                self.running = True
+                self.setup_jobs()
+                
+                if APSCHEDULER_AVAILABLE and self.scheduler:
+                    self.scheduler.start()
+                    logger.info("APScheduler started successfully")
+                else:
+                    # Fallback to simple scheduler
+                    self.scheduler_thread = threading.Thread(target=self.run_fallback_scheduler)
+                    self.scheduler_thread.daemon = True
+                    self.scheduler_thread.start()
+                    logger.info("Fallback scheduler started")
+                
+                return True
+            except Exception as e:
+                logger.error(f"Failed to start scheduler: {str(e)}")
+                return False
+        return True
     
-    def stop(self):
+    def stop(self) -> bool:
         """Scheduler ni to'xtatish"""
-        self.running = False
-        if self.scheduler_thread:
-            self.scheduler_thread.join()
-        logger.info("Task scheduler stopped")
+        try:
+            self.running = False
+            
+            if APSCHEDULER_AVAILABLE and self.scheduler:
+                self.scheduler.shutdown(wait=True)
+                logger.info("APScheduler stopped successfully")
+            else:
+                # Fallback scheduler
+                if self.scheduler_thread:
+                    self.scheduler_thread.join()
+                logger.info("Fallback scheduler stopped")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Failed to stop scheduler: {str(e)}")
+            return False
     
-    def setup_jobs(self):
-        """Vazifalarni sozlash"""
-        # Har kuni soat 9:00 da obunalarni tekshirish
-        schedule.every().day.at("09:00").do(self.check_subscriptions)
-        
-        # Har kuni soat 10:00 da eslatmalar yuborish
-        schedule.every().day.at("10:00").do(self.send_reminders)
-        
-        # Haftada bir marta bepul foydalanuvchilarga marketing
-        schedule.every().monday.at("14:00").do(self.send_marketing_campaigns)
-        
-        # Har kuni yarim tungi ma'lumotlarni tozalash
-        schedule.every().day.at("00:00").do(self.cleanup_old_data)
-        
-        # Har soat bot statistikalarini yangilash
-        schedule.every().hour.do(self.update_bot_stats)
-        
-        # Har 15 daqiqada tizim holatini tekshirish
-        schedule.every(15).minutes.do(self.system_health_check)
+    def setup_jobs(self) -> None:
+        """Professional vazifalarni sozlash"""
+        try:
+            if APSCHEDULER_AVAILABLE and self.scheduler:
+                # APScheduler bilan professional joblar
+                
+                # Har kuni soat 9:00 da obunalarni tekshirish  
+                self.scheduler.add_job(
+                    func=self.check_subscriptions,
+                    trigger=CronTrigger(hour=9, minute=0, timezone='Asia/Tashkent'),
+                    id='check_subscriptions',
+                    name='Daily subscription check',
+                    replace_existing=True
+                )
+                
+                # Har kuni soat 10:00 da eslatmalar yuborish
+                self.scheduler.add_job(
+                    func=self.send_reminders,
+                    trigger=CronTrigger(hour=10, minute=0, timezone='Asia/Tashkent'),
+                    id='send_reminders',
+                    name='Daily reminders',
+                    replace_existing=True
+                )
+                
+                # Haftada bir marta bepul foydalanuvchilarga marketing (Dushanba 14:00)
+                self.scheduler.add_job(
+                    func=self.send_marketing_campaigns,
+                    trigger=CronTrigger(day_of_week='mon', hour=14, minute=0, timezone='Asia/Tashkent'),
+                    id='marketing_campaigns',
+                    name='Weekly marketing campaigns',
+                    replace_existing=True
+                )
+                
+                # Har kuni yarim tungi ma'lumotlarni tozalash
+                self.scheduler.add_job(
+                    func=self.cleanup_old_data,
+                    trigger=CronTrigger(hour=0, minute=0, timezone='Asia/Tashkent'),
+                    id='cleanup_data',
+                    name='Daily data cleanup',
+                    replace_existing=True
+                )
+                
+                # Har soat bot statistikalarini yangilash
+                self.scheduler.add_job(
+                    func=self.update_bot_stats,
+                    trigger=IntervalTrigger(hours=1),
+                    id='update_stats',
+                    name='Hourly stats update',
+                    replace_existing=True
+                )
+                
+                # Har 15 daqiqada tizim holatini tekshirish
+                self.scheduler.add_job(
+                    func=self.system_health_check,
+                    trigger=IntervalTrigger(minutes=15),
+                    id='health_check',
+                    name='System health check',
+                    replace_existing=True
+                )
+                
+                # Har 5 daqiqada muddati tugash arafasidagi foydalanuvchilarga ogohlantirish
+                self.scheduler.add_job(
+                    func=self.send_expiry_warnings,
+                    trigger=IntervalTrigger(minutes=5),
+                    id='expiry_warnings',
+                    name='Subscription expiry warnings',
+                    replace_existing=True
+                )
+                
+                logger.info("APScheduler jobs configured successfully")
+                
+            else:
+                # Fallback simple scheduler
+                import schedule
+                schedule.every().day.at("09:00").do(self.check_subscriptions)
+                schedule.every().day.at("10:00").do(self.send_reminders)
+                schedule.every().monday.at("14:00").do(self.send_marketing_campaigns)
+                schedule.every().day.at("00:00").do(self.cleanup_old_data)
+                schedule.every().hour.do(self.update_bot_stats)
+                schedule.every(15).minutes.do(self.system_health_check)
+                logger.info("Fallback scheduler jobs configured")
+                
+        except Exception as e:
+            logger.error(f"Failed to setup jobs: {str(e)}")
     
-    def run_scheduler(self):
-        """Scheduler ishga tushirish"""
+    def run_fallback_scheduler(self) -> None:
+        """Fallback scheduler ishga tushirish"""
+        import schedule
         while self.running:
             try:
                 schedule.run_pending()
                 time.sleep(1)
             except Exception as e:
-                logger.error(f"Scheduler error: {str(e)}")
+                logger.error(f"Fallback scheduler error: {str(e)}")
                 time.sleep(60)  # Xato bo'lsa 1 daqiqa kutish
     
-    def check_subscriptions(self):
+    def check_subscriptions(self) -> None:
         """Obunalarni tekshirish"""
         try:
             logger.info("Checking subscriptions...")
@@ -124,7 +248,7 @@ class TaskScheduler:
         except Exception as e:
             logger.error(f"Check subscriptions error: {str(e)}")
     
-    def send_reminders(self):
+    def send_reminders(self) -> None:
         """Eslatmalar yuborish"""
         try:
             logger.info("Sending reminders...")
@@ -156,7 +280,7 @@ class TaskScheduler:
         except Exception as e:
             logger.error(f"Send reminders error: {str(e)}")
     
-    def send_marketing_campaigns(self):
+    def send_marketing_campaigns(self) -> None:
         """Marketing kampaniyalari yuborish"""
         try:
             logger.info("Sending marketing campaigns...")
@@ -189,7 +313,7 @@ class TaskScheduler:
         except Exception as e:
             logger.error(f"Marketing campaigns error: {str(e)}")
     
-    def cleanup_old_data(self):
+    def cleanup_old_data(self) -> None:
         """Eski ma'lumotlarni tozalash"""
         try:
             logger.info("Cleaning up old data...")
@@ -222,7 +346,7 @@ class TaskScheduler:
             logger.error(f"Cleanup error: {str(e)}")
             db.session.rollback()
     
-    def update_bot_stats(self):
+    def update_bot_stats(self) -> None:
         """Bot statistikalarini yangilash"""
         try:
             logger.info("Updating bot statistics...")
@@ -261,7 +385,7 @@ class TaskScheduler:
         except Exception as e:
             logger.error(f"Update bot stats error: {str(e)}")
     
-    def system_health_check(self):
+    def system_health_check(self) -> None:
         """Tizim salomatligini tekshirish"""
         try:
             with app.app_context():

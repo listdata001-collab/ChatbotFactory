@@ -1,11 +1,17 @@
 import os
 import logging
-import google.generativeai as genai
+from typing import Optional
 
-# Initialize Gemini client
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "default_key"))
+try:
+    import google.generativeai as genai
+    # Initialize Gemini client
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "default_key"))
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    logging.warning("Google Generative AI library not available. Install with: pip install google-generativeai")
 
-def get_ai_response(message, bot_name="BotFactory AI", user_language="uz", knowledge_base=""):
+def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language: str = "uz", knowledge_base: str = "") -> Optional[str]:
     """
     Generate AI response using Google Gemini
     """
@@ -27,6 +33,9 @@ def get_ai_response(message, bot_name="BotFactory AI", user_language="uz", knowl
         full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"
         
         # Generate response using Gemini
+        if not GEMINI_AVAILABLE:
+            return get_fallback_response(user_language)
+            
         model = genai.GenerativeModel('gemini-1.5-flash')
         response = model.generate_content(full_prompt)
         
@@ -39,7 +48,7 @@ def get_ai_response(message, bot_name="BotFactory AI", user_language="uz", knowl
         logging.error(f"AI response error: {str(e)}")
         return get_fallback_response(user_language)
 
-def get_fallback_response(language="uz"):
+def get_fallback_response(language: str = "uz") -> str:
     """
     Fallback responses when AI fails
     """
@@ -50,7 +59,7 @@ def get_fallback_response(language="uz"):
     }
     return fallback_responses.get(language, fallback_responses['uz'])
 
-def process_knowledge_base(bot_id):
+def process_knowledge_base(bot_id: int) -> str:
     """
     Process and combine knowledge base content for a bot
     """
@@ -68,7 +77,7 @@ def process_knowledge_base(bot_id):
         logging.error(f"Knowledge base processing error: {str(e)}")
         return ""
 
-def validate_ai_response(response, max_length=4000):
+def validate_ai_response(response: Optional[str], max_length: int = 4000) -> Optional[str]:
     """
     Validate and clean AI response
     """

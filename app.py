@@ -6,8 +6,17 @@ from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+# Professional logging tizimini ishga tushirish
+try:
+    from logging_config import setup_logging, error_tracker, ContextLogger
+    setup_logging()
+    logger = logging.getLogger(__name__)
+    logger.info("BotFactory AI application starting with professional logging")
+except ImportError:
+    # Fallback basic logging
+    logging.basicConfig(level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    logger.warning("Using fallback logging configuration")
 
 class Base(DeclarativeBase):
     pass
@@ -70,8 +79,7 @@ with app.app_context():
         admin.password_hash = generate_password_hash('Gisobot20141920*')
         admin.language = 'uz'
         admin.subscription_type = 'admin'
-        # is_active maydonini to'g'ridan-to'g'ri belgilaymiz
-        setattr(admin, 'is_active', True)
+        admin.is_active = True
         admin.is_admin = True
         db.session.add(admin)
         db.session.commit()

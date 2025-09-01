@@ -2,8 +2,9 @@ import os
 import json
 import logging
 import requests
+from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, url_for
 from app import db, app
 from models import User, Bot, ChatHistory
 from ai import get_ai_response, process_knowledge_base
@@ -17,13 +18,13 @@ instagram_bp = Blueprint('instagram', __name__)
 class InstagramBot:
     """Instagram bot integratsiyasi"""
     
-    def __init__(self, access_token, bot_id):
+    def __init__(self, access_token: str, bot_id: int):
         self.access_token = access_token
         self.bot_id = bot_id
         self.base_url = "https://graph.facebook.com/v18.0"
         self.verify_token = os.environ.get('INSTAGRAM_VERIFY_TOKEN', 'botfactory_instagram_2024')
     
-    def send_message(self, recipient_id, message_text):
+    def send_message(self, recipient_id: str, message_text: str) -> bool:
         """Instagram Direct Message yuborish"""
         try:
             url = f"{self.base_url}/me/messages"
@@ -47,7 +48,60 @@ class InstagramBot:
             logger.error(f"Instagram send message error: {str(e)}")
             return False
     
-    def send_quick_reply(self, recipient_id, message_text, quick_replies):
+    def send_media_message(self, recipient_id: str, media_url: str, media_type: str = "image", caption: str = "") -> bool:
+        """Instagram media xabar yuborish (rasm, video)"""
+        try:
+            url = f"{self.base_url}/me/messages"
+            
+            payload = {
+                'recipient': {'id': recipient_id},
+                'message': {
+                    'attachment': {
+                        'type': media_type,
+                        'payload': {'url': media_url}
+                    }
+                },
+                'access_token': self.access_token
+            }
+            
+            if caption:
+                payload['message']['text'] = caption
+            
+            response = requests.post(url, json=payload, timeout=30)
+            
+            if response.status_code == 200:
+                logger.info(f"Instagram media sent to {recipient_id}")
+                return True
+            else:
+                logger.error(f"Instagram media error: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Instagram media send error: {str(e)}")
+            return False
+    
+    def get_user_profile(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Foydalanuvchi profilini olish"""
+        try:
+            url = f"{self.base_url}/{user_id}"
+            params = {
+                'fields': 'name,profile_pic',
+                'access_token': self.access_token
+            }
+            
+            response = requests.get(url, params=params, timeout=30)
+            
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"Instagram profile error: {response.status_code}")
+                return None
+                
+        except Exception as e:
+            logger.error(f"Instagram profile fetch error: {str(e)}")
+            return None
+    
+    def send_quick_reply(self, recipient_id: str, message_text: str, quick_replies: List[Dict[str, str]]) -> bool:
         """Tez javob tugmalari bilan xabar yuborish"""
         try:
             url = f"{self.base_url}/me/messages"
@@ -82,7 +136,7 @@ class InstagramBot:
             logger.error(f"Instagram quick reply error: {str(e)}")
             return False
     
-    def handle_message(self, sender_id, message_text):
+    def handle_message(self, sender_id: str, message_text: str) -> bool:
         """Instagram xabarini qayta ishlash"""
         try:
             with app.app_context():
@@ -168,7 +222,7 @@ class InstagramBot:
             logger.error(f"Instagram message handling error: {str(e)}")
             return False
     
-    def handle_postback(self, sender_id, payload):
+    def handle_postback(self, sender_id: str, payload: str) -> bool:
         """Instagram postback (tugma bosilgan) ni qayta ishlash"""
         try:
             if payload == 'GET_STARTED':
@@ -218,7 +272,7 @@ class InstagramBotManager:
     def __init__(self):
         self.running_bots = {}
     
-    def start_bot(self, bot_id, access_token):
+    def start_bot(self, bot_id: int, access_token: str) -> bool:
         """Instagram botni ishga tushirish"""
         try:
             if bot_id not in self.running_bots:
@@ -231,7 +285,7 @@ class InstagramBotManager:
             logger.error(f"Instagram bot start error: {str(e)}")
             return False
     
-    def stop_bot(self, bot_id):
+    def stop_bot(self, bot_id: int) -> bool:
         """Instagram botni to'xtatish"""
         try:
             if bot_id in self.running_bots:
@@ -242,7 +296,7 @@ class InstagramBotManager:
             logger.error(f"Instagram bot stop error: {str(e)}")
             return False
     
-    def get_bot(self, bot_id):
+    def get_bot(self, bot_id: int) -> Optional['InstagramBot']:
         """Instagram botni olish"""
         return self.running_bots.get(bot_id)
 
