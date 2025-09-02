@@ -102,6 +102,63 @@ def send_broadcast():
     
     return redirect(url_for('main.admin'))
 
+@main_bp.route('/admin/change-subscription', methods=['POST'])
+@login_required
+def change_user_subscription():
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    user_id = request.form.get('user_id')
+    subscription_type = request.form.get('subscription_type')
+    subscription_duration = request.form.get('subscription_duration', '30')  # Default 30 days
+    
+    if not user_id or not subscription_type:
+        flash('Xatolik: Ma\'lumotlar to\'liq emas!', 'error')
+        return redirect(url_for('main.admin'))
+    
+    user = User.query.get_or_404(user_id)
+    
+    # Don't allow changing admin subscription or setting subscription to free
+    if user.subscription_type == 'admin' or subscription_type == 'free':
+        flash('Xatolik: Admin obunasini yoki bepul ta\'rifni o\'zgartirib bo\'lmaydi!', 'error')
+        return redirect(url_for('main.admin'))
+    
+    # Set new subscription
+    user.subscription_type = subscription_type
+    
+    # Calculate end date based on duration
+    if subscription_type in ['basic', 'premium']:
+        days = int(subscription_duration)
+        user.subscription_end_date = datetime.utcnow() + timedelta(days=days)
+    
+    try:
+        db.session.commit()
+        
+        # Create payment record for manual subscription change
+        payment = Payment()
+        payment.user_id = user.id
+        payment.amount = 0  # Manual change by admin
+        payment.method = 'Admin'
+        payment.status = 'completed'
+        payment.subscription_type = subscription_type
+        payment.transaction_id = f'ADMIN_{current_user.id}_{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
+        
+        db.session.add(payment)
+        db.session.commit()
+        
+        subscription_names = {
+            'basic': 'Basic',
+            'premium': 'Premium'
+        }
+        
+        flash(f'{user.username} foydalanuvchisining obunasi {subscription_names.get(subscription_type, subscription_type)} ga o\'zgartirildi ({subscription_duration} kun)', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Obunani o\'zgartirishda xatolik yuz berdi!', 'error')
+    
+    return redirect(url_for('main.admin'))
+
 def send_broadcast_messages(broadcast_id, message_text, target_type):
     """Send broadcast message to users"""
     sent_count = 0

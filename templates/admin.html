@@ -159,7 +159,18 @@
                                         <button class="btn btn-outline-primary" title="Ko'rish">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button class="btn btn-outline-warning" title="Tahrirlash">
+                                        {% if user.subscription_type != 'admin' %}
+                                        <button class="btn btn-outline-warning" 
+                                                title="Obunani o'zgartirish"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#changeSubscriptionModal"
+                                                data-user-id="{{ user.id }}"
+                                                data-user-name="{{ user.username }}"
+                                                data-current-subscription="{{ user.subscription_type }}">
+                                            <i class="fas fa-crown"></i>
+                                        </button>
+                                        {% endif %}
+                                        <button class="btn btn-outline-secondary" title="Tahrirlash">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     </div>
@@ -395,4 +406,103 @@
         </div>
     </div>
 </div>
+
+<!-- Change Subscription Modal -->
+<div class="modal fade" id="changeSubscriptionModal" tabindex="-1" aria-labelledby="changeSubscriptionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="changeSubscriptionModalLabel">
+                    <i class="fas fa-crown me-2"></i>Obuna ta'rifini o'zgartirish
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ url_for('main.change_user_subscription') }}">
+                <div class="modal-body">
+                    <input type="hidden" name="user_id" id="modal_user_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Foydalanuvchi:</strong></label>
+                        <p class="text-muted" id="modal_user_name"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Joriy obuna:</strong></label>
+                        <p id="modal_current_subscription"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subscription_type" class="form-label">Yangi obuna ta'rifi</label>
+                        <select class="form-select" name="subscription_type" required>
+                            <option value="">Obuna ta'rifini tanlang</option>
+                            <option value="basic">Basic (290,000 so'm/oy)</option>
+                            <option value="premium">Premium (590,000 so'm/oy)</option>
+                        </select>
+                        <div class="form-text">
+                            <small class="text-muted">Eslatma: "Bepul" ta'rifni bu yerdan o'rnatib bo'lmaydi.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subscription_duration" class="form-label">Obuna muddati (kunlarda)</label>
+                        <select class="form-select" name="subscription_duration">
+                            <option value="30">30 kun (1 oy)</option>
+                            <option value="90">90 kun (3 oy)</option>
+                            <option value="180">180 kun (6 oy)</option>
+                            <option value="365">365 kun (1 yil)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Eslatma:</strong> Bu o'zgarish avtomatik ravishda to'lov tarixi ro'yxatiga "Admin" usuli bilan qo'shiladi.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-2"></i>O'zgarishni saqlash
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Modal oynani to'ldirish
+document.addEventListener('DOMContentLoaded', function() {
+    const changeSubscriptionModal = document.getElementById('changeSubscriptionModal');
+    
+    changeSubscriptionModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const userId = button.getAttribute('data-user-id');
+        const userName = button.getAttribute('data-user-name');
+        const currentSubscription = button.getAttribute('data-current-subscription');
+        
+        // Modal ichidagi elementlarni to'ldirish
+        document.getElementById('modal_user_id').value = userId;
+        document.getElementById('modal_user_name').textContent = userName;
+        
+        // Joriy obuna ta'rifini ko'rsatish
+        const subscriptionNames = {
+            'free': 'Bepul',
+            'basic': 'Basic (290,000 so\'m/oy)',
+            'premium': 'Premium (590,000 so\'m/oy)',
+            'admin': 'Admin'
+        };
+        
+        const subscriptionBadges = {
+            'free': '<span class="badge bg-secondary">Bepul</span>',
+            'basic': '<span class="badge bg-primary">Basic</span>',
+            'premium': '<span class="badge bg-warning">Premium</span>',
+            'admin': '<span class="badge bg-success">Admin</span>'
+        };
+        
+        document.getElementById('modal_current_subscription').innerHTML = 
+            subscriptionBadges[currentSubscription] || currentSubscription;
+    });
+});
+</script>
+
 {% endblock %}
