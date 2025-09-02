@@ -13,11 +13,6 @@ main_bp = Blueprint('main', __name__)
 def index():
     return render_template('index.html')
 
-@main_bp.route('/subscription')
-@login_required  
-def subscription():
-    return render_template('subscription.html')
-
 @main_bp.route('/dashboard')
 @login_required
 def dashboard():

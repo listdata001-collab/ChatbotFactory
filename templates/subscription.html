@@ -203,7 +203,7 @@
         
         <div class="row justify-content-center">
             <!-- Test Plan -->
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="pricing-card test">
                     {% if current_user.subscription_type == 'free' %}
                     <div class="current-plan-badge">Joriy tarif</div>
@@ -253,8 +253,74 @@
                 </div>
             </div>
             
+            <!-- Starter Plan -->
+            <div class="col-lg-3 col-md-6">
+                <div class="pricing-card basic">
+                    {% if current_user.subscription_type == 'starter' %}
+                    <div class="current-plan-badge">Joriy tarif</div>
+                    {% endif %}
+                    
+                    <div class="plan-header">
+                        <div class="plan-icon basic">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3 class="plan-title">Starter</h3>
+                        <div class="plan-price">165,000 so'm</div>
+                        <div class="plan-duration">/oy</div>
+                    </div>
+                    
+                    <ul class="feature-list">
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            1 ta bot
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Faqat Telegram
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            3 ta til (uz/ru/en)
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Bilim bazasi
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Kengaytirilgan AI
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Texnik yordam
+                        </li>
+                    </ul>
+                    
+                    {% if current_user.subscription_type == 'starter' %}
+                    <button class="plan-button basic" disabled>Faol tarif</button>
+                    {% elif current_user.subscription_type in ['basic', 'premium', 'admin'] %}
+                    <button class="plan-button basic" disabled>Yuqori tarif faol</button>
+                    {% else %}
+                    <button class="plan-button basic" data-bs-toggle="modal" data-bs-target="#paymentModal" 
+                            data-subscription="starter" data-amount="165000">Tanlash</button>
+                    {% endif %}
+                </div>
+            </div>
+
             <!-- Basic Plan -->
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="pricing-card basic">
                     {% if current_user.subscription_type == 'basic' %}
                     <div class="current-plan-badge">Joriy tarif</div>
@@ -314,7 +380,7 @@
             </div>
             
             <!-- Premium Plan -->
-            <div class="col-lg-4 col-md-6">
+            <div class="col-lg-3 col-md-6">
                 <div class="pricing-card premium">
                     {% if current_user.subscription_type == 'premium' %}
                     <div class="current-plan-badge">Joriy tarif</div>
@@ -469,6 +535,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update payment details
         const subscriptionNames = {
+            'starter': 'Starter',
             'basic': 'Basic',
             'premium': 'Premium'
         };
