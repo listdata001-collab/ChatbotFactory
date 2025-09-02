@@ -117,7 +117,11 @@
                     <li><i class="fas fa-check text-success me-2"></i>Faqat o'zbek tili</li>
                     <li><i class="fas fa-check text-success me-2"></i>Bilim bazasi</li>
                 </ul>
-                {% if not current_user.is_authenticated %}
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('main.subscription') }}" class="btn btn-outline-secondary btn-lg w-100">
+                    Tanlash
+                </a>
+                {% else %}
                 <a href="{{ url_for('auth.register') }}" class="btn btn-outline-secondary btn-lg w-100">
                     Boshlash
                 </a>
