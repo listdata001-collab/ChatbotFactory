@@ -532,9 +532,24 @@ document.addEventListener('DOMContentLoaded', function() {
         // Redirect to Telegram contact
         window.open('https://t.me/akramjon0011', '_blank');
         
-        // Close modal
-        const modal = bootstrap.Modal.getInstance(paymentModal);
-        modal.hide();
+        // Close modal safely
+        try {
+            const modal = bootstrap.Modal.getInstance(paymentModal);
+            if (modal) {
+                modal.hide();
+            } else {
+                paymentModal.style.display = 'none';
+                document.body.classList.remove('modal-open');
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) backdrop.remove();
+            }
+        } catch (error) {
+            console.log('Modal close error:', error);
+            paymentModal.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            const backdrop = document.querySelector('.modal-backdrop');
+            if (backdrop) backdrop.remove();
+        }
     });
     
     // Style payment method cards
