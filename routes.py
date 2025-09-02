@@ -513,7 +513,7 @@ def process_payment(subscription_type):
 def dashboard_api():
     """API endpoint for dashboard data refresh"""
     bots = Bot.query.filter_by(user_id=current_user.id).all()
-    active_bots = sum(1 for bot in bots if bot.status == 'active')
+    active_bots = sum(1 for bot in bots if bot.is_active)
     
     return jsonify({
         'bot_count': len(bots),
