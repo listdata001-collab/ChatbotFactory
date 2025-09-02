@@ -1,421 +1,383 @@
 {% extends "base.html" %}
 
-{% block title %}Obuna boshqaruvi - BotFactory AI{% endblock %}
+{% block title %}Tariflar - BotFactory AI{% endblock %}
 
 {% block content %}
-<!-- Subscription Header -->
-<div class="row mb-4">
-    <div class="col-12">
-        <h2><i class="fas fa-crown me-2"></i>Obuna boshqaruvi</h2>
-        <p class="text-muted">O'zingizga mos tarifni tanlang va AI botlar yaratishni boshlang!</p>
-    </div>
-</div>
+<style>
+.pricing-section {
+    background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+    min-height: 100vh;
+    padding: 80px 0;
+    color: white;
+}
 
-<!-- Current Subscription Status -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card border-start border-4 
-                    {% if current_user.subscription_type == 'free' %}border-secondary
-                    {% elif current_user.subscription_type == 'starter' %}border-info
-                    {% elif current_user.subscription_type == 'basic' %}border-primary
-                    {% elif current_user.subscription_type == 'premium' %}border-warning
-                    {% else %}border-success{% endif %}">
-            <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5 class="card-title mb-1">
-                            <i class="fas fa-info-circle me-2"></i>Joriy obuna holati
-                        </h5>
-                        <div class="d-flex align-items-center mb-2">
-                            <span class="me-2">Tarif:</span>
-                            {% if current_user.subscription_type == 'free' %}
-                                <span class="badge bg-secondary fs-6">Bepul (Test)</span>
-                            {% elif current_user.subscription_type == 'starter' %}
-                                <span class="badge bg-info fs-6">Starter</span>
-                            {% elif current_user.subscription_type == 'basic' %}
-                                <span class="badge bg-primary fs-6">Basic</span>
-                            {% elif current_user.subscription_type == 'premium' %}
-                                <span class="badge bg-warning fs-6">Premium</span>
-                            {% elif current_user.subscription_type == 'admin' %}
-                                <span class="badge bg-success fs-6">Admin</span>
-                            {% endif %}
+.pricing-card {
+    background: rgba(40, 40, 40, 0.9);
+    border-radius: 20px;
+    padding: 40px 30px;
+    margin: 20px 0;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    height: 100%;
+    position: relative;
+    backdrop-filter: blur(10px);
+}
+
+.pricing-card.test {
+    border-color: #6c757d;
+    background: linear-gradient(135deg, rgba(108, 117, 125, 0.2) 0%, rgba(108, 117, 125, 0.1) 100%);
+}
+
+.pricing-card.basic {
+    border-color: #007bff;
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.2) 0%, rgba(0, 123, 255, 0.1) 100%);
+}
+
+.pricing-card.premium {
+    border-color: #ffc107;
+    background: linear-gradient(135deg, rgba(255, 193, 7, 0.2) 0%, rgba(255, 193, 7, 0.1) 100%);
+    transform: scale(1.05);
+}
+
+.pricing-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.pricing-card.premium:hover {
+    transform: scale(1.05) translateY(-10px);
+}
+
+.plan-header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.plan-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 2rem;
+}
+
+.plan-icon.test {
+    background: linear-gradient(135deg, #6c757d, #495057);
+}
+
+.plan-icon.basic {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+}
+
+.plan-icon.premium {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+}
+
+.plan-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.plan-price {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+}
+
+.plan-duration {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 30px;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 30px 0;
+}
+
+.feature-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+}
+
+.feature-list li:last-child {
+    border-bottom: none;
+}
+
+.feature-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 12px;
+}
+
+.feature-icon.check {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+}
+
+.plan-button {
+    width: 100%;
+    padding: 15px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+.plan-button.test {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+}
+
+.plan-button.basic {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+}
+
+.plan-button.premium {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    color: #000;
+}
+
+.plan-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.main-title {
+    text-align: center;
+    margin-bottom: 60px;
+}
+
+.main-title h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    background: linear-gradient(135deg, #ffc107, #007bff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.crown-icon {
+    color: #ffc107;
+    font-size: 2.5rem;
+    margin-right: 15px;
+}
+
+.current-plan-badge {
+    position: absolute;
+    top: -10px;
+    right: 20px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 5px 15px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+</style>
+
+<div class="pricing-section">
+    <div class="container">
+        <div class="main-title">
+            <h1><i class="fas fa-crown crown-icon"></i>Tariflar</h1>
+            <p class="lead">O'zingizga mos tarifni tanlang va AI botlar olamiga qadaṃ qo'ying</p>
+        </div>
+        
+        <div class="row justify-content-center">
+            <!-- Test Plan -->
+            <div class="col-lg-4 col-md-6">
+                <div class="pricing-card test">
+                    {% if current_user.subscription_type == 'free' %}
+                    <div class="current-plan-badge">Joriy tarif</div>
+                    {% endif %}
+                    
+                    <div class="plan-header">
+                        <div class="plan-icon test">
+                            <i class="fas fa-gift"></i>
                         </div>
-                        {% if current_user.subscription_end_date %}
-                        <p class="card-text text-muted mb-0">
-                            <i class="fas fa-calendar me-1"></i>
-                            {% if current_user.subscription_active() %}
-                                Tugash sanasi: {{ current_user.subscription_end_date.strftime('%d.%m.%Y') }}
-                                {% set days_left = (current_user.subscription_end_date - datetime.utcnow()).days %}
-                                <span class="ms-2 badge bg-warning">{{ days_left }} kun qoldi</span>
-                            {% else %}
-                                <span class="text-danger">Obuna tugagan: {{ current_user.subscription_end_date.strftime('%d.%m.%Y') }}</span>
-                            {% endif %}
-                        </p>
-                        {% endif %}
+                        <h3 class="plan-title">Test</h3>
+                        <div class="plan-price">Bepul</div>
+                        <div class="plan-duration">/14 kun</div>
                     </div>
-                    <div class="col-md-4 text-md-end">
-                        {% if current_user.subscription_type == 'free' %}
-                        <small class="text-success d-block">
-                            <i class="fas fa-gift me-1"></i>14 kunlik bepul sinov faol
-                        </small>
-                        {% endif %}
-                    </div>
+                    
+                    <ul class="feature-list">
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            1 ta bot
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Faqat Telegram
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Faqat o'zbek tili
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Bilim bazasi
+                        </li>
+                    </ul>
+                    
+                    {% if current_user.subscription_type == 'free' %}
+                    <button class="plan-button test" disabled>Faol tarif</button>
+                    {% else %}
+                    <button class="plan-button test" disabled>Test rejimi</button>
+                    {% endif %}
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Pricing Plans -->
-<div class="row mb-5">
-    <div class="col-12">
-        <h3 class="text-center mb-4">
-            <i class="fas fa-star me-2"></i>Tariflarni taqqoslang
-        </h3>
-    </div>
-    
-    <!-- Free Plan -->
-    <div class="col-lg-4 mb-4">
-        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'free' %}border-secondary border-2{% endif %}">
-            <div class="card-header text-center bg-secondary text-white">
-                <h4 class="my-2">
-                    <i class="fas fa-gift me-2"></i>Test (Bepul)
-                </h4>
-                {% if current_user.subscription_type == 'free' %}
-                <small class="badge bg-light text-dark">Joriy tarif</small>
-                {% endif %}
-            </div>
-            <div class="card-body text-center">
-                <h2 class="card-title pricing-title text-secondary">
-                    Bepul
-                    <small class="text-muted fs-6">/14 kun</small>
-                </h2>
-                
-                <ul class="list-unstyled mt-4 mb-4">
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>1 ta bot</strong>
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Faqat <strong>Telegram</strong> platforma
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Faqat <strong>o'zbek</strong> tili
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Bilim bazasi yuklash
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Asosiy AI javoblar
-                    </li>
-                    <li class="py-2 text-muted">
-                        <i class="fas fa-times text-danger me-2"></i>
-                        Texnik yordam
-                    </li>
-                </ul>
-                
-                {% if current_user.subscription_type != 'free' %}
-                <button class="btn btn-outline-secondary" disabled>
-                    Joriy tarif emas
-                </button>
-                {% else %}
-                <button class="btn btn-secondary" disabled>
-                    <i class="fas fa-star me-2"></i>Faol tarif
-                </button>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Starter Plan -->
-    <div class="col-lg-3 mb-4">
-        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'starter' %}border-info border-2{% endif %}">
-            <div class="card-header text-center bg-info text-white">
-                <h4 class="my-2">
-                    <i class="fas fa-rocket me-2"></i>Starter
-                </h4>
-                {% if current_user.subscription_type == 'starter' %}
-                <small class="badge bg-light text-dark">Joriy tarif</small>
-                {% endif %}
-            </div>
-            <div class="card-body text-center">
-                <h2 class="card-title pricing-title text-info">
-                    165,000 so'm
-                    <small class="text-muted fs-6">/oy</small>
-                </h2>
-                
-                <ul class="list-unstyled mt-4 mb-4">
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>1 ta bot</strong>
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Faqat <strong>Telegram</strong> platforma
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>3 ta til</strong> (o'zbek/rus/ingliz)
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Bilim bazasi yuklash
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Kengaytirilgan AI javoblar
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Texnik yordam
-                    </li>
-                </ul>
-                
-                {% if current_user.subscription_type == 'starter' %}
-                <button class="btn btn-info" disabled>
-                    <i class="fas fa-rocket me-2"></i>Faol tarif
-                </button>
-                {% elif current_user.subscription_type in ['basic', 'premium', 'admin'] %}
-                <button class="btn btn-outline-info" disabled>
-                    Yuqori tarif faol
-                </button>
-                {% else %}
-                <button class="btn btn-info btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentModal" 
-                        data-subscription="starter" data-amount="165000">
-                    <i class="fas fa-rocket me-2"></i>Starter ga o'tish
-                </button>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Basic Plan -->
-    <div class="col-lg-4 mb-4">
-        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'basic' %}border-primary border-2{% endif %}">
-            <div class="card-header text-center bg-primary text-white">
-                <h4 class="my-2">
-                    <i class="fas fa-star me-2"></i>Basic
-                </h4>
-                {% if current_user.subscription_type == 'basic' %}
-                <small class="badge bg-light text-dark">Joriy tarif</small>
-                {% endif %}
-            </div>
-            <div class="card-body text-center">
-                <h2 class="card-title pricing-title text-primary">
-                    290,000 so'm
-                    <small class="text-muted fs-6">/oy</small>
-                </h2>
-                
-                <ul class="list-unstyled mt-4 mb-4">
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>1 ta bot</strong>
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>Barcha platformalar</strong> (Telegram, Instagram, WhatsApp)
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>3 ta til</strong> (o'zbek/rus/ingliz)
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Bilim bazasi yuklash
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Kengaytirilgan AI javoblar
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Texnik yordam
-                    </li>
-                </ul>
-                
-                {% if current_user.subscription_type == 'basic' %}
-                <button class="btn btn-primary" disabled>
-                    <i class="fas fa-star me-2"></i>Faol tarif
-                </button>
-                {% elif current_user.subscription_type in ['premium', 'admin'] %}
-                <button class="btn btn-outline-primary" disabled>
-                    Yuqori tarif faol
-                </button>
-                {% else %}
-                <button class="btn btn-primary btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentModal" 
-                        data-subscription="basic" data-amount="290000">
-                    <i class="fas fa-arrow-up me-2"></i>Basic ga o'tish
-                </button>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-    
-    <!-- Premium Plan -->
-    <div class="col-lg-4 mb-4">
-        <div class="card pricing-card h-100 {% if current_user.subscription_type == 'premium' %}border-warning border-2{% endif %} position-relative">
-            <!-- Popular Badge -->
-            <div class="popular-badge">
-                <span class="badge bg-warning text-dark">
-                    <i class="fas fa-star me-1"></i>Ommabop
-                </span>
             </div>
             
-            <div class="card-header text-center bg-warning text-dark">
-                <h4 class="my-2">
-                    <i class="fas fa-crown me-2"></i>Premium
-                </h4>
-                {% if current_user.subscription_type == 'premium' %}
-                <small class="badge bg-dark text-light">Joriy tarif</small>
-                {% endif %}
-            </div>
-            <div class="card-body text-center">
-                <h2 class="card-title pricing-title text-warning">
-                    590,000 so'm
-                    <small class="text-muted fs-6">/oy</small>
-                </h2>
-                
-                <ul class="list-unstyled mt-4 mb-4">
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>5 ta bot</strong>
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>Barcha platformalar</strong> (Telegram, Instagram, WhatsApp)
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        <strong>3 ta til</strong> (o'zbek/rus/ingliz)
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Cheksiz bilim bazasi
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Premium AI javoblar
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Prioritet texnik yordam
-                    </li>
-                    <li class="py-2">
-                        <i class="fas fa-check text-success me-2"></i>
-                        Kengaytirilgan analitika
-                    </li>
-                </ul>
-                
-                {% if current_user.subscription_type == 'premium' %}
-                <button class="btn btn-warning btn-lg w-100" disabled>
-                    <i class="fas fa-crown me-2"></i>Faol tarif
-                </button>
-                {% elif current_user.subscription_type == 'admin' %}
-                <button class="btn btn-outline-warning" disabled>
-                    Admin tarif faol
-                </button>
-                {% else %}
-                <button class="btn btn-warning btn-lg w-100" data-bs-toggle="modal" data-bs-target="#paymentModal" 
-                        data-subscription="premium" data-amount="590000">
-                    <i class="fas fa-crown me-2"></i>Premium ga o'tish
-                </button>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Contact Support for Subscription Changes -->
-<div class="row mb-5">
-    <div class="col-12">
-        <div class="card border-info">
-            <div class="card-body text-center">
-                <h5 class="card-title text-info">
-                    <i class="fas fa-headset me-2"></i>Ta'rifni yangilamoqchimisiz?
-                </h5>
-                <p class="card-text mb-3">
-                    Obuna tarifingizni o'zgartirish, bekor qilish yoki qo'shimcha yordam olish uchun bizning 
-                    qo'llab-quvvatlash xizmatimiz bilan bog'laning.
-                </p>
-                <a href="https://t.me/akramjon0011" target="_blank" class="btn btn-info btn-lg">
-                    <i class="fab fa-telegram me-2"></i>@akramjon0011 ga yozish
-                </a>
-                <div class="mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-clock me-1"></i>Ish vaqti: 09:00 - 18:00 (Dushanba-Juma)
-                    </small>
+            <!-- Basic Plan -->
+            <div class="col-lg-4 col-md-6">
+                <div class="pricing-card basic">
+                    {% if current_user.subscription_type == 'basic' %}
+                    <div class="current-plan-badge">Joriy tarif</div>
+                    {% endif %}
+                    
+                    <div class="plan-header">
+                        <div class="plan-icon basic">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 class="plan-title">Basic</h3>
+                        <div class="plan-price">290,000 so'm</div>
+                        <div class="plan-duration">/oy</div>
+                    </div>
+                    
+                    <ul class="feature-list">
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            1 ta bot
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Barcha platformalar
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            3 ta til (uz/ru/en)
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Bilim bazasi
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Texnik yordam
+                        </li>
+                    </ul>
+                    
+                    {% if current_user.subscription_type == 'basic' %}
+                    <button class="plan-button basic" disabled>Faol tarif</button>
+                    {% elif current_user.subscription_type in ['premium', 'admin'] %}
+                    <button class="plan-button basic" disabled>Yuqori tarif faol</button>
+                    {% else %}
+                    <button class="plan-button basic" data-bs-toggle="modal" data-bs-target="#paymentModal" 
+                            data-subscription="basic" data-amount="290000">Tanlash</button>
+                    {% endif %}
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Features Comparison -->
-<div class="row mb-5">
-    <div class="col-12">
-        <h3 class="text-center mb-4">
-            <i class="fas fa-table me-2"></i>Batafsil taqqoslash
-        </h3>
-        <div class="table-responsive">
-            <table class="table table-bordered comparison-table">
-                <thead class="table-dark">
-                    <tr>
-                        <th>Imkoniyatlar</th>
-                        <th class="text-center">Test</th>
-                        <th class="text-center">Starter</th>
-                        <th class="text-center">Basic</th>
-                        <th class="text-center">Premium</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><i class="fas fa-robot me-2"></i>Botlar soni</td>
-                        <td class="text-center">1 ta</td>
-                        <td class="text-center">1 ta</td>
-                        <td class="text-center">1 ta</td>
-                        <td class="text-center"><strong>5 ta</strong></td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-mobile-alt me-2"></i>Platformalar</td>
-                        <td class="text-center">Faqat Telegram</td>
-                        <td class="text-center">Faqat Telegram</td>
-                        <td class="text-center">Hammasi</td>
-                        <td class="text-center">Hammasi</td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-language me-2"></i>Tillar</td>
-                        <td class="text-center">Faqat o'zbek</td>
-                        <td class="text-center">O'zbek, Rus, Ingliz</td>
-                        <td class="text-center">O'zbek, Rus, Ingliz</td>
-                        <td class="text-center">O'zbek, Rus, Ingliz</td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-book me-2"></i>Bilim bazasi</td>
-                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
-                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
-                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
-                        <td class="text-center"><i class="fas fa-check text-success"></i></td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-headset me-2"></i>Texnik yordam</td>
-                        <td class="text-center"><i class="fas fa-times text-danger"></i></td>
-                        <td class="text-center">Standart</td>
-                        <td class="text-center">Standart</td>
-                        <td class="text-center"><strong>Prioritet</strong></td>
-                    </tr>
-                    <tr>
-                        <td><i class="fas fa-chart-bar me-2"></i>Analitika</td>
-                        <td class="text-center">Asosiy</td>
-                        <td class="text-center">Kengaytirilgan</td>
-                        <td class="text-center">Kengaytirilgan</td>
-                        <td class="text-center"><strong>Kengaytirilgan</strong></td>
-                    </tr>
-                </tbody>
-            </table>
+            
+            <!-- Premium Plan -->
+            <div class="col-lg-4 col-md-6">
+                <div class="pricing-card premium">
+                    {% if current_user.subscription_type == 'premium' %}
+                    <div class="current-plan-badge">Joriy tarif</div>
+                    {% endif %}
+                    
+                    <div class="plan-header">
+                        <div class="plan-icon premium">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <h3 class="plan-title">Premium</h3>
+                        <div class="plan-price">590,000 so'm</div>
+                        <div class="plan-duration">/oy</div>
+                    </div>
+                    
+                    <ul class="feature-list">
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            5 ta bot
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Barcha platformalar
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            3 ta til (uz/ru/en)
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Bilim bazasi
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Prioritet yordam
+                        </li>
+                        <li>
+                            <div class="feature-icon check">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            Kengaytirilgan analitika
+                        </li>
+                    </ul>
+                    
+                    {% if current_user.subscription_type == 'premium' %}
+                    <button class="plan-button premium" disabled>Faol tarif</button>
+                    {% elif current_user.subscription_type == 'admin' %}
+                    <button class="plan-button premium" disabled>Admin tarif faol</button>
+                    {% else %}
+                    <button class="plan-button premium" data-bs-toggle="modal" data-bs-target="#paymentModal" 
+                            data-subscription="premium" data-amount="590000">Tanlash</button>
+                    {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -423,24 +385,27 @@
 <!-- Payment Modal -->
 <div class="modal fade" id="paymentModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content" style="background: #2d2d2d; color: white;">
             <div class="modal-header">
                 <h5 class="modal-title">
                     <i class="fas fa-credit-card me-2"></i>To'lov usulini tanlang
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div id="paymentDetails" class="alert alert-info">
                     <!-- Payment details will be filled by JavaScript -->
                 </div>
                 
-                <form id="paymentForm" method="POST">
+                <form id="paymentForm" method="POST" action="{{ url_for('payment.create_payment') }}">
+                    <input type="hidden" name="subscription_type" id="subscriptionType">
+                    <input type="hidden" name="amount" id="paymentAmount">
+                    
                     <div class="row">
                         <div class="col-md-4 mb-3">
                             <label class="payment-method">
                                 <input type="radio" name="method" value="Payme" required>
-                                <div class="payment-card text-center">
+                                <div class="payment-card text-center p-3 border rounded">
                                     <i class="fas fa-mobile-alt fs-1 text-primary mb-2"></i>
                                     <h6>Payme</h6>
                                     <small class="text-muted">Mobil to'lovlar</small>
@@ -451,7 +416,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="payment-method">
                                 <input type="radio" name="method" value="Click" required>
-                                <div class="payment-card text-center">
+                                <div class="payment-card text-center p-3 border rounded">
                                     <i class="fas fa-credit-card fs-1 text-warning mb-2"></i>
                                     <h6>Click</h6>
                                     <small class="text-muted">Bank kartalar</small>
@@ -462,7 +427,7 @@
                         <div class="col-md-4 mb-3">
                             <label class="payment-method">
                                 <input type="radio" name="method" value="Uzum" required>
-                                <div class="payment-card text-center">
+                                <div class="payment-card text-center p-3 border rounded">
                                     <i class="fas fa-wallet fs-1 text-success mb-2"></i>
                                     <h6>Uzum</h6>
                                     <small class="text-muted">Uzum Bank</small>
@@ -474,10 +439,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Bekor qilish
+                    Bekor qilish
                 </button>
                 <button type="button" id="paymentSubmitBtn" class="btn btn-primary">
-                    <i class="fas fa-credit-card me-2"></i>To'lovni amalga oshirish
+                    To'lovni amalga oshirish
                 </button>
             </div>
         </div>
@@ -498,69 +463,57 @@ document.addEventListener('DOMContentLoaded', function() {
         const subscription = button.getAttribute('data-subscription');
         const amount = button.getAttribute('data-amount');
         
+        // Update hidden fields
+        document.getElementById('subscriptionType').value = subscription;
+        document.getElementById('paymentAmount').value = amount;
+        
         // Update payment details
         const subscriptionNames = {
-            'starter': 'Starter',
             'basic': 'Basic',
             'premium': 'Premium'
         };
         
         paymentDetails.innerHTML = `
             <strong>Tarif:</strong> ${subscriptionNames[subscription]}<br>
-            <strong>Narx:</strong> ${parseInt(amount).toLocaleString('uz-UZ')} so'm/oy<br>
-            <strong>Muddati:</strong> 30 kun<br>
-            <div class="mt-2 p-2 bg-light rounded">
-                <small class="text-info">
-                    <i class="fab fa-telegram me-1"></i>
-                    To'lovni amalga oshirish uchun qo'llab-quvvatlash xizmati bilan bog'laning
-                </small>
-            </div>
+            <strong>Miqdor:</strong> ${parseInt(amount).toLocaleString()} so'm
         `;
     });
     
-    // Handle payment button click - redirect to Telegram contact
-    const paymentSubmitBtn = document.getElementById('paymentSubmitBtn');
-    if (paymentSubmitBtn) {
-        paymentSubmitBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            console.log('Payment button clicked');
-            
-            // Check if payment method is selected
-            const selectedMethod = document.querySelector('input[name="method"]:checked');
-            if (!selectedMethod) {
-                alert('Iltimos, to\'lov usulini tanlang!');
-                return;
-            }
-            
-            console.log('Opening Telegram contact...');
-            // Redirect to Telegram contact
-            window.open('https://t.me/akramjon0011', '_blank');
-            
-            // Close modal
-            setTimeout(function() {
-                const modal = bootstrap.Modal.getInstance(paymentModal);
-                if (modal) {
-                    modal.hide();
-                } else {
-                    paymentModal.style.display = 'none';
-                    document.body.classList.remove('modal-open');
-                    const backdrop = document.querySelector('.modal-backdrop');
-                    if (backdrop) backdrop.remove();
-                }
-            }, 500);
-        });
-    }
+    // Handle payment form submission
+    document.getElementById('paymentSubmitBtn').addEventListener('click', function() {
+        const selectedMethod = document.querySelector('input[name="method"]:checked');
+        if (selectedMethod) {
+            paymentForm.submit();
+        } else {
+            alert('Iltimos, to\'lov usulini tanlang!');
+        }
+    });
     
     // Style payment method cards
-    const paymentMethods = document.querySelectorAll('.payment-method');
-    paymentMethods.forEach(method => {
-        method.addEventListener('click', function() {
-            // Remove active class from all
-            paymentMethods.forEach(m => m.classList.remove('active'));
-            // Add active class to clicked
+    document.querySelectorAll('.payment-method').forEach(function(label) {
+        label.addEventListener('click', function() {
+            document.querySelectorAll('.payment-method').forEach(function(l) {
+                l.classList.remove('active');
+            });
             this.classList.add('active');
         });
     });
 });
 </script>
+
+<style>
+.payment-method {
+    cursor: pointer;
+    display: block;
+}
+
+.payment-method.active .payment-card {
+    border-color: #007bff !important;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.payment-method input[type="radio"] {
+    display: none;
+}
+</style>
 {% endblock %}
