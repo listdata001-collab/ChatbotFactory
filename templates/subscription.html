@@ -498,9 +498,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const subscription = button.getAttribute('data-subscription');
         const amount = button.getAttribute('data-amount');
         
-        // Update form action
-        paymentForm.action = `/payment/${subscription}`;
-        
         // Update payment details
         const subscriptionNames = {
             'starter': 'Starter',
@@ -511,8 +508,33 @@ document.addEventListener('DOMContentLoaded', function() {
         paymentDetails.innerHTML = `
             <strong>Tarif:</strong> ${subscriptionNames[subscription]}<br>
             <strong>Narx:</strong> ${parseInt(amount).toLocaleString('uz-UZ')} so'm/oy<br>
-            <strong>Muddati:</strong> 30 kun
+            <strong>Muddati:</strong> 30 kun<br>
+            <div class="mt-2 p-2 bg-light rounded">
+                <small class="text-info">
+                    <i class="fab fa-telegram me-1"></i>
+                    To'lovni amalga oshirish uchun qo'llab-quvvatlash xizmati bilan bog'laning
+                </small>
+            </div>
         `;
+    });
+    
+    // Handle payment form submission - redirect to Telegram contact
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault(); // Prevent form submission
+        
+        // Check if payment method is selected
+        const selectedMethod = document.querySelector('input[name="method"]:checked');
+        if (!selectedMethod) {
+            alert('Iltimos, to\'lov usulini tanlang!');
+            return;
+        }
+        
+        // Redirect to Telegram contact
+        window.open('https://t.me/akramjon0011', '_blank');
+        
+        // Close modal
+        const modal = bootstrap.Modal.getInstance(paymentModal);
+        modal.hide();
     });
     
     // Style payment method cards
