@@ -476,7 +476,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                     <i class="fas fa-times me-2"></i>Bekor qilish
                 </button>
-                <button type="submit" form="paymentForm" class="btn btn-primary">
+                <button type="button" id="paymentSubmitBtn" class="btn btn-primary">
                     <i class="fas fa-credit-card me-2"></i>To'lovni amalga oshirish
                 </button>
             </div>
@@ -518,39 +518,38 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     });
     
-    // Handle payment form submission - redirect to Telegram contact
-    paymentForm.addEventListener('submit', function(e) {
-        e.preventDefault(); // Prevent form submission
-        
-        // Check if payment method is selected
-        const selectedMethod = document.querySelector('input[name="method"]:checked');
-        if (!selectedMethod) {
-            alert('Iltimos, to\'lov usulini tanlang!');
-            return;
-        }
-        
-        // Redirect to Telegram contact
-        window.open('https://t.me/akramjon0011', '_blank');
-        
-        // Close modal safely
-        try {
-            const modal = bootstrap.Modal.getInstance(paymentModal);
-            if (modal) {
-                modal.hide();
-            } else {
-                paymentModal.style.display = 'none';
-                document.body.classList.remove('modal-open');
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) backdrop.remove();
+    // Handle payment button click - redirect to Telegram contact
+    const paymentSubmitBtn = document.getElementById('paymentSubmitBtn');
+    if (paymentSubmitBtn) {
+        paymentSubmitBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Payment button clicked');
+            
+            // Check if payment method is selected
+            const selectedMethod = document.querySelector('input[name="method"]:checked');
+            if (!selectedMethod) {
+                alert('Iltimos, to\'lov usulini tanlang!');
+                return;
             }
-        } catch (error) {
-            console.log('Modal close error:', error);
-            paymentModal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            const backdrop = document.querySelector('.modal-backdrop');
-            if (backdrop) backdrop.remove();
-        }
-    });
+            
+            console.log('Opening Telegram contact...');
+            // Redirect to Telegram contact
+            window.open('https://t.me/akramjon0011', '_blank');
+            
+            // Close modal
+            setTimeout(function() {
+                const modal = bootstrap.Modal.getInstance(paymentModal);
+                if (modal) {
+                    modal.hide();
+                } else {
+                    paymentModal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                    const backdrop = document.querySelector('.modal-backdrop');
+                    if (backdrop) backdrop.remove();
+                }
+            }, 500);
+        });
+    }
     
     // Style payment method cards
     const paymentMethods = document.querySelectorAll('.payment-method');
