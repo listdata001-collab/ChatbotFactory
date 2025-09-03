@@ -94,12 +94,19 @@ _BotFactory AI - Suhbat Kuzatuvi_
             }
             
             response = requests.post(url, data=data, timeout=10)
+            result = response.json()
             
-            if response.status_code == 200:
+            if response.status_code == 200 and result.get('ok'):
                 logger.info(f"Notification sent successfully to {chat_id}")
                 return True
             else:
-                logger.error(f"Failed to send notification to {chat_id}: {response.text}")
+                error_desc = result.get('description', 'Unknown error')
+                if 'chat not found' in error_desc.lower():
+                    logger.error(f"Chat/Channel not found for {chat_id}. Bot must be added as administrator to the channel!")
+                elif 'bot is not a member' in error_desc.lower():
+                    logger.error(f"Bot is not a member of {chat_id}. Add bot as administrator first!")
+                else:
+                    logger.error(f"Failed to send notification to {chat_id}: {error_desc}")
                 return False
                 
         except Exception as e:
