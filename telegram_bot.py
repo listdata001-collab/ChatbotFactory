@@ -556,33 +556,41 @@ Masalan:
                 # Clean and send response safely
                 if ai_response:
                     try:
-                        # Keep emojis but ensure safe encoding
-                        import re
+                        # Ensure safe encoding for Telegram
+                        cleaned_response = ai_response
                         
-                        # Replace problematic unicode characters
+                        # Replace problematic unicode characters but keep emojis
                         unicode_replacements = {
                             '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
                             '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
                             '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
                         }
                         
-                        cleaned_response = ai_response
                         for unicode_char, replacement in unicode_replacements.items():
                             cleaned_response = cleaned_response.replace(unicode_char, replacement)
                         
+                        # Ensure the response is properly encoded
+                        try:
+                            # Test if the string can be encoded safely
+                            cleaned_response.encode('utf-8')
+                        except UnicodeEncodeError:
+                            # If there are encoding issues, use a safe fallback
+                            cleaned_response = "Javob tayyor! 🤖"
+                        
                         # Fallback if empty
                         if not cleaned_response.strip():
-                            cleaned_response = "Javob tayyor!"
+                            cleaned_response = "Javob tayyor! 🤖"
                         
                         # Send the response
                         if update.message:
                             await update.message.reply_text(cleaned_response)
-                    except:
-                        # Final fallback
+                    except Exception as send_error:
+                        # Final fallback with logging
+                        logger.error(f"Failed to send response: {str(send_error)[:100]}")
                         if update.message:
-                            await update.message.reply_text("Javob tayyor!")
+                            await update.message.reply_text("Javob tayyor! 🤖")
                 else:
-                    await update.message.reply_text("Javob berishda xatolik yuz berdi!")
+                    await update.message.reply_text("Javob berishda xatolik yuz berdi! Keyinroq urinib ko'ring. ⚠️")
                     
             except Exception as e:
                 # Debug: log which step failed

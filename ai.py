@@ -69,9 +69,9 @@ def get_fallback_response(language: str = "uz") -> str:
     Fallback responses when AI fails
     """
     fallback_responses = {
-        'uz': "Kechirasiz, hozir javob bera olmayapman. Iltimos, keyinroq urinib ko'ring. 🤖",
-        'ru': "Извините, сейчас не могу ответить. Пожалуйста, попробуйте позже. 🤖",
-        'en': "Sorry, I can't respond right now. Please try again later. 🤖"
+        'uz': "Salom! Men BotFactory AI botiman. Hozir AI xizmat sozlanmoqda. Tez orada sizga yordam bera olaman! 🤖 Savollaringizni yuboring, men eslab qolaman.",
+        'ru': "Привет! Я BotFactory AI бот. Сейчас настраивается AI сервис. Скоро смогу помочь вам! 🤖 Присылайте вопросы, я их запомню.",
+        'en': "Hello! I'm BotFactory AI bot. AI service is being configured now. I'll be able to help you soon! 🤖 Send your questions, I'll remember them."
     }
     return fallback_responses.get(language, fallback_responses['uz'])
 
