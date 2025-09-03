@@ -607,14 +607,16 @@ Masalan:
                             except:
                                 logger.error("Chat history save failed and rollback failed")
                         
-                        # Send notification to admin
+                        # Send notification to admin using bot's own token
                         try:
                             bot_owner = bot.owner
                             if (bot_owner and bot_owner.notifications_enabled and 
                                 (bot_owner.admin_chat_id or bot_owner.notification_channel)):
                                 
-                                from notification_service import notification_service
-                                notification_service.send_chat_notification(
+                                from notification_service import TelegramNotificationService
+                                # Use current bot's token for notifications
+                                bot_notification_service = TelegramNotificationService(bot.telegram_token)
+                                bot_notification_service.send_chat_notification(
                                     admin_chat_id=bot_owner.admin_chat_id,
                                     channel_id=bot_owner.notification_channel,
                                     bot_name=bot.name,

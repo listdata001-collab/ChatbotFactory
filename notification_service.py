@@ -9,13 +9,13 @@ logger = logging.getLogger(__name__)
 class TelegramNotificationService:
     """Telegram orqali real-time bildirishnomalar yuborish xizmati"""
     
-    def __init__(self):
-        # Asosiy bot tokenini olish (bildirishnoma uchun)
-        self.bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
+    def __init__(self, bot_token=None):
+        # Bot tokenini parameter orqali yoki environment variable dan olish
+        self.bot_token = bot_token or os.environ.get('TELEGRAM_BOT_TOKEN')
         if self.bot_token:
             self.base_url = f"https://api.telegram.org/bot{self.bot_token}"
         else:
-            logger.warning("TELEGRAM_BOT_TOKEN not configured for notifications")
+            logger.warning("Bot token not provided for notifications")
     
     def send_chat_notification(self, admin_chat_id: str, channel_id: str, 
                              bot_name: str, user_id: str, user_message: str, 
@@ -125,5 +125,5 @@ _BotFactory AI Platform_
         
         return self._send_message(chat_id, test_message)
 
-# Global service instance
+# Global service instance (fallback uchun)
 notification_service = TelegramNotificationService()
