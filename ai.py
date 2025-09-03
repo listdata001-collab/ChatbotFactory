@@ -5,7 +5,7 @@ from typing import Optional
 try:
     import google.generativeai as genai
     # Initialize Gemini client
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "default_key"))
+    genai.configure(api_key=os.environ.get("GOOGLE_API_KEY", "default_key"))
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False

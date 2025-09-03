@@ -24,7 +24,7 @@ class Config:
     ALLOWED_EXTENSIONS = {'txt', 'docx', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'webp'}
     
     # AI
-    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'default_key')
+    GEMINI_API_KEY = os.environ.get('GOOGLE_API_KEY', 'default_key')
     
     # Telegram
     TELEGRAM_API_URL = 'https://api.telegram.org/bot'
