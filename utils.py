@@ -10,7 +10,7 @@ from app import db
 def allowed_file(filename: str) -> bool:
     """Check if file extension is allowed"""
     return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in {'txt', 'docx'}
+           filename.rsplit('.', 1)[1].lower() in {'txt', 'docx', 'csv'}
 
 def format_currency(amount: float) -> str:
     """Format currency amount in UZS"""

@@ -693,9 +693,40 @@ def upload_knowledge(bot_id):
                 content = f"/static/uploads/{unique_filename}"
                 content_type = "image"
                 
-            elif filename.lower().endswith(('.xlsx', '.xls', '.csv')):
-                # Handle Excel/CSV files for bulk product import directly
+            elif filename.lower().endswith(('.xlsx', '.xls')):
+                # Handle Excel files for bulk product import directly
                 return handle_bulk_product_upload(file, bot_id)
+                
+            elif filename.endswith('.csv'):
+                # Handle CSV files for knowledge base
+                import pandas as pd
+                try:
+                    # Try reading CSV with UTF-8 encoding
+                    file.seek(0)
+                    df = pd.read_csv(file.stream, encoding='utf-8')
+                except UnicodeDecodeError:
+                    # Fallback to other encodings
+                    file.seek(0)
+                    try:
+                        df = pd.read_csv(file.stream, encoding='cp1251')
+                    except UnicodeDecodeError:
+                        file.seek(0)
+                        df = pd.read_csv(file.stream, encoding='latin-1')
+                
+                # Convert DataFrame to text content with clean formatting
+                content = df.to_string(index=False)
+                
+                # Clean problematic Unicode characters
+                unicode_replacements = {
+                    '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                    '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                    '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                }
+                
+                for unicode_char, replacement in unicode_replacements.items():
+                    content = content.replace(unicode_char, replacement)
+                    
+                content_type = "file"
                 
             elif filename.endswith('.txt'):
                 # Handle different encodings for text files
@@ -748,7 +779,7 @@ def upload_knowledge(bot_id):
                     paragraphs.append(text)
                 content = '\n'.join(paragraphs)
             else:
-                flash('Qo\'llab-quvvatlanadigan formatlar: .txt, .docx, .xlsx, .xls, .csv, .jpg, .png, .gif', 'error')
+                flash('Qo\'llab-quvvatlanadigan formatlar: .txt, .docx, .csv, .xlsx, .xls, .jpg, .png, .gif', 'error')
                 return redirect(url_for('main.edit_bot', bot_id=bot_id))
             
             knowledge = KnowledgeBase()

@@ -21,7 +21,7 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB
     UPLOAD_FOLDER = 'uploads'
     STATIC_FOLDER = 'static/uploads'
-    ALLOWED_EXTENSIONS = {'txt', 'docx', 'jpg', 'jpeg', 'png', 'gif', 'webp'}
+    ALLOWED_EXTENSIONS = {'txt', 'docx', 'csv', 'jpg', 'jpeg', 'png', 'gif', 'webp'}
     
     # AI
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', 'default_key')
