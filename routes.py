@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import docx
 import pandas as pd
 from io import BytesIO
+from flask import send_file
 
 main_bp = Blueprint('main', __name__)
 
@@ -190,6 +191,153 @@ def cleanup_chat_history():
         flash(f'Tozalashda xatolik: {str(e)}', 'error')
     
     return redirect(url_for('main.admin'))
+
+def handle_bulk_product_upload(file, bot_id):
+    """Excel/CSV orqali ko'p mahsulot qo'shish helper funksiyasi"""
+    try:
+        # Fayl format tekshirish
+        filename = file.filename or ''
+        file_ext = os.path.splitext(filename)[1].lower()
+        
+        # Fayl stream'ini pandas'ga o'qish
+        if file_ext == '.csv':
+            df = pd.read_csv(file.stream)
+        else:
+            df = pd.read_excel(file.stream)
+        
+        # Ustunlar nomini standartlashtirish
+        expected_columns = ['mahsulot_nomi', 'narx', 'tavsif', 'rasm_url']
+        if len(df.columns) >= 1:
+            # Birinchi 4 ta ustunni standart nomlarga o'zgartirish
+            new_columns = {}
+            for i, col in enumerate(df.columns[:4]):
+                if i < len(expected_columns):
+                    new_columns[col] = expected_columns[i]
+            df.rename(columns=new_columns, inplace=True)
+        
+        # Bo'sh qatorlarni olib tashlash
+        df = df.dropna(subset=['mahsulot_nomi'])
+        
+        added_count = 0
+        errors = []
+        
+        for idx, row in df.iterrows():
+            try:
+                row_num = int(idx) + 2  # Excel qator raqami
+                product_name = str(row.get('mahsulot_nomi', '')).strip()
+                if not product_name or product_name == 'nan':
+                    continue
+                
+                product_price = str(row.get('narx', '')).strip()
+                if product_price == 'nan':
+                    product_price = ''
+                
+                product_description = str(row.get('tavsif', '')).strip()
+                if product_description == 'nan':
+                    product_description = ''
+                
+                product_image_url = str(row.get('rasm_url', '')).strip()
+                if product_image_url == 'nan':
+                    product_image_url = ''
+                
+                # Mahsulot ma'lumotlarini birlashtirish
+                content_parts = [f"Mahsulot: {product_name}"]
+                if product_price:
+                    content_parts.append(f"Narx: {product_price}")
+                if product_description:
+                    content_parts.append(f"Tavsif: {product_description}")
+                if product_image_url:
+                    content_parts.append(f"Rasm: {product_image_url}")
+                
+                content = "\n".join(content_parts)
+                
+                # Mahsulotni bazaga qo'shish
+                knowledge = KnowledgeBase()
+                knowledge.bot_id = bot_id
+                knowledge.content = content
+                knowledge.filename = None
+                knowledge.content_type = 'product'
+                knowledge.source_name = product_name
+                
+                db.session.add(knowledge)
+                added_count += 1
+                
+            except Exception as row_error:
+                errors.append(f"Qator {row_num}: {str(row_error)}")
+        
+        # Saqlash
+        db.session.commit()
+        
+        if added_count > 0:
+            flash(f'{added_count} ta mahsulot muvaffaqiyatli qo\'shildi!', 'success')
+        if errors:
+            error_text = '; '.join(errors[:5])  # Birinchi 5 ta xatolikni ko'rsatish
+            flash(f'Ba\'zi qatorlarda xatoliklar: {error_text}', 'warning')
+        
+    except Exception as e:
+        flash(f'Excel/CSV fayl qayta ishlashda xatolik: {str(e)}', 'error')
+    
+    return redirect(url_for('main.edit_bot', bot_id=bot_id))
+
+@main_bp.route('/download-sample-excel')
+@login_required  
+def download_sample_excel():
+    """Namuna Excel faylini yuklab olish"""
+    try:
+        # Namuna ma'lumotlar
+        sample_data = {
+            'mahsulot_nomi': [
+                'Zip paket 4x6', 
+                'Telefon g\'ilof', 
+                'USB kabel',
+                'Bluetooth quloqchin',
+                'Power bank 10000mAh'
+            ],
+            'narx': [
+                '3000 so\'m',
+                '25000 so\'m', 
+                '15000 so\'m',
+                '85000 so\'m',
+                '120000 so\'m'
+            ],
+            'tavsif': [
+                'Suv o\'tkazmaydigan zip paket, zo\'r sifatli',
+                'Telefon uchun himoya g\'ilofi, turli ranglar',
+                'Tez zaryadlash USB kabeli, 1 metr',
+                'Simsiz bluetooth quloqchin, sifatli ovoz',
+                'Portativ zaryadlovchi, ko\'p marta foydalanish mumkin'
+            ],
+            'rasm_url': [
+                'https://example.com/zip-paket.jpg',
+                'https://example.com/telefon-gilof.jpg', 
+                'https://example.com/usb-kabel.jpg',
+                'https://example.com/bluetooth-quloqchin.jpg',
+                'https://example.com/power-bank.jpg'
+            ]
+        }
+        
+        # DataFrame yaratish
+        df = pd.DataFrame(sample_data)
+        
+        # BytesIO obyekt yaratish
+        output = BytesIO()
+        
+        # Excel ga yozish
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Mahsulotlar', index=False)
+        
+        output.seek(0)
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name='mahsulotlar_namuna.xlsx'
+        )
+        
+    except Exception as e:
+        flash(f'Namuna fayl yaratishda xatolik: {str(e)}', 'error')
+        return redirect(url_for('main.dashboard'))
 
 @main_bp.route('/admin/broadcast', methods=['POST'])
 @login_required
@@ -523,6 +671,10 @@ def upload_knowledge(bot_id):
                 content = f"/static/uploads/{unique_filename}"
                 content_type = "image"
                 
+            elif filename.lower().endswith(('.xlsx', '.xls', '.csv')):
+                # Handle Excel/CSV files for bulk product import directly
+                return handle_bulk_product_upload(file, bot_id)
+                
             elif filename.endswith('.txt'):
                 # Handle different encodings for text files
                 try:
@@ -574,7 +726,7 @@ def upload_knowledge(bot_id):
                     paragraphs.append(text)
                 content = '\n'.join(paragraphs)
             else:
-                flash('Faqat .txt, .docx, .jpg, .png, .gif formatdagi fayllar qo\'llab-quvvatlanadi!', 'error')
+                flash('Qo\'llab-quvvatlanadigan formatlar: .txt, .docx, .xlsx, .xls, .csv, .jpg, .png, .gif', 'error')
                 return redirect(url_for('main.edit_bot', bot_id=bot_id))
             
             knowledge = KnowledgeBase()
