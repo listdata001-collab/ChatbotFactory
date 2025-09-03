@@ -4,6 +4,7 @@ from app import db
 from models import User, Bot, KnowledgeBase, Payment, ChatHistory, BroadcastMessage
 from werkzeug.utils import secure_filename
 import os
+import logging
 from datetime import datetime, timedelta
 import docx
 import pandas as pd
