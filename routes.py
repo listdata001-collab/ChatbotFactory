@@ -126,6 +126,71 @@ def export_chat_history():
         flash(f'Eksport qilishda xatolik: {str(e)}', 'error')
         return redirect(url_for('main.admin'))
 
+@main_bp.route('/settings')
+@login_required
+def settings():
+    """User settings page"""
+    return render_template('settings.html')
+
+@main_bp.route('/settings/notifications', methods=['POST'])
+@login_required
+def update_notification_settings():
+    """Update notification settings"""
+    admin_chat_id = request.form.get('admin_chat_id', '').strip()
+    notification_channel = request.form.get('notification_channel', '').strip()
+    notifications_enabled = 'notifications_enabled' in request.form
+    
+    try:
+        current_user.admin_chat_id = admin_chat_id if admin_chat_id else None
+        current_user.notification_channel = notification_channel if notification_channel else None
+        current_user.notifications_enabled = notifications_enabled
+        
+        db.session.commit()
+        
+        # Test notification yuborish
+        if notifications_enabled and admin_chat_id:
+            from notification_service import notification_service
+            if notification_service.test_notification(admin_chat_id):
+                flash('Bildirishnoma sozlamalari saqlandi va test xabar yuborildi!', 'success')
+            else:
+                flash('Sozlamalar saqlandi, lekin test xabarni yuborishda xatolik!', 'warning')
+        else:
+            flash('Bildirishnoma sozlamalari muvaffaqiyatli saqlandi!', 'success')
+            
+    except Exception as e:
+        flash(f'Sozlamalarni saqlashda xatolik: {str(e)}', 'error')
+    
+    return redirect(url_for('main.settings'))
+
+@main_bp.route('/admin/cleanup-chat-history', methods=['POST'])
+@login_required
+def cleanup_chat_history():
+    """Clean up old chat history to reduce database size"""
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # Keep only last 1000 entries to reduce database load
+        total_count = ChatHistory.query.count()
+        
+        if total_count > 1000:
+            # Get IDs of records to keep (latest 1000)
+            keep_ids = db.session.query(ChatHistory.id).order_by(ChatHistory.created_at.desc()).limit(1000).subquery()
+            
+            # Delete old records
+            deleted_count = ChatHistory.query.filter(~ChatHistory.id.in_(keep_ids)).delete(synchronize_session=False)
+            db.session.commit()
+            
+            flash(f'Eski yozishmalar tozalandi! {deleted_count} ta yozuv o\'chirildi, {1000} ta oxirgi yozuv saqlandi.', 'success')
+        else:
+            flash(f'Tozalash kerak emas. Jami {total_count} ta yozishma mavjud (1000 dan kam).', 'info')
+    
+    except Exception as e:
+        flash(f'Tozalashda xatolik: {str(e)}', 'error')
+    
+    return redirect(url_for('main.admin'))
+
 @main_bp.route('/admin/broadcast', methods=['POST'])
 @login_required
 def send_broadcast():

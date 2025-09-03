@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Sozlamalar - BotFactory AI{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-cog me-2"></i>Sozlamalar</h2>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Orqaga
+                </a>
+            </div>
+
+            <!-- Notification Settings Card -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell me-2"></i>Bildirishnoma sozlamalari
+                    </h5>
+                    <small class="text-muted">
+                        Bot yozishmalar haqida real-time bildirishnomalar olish
+                    </small>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.update_notification_settings') }}">
+                        <!-- Enable Notifications -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="notifications_enabled" 
+                                       name="notifications_enabled" 
+                                       {% if current_user.notifications_enabled %}checked{% endif %}>
+                                <label class="form-check-label" for="notifications_enabled">
+                                    <strong>Bildirishnomalarni yoqish</strong>
+                                </label>
+                            </div>
+                            <small class="text-muted">
+                                Ushbu parametrni yoqsangiz, botlaringizga kelgan har bir xabar haqida bildirishnoma olasiz.
+                            </small>
+                        </div>
+
+                        <!-- Admin Chat ID -->
+                        <div class="mb-4">
+                            <label for="admin_chat_id" class="form-label">
+                                <i class="fas fa-user-shield me-2"></i>Admin Chat ID
+                            </label>
+                            <input type="text" class="form-control" id="admin_chat_id" name="admin_chat_id" 
+                                   value="{{ current_user.admin_chat_id or '' }}" 
+                                   placeholder="masalan: 123456789">
+                            <div class="form-text">
+                                <strong>Qanday topish kerak:</strong>
+                                <ol class="small mt-2 mb-0">
+                                    <li>Telegram-da <strong>@userinfobot</strong> ga yozing</li>
+                                    <li>Botga <code>/start</code> buyrug'ini yuboring</li>
+                                    <li>Bot sizga <strong>User ID</strong> raqamini yuboradi</li>
+                                    <li>Ushbu raqamni bu yerga kiriting</li>
+                                </ol>
+                            </div>
+                        </div>
+
+                        <!-- Notification Channel -->
+                        <div class="mb-4">
+                            <label for="notification_channel" class="form-label">
+                                <i class="fas fa-bullhorn me-2"></i>Bildirishnoma kanali (ixtiyoriy)
+                            </label>
+                            <input type="text" class="form-control" id="notification_channel" name="notification_channel" 
+                                   value="{{ current_user.notification_channel or '' }}" 
+                                   placeholder="masalan: @mychannel yoki -1001234567890">
+                            <div class="form-text">
+                                <strong>Kanal uchun:</strong>
+                                <ul class="small mt-2 mb-0">
+                                    <li>Agar public kanal bo'lsa: <code>@kanalid</code> formatida kiriting</li>
+                                    <li>Agar private kanal bo'lsa: Chat ID raqamini kiriting</li>
+                                    <li>Bot kanalgizga admin sifatida qo'shilgan bo'lishi kerak</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Example Preview -->
+                        <div class="alert alert-info mb-4">
+                            <h6><i class="fas fa-eye me-2"></i>Bildirishnoma namunasi:</h6>
+                            <div class="bg-light p-3 rounded mt-2" style="font-family: monospace; font-size: 0.9em;">
+                                🔔 <strong>Yangi xabar keldi!</strong><br><br>
+                                📱 <strong>Bot:</strong> Optombazar Bot<br>
+                                👤 <strong>Foydalanuvchi:</strong> 123456789<br>
+                                ⏰ <strong>Vaqt:</strong> 15:30<br><br>
+                                💬 <strong>Xabar:</strong><br>
+                                <em>zip paket narxi qancha?</em><br><br>
+                                🤖 <strong>Bot javobi:</strong><br>
+                                <em>Zip paket 4*6 o'lchamdagi narxi 3000 so'm...</em><br><br>
+                                ---<br>
+                                <em>BotFactory AI Platform</em>
+                            </div>
+                        </div>
+
+                        <!-- Save Button -->
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Sozlamalarni saqlash
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Yordam
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Chat ID topish:</h6>
+                            <p class="small text-muted">
+                                Telegram-da <code>@userinfobot</code> ga <code>/start</code> yuboring va 
+                                User ID raqamini oling.
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Bot kaliti kerak:</h6>
+                            <p class="small text-muted">
+                                Bildirishnomalar ishlashi uchun TELEGRAM_BOT_TOKEN 
+                                environment variable sozlangan bo'lishi kerak.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -324,9 +324,14 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Bot yozishmalar tarixi</h5>
-                <a href="{{ url_for('main.export_chat_history') }}" class="btn btn-success btn-sm">
-                    <i class="fas fa-download me-2"></i>Excel ga yuklash
-                </a>
+                <div class="btn-group">
+                    <a href="{{ url_for('main.export_chat_history') }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-download me-2"></i>Excel ga yuklash
+                    </a>
+                    <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#cleanupModal">
+                        <i class="fas fa-broom me-2"></i>Tozalash
+                    </button>
+                </div>
             </div>
             <div class="card-body">
                 {% if chat_history %}
@@ -489,6 +494,36 @@
                         {% endif %}
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cleanup Chat History Modal -->
+<div class="modal fade" id="cleanupModal" tabindex="-1" aria-labelledby="cleanupModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cleanupModalLabel">
+                    <i class="fas fa-broom me-2"></i>Yozishmalar tozalash
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Diqqat!</strong> Bu amal 1000 tadan ko'p yozishma bo'lsa, eskilerini o'chiradi.
+                </div>
+                <p>Ma'lumotlar bazasini optimizatsiya qilish uchun eng oxirgi 1000 ta yozishma saqlanadi, qolganlari o'chiriladi.</p>
+                <p><strong>Bu amal qaytarib bo'lmaydi!</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                <form method="POST" action="{{ url_for('main.cleanup_chat_history') }}" style="display: inline;">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-broom me-2"></i>Tozalash
+                    </button>
+                </form>
             </div>
         </div>
     </div>

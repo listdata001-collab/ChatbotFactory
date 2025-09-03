@@ -20,6 +20,11 @@ class User(UserMixin, db.Model):
     whatsapp_number = db.Column(db.String(20), unique=True)
     phone_number = db.Column(db.String(20))
     
+    # Notification settings
+    admin_chat_id = db.Column(db.String(50))  # Admin telegram chat ID for notifications
+    notification_channel = db.Column(db.String(100))  # Telegram channel for notifications
+    notifications_enabled = db.Column(db.Boolean, default=False)
+    
     # Relationships
     bots = db.relationship('Bot', backref='owner', lazy=True, cascade='all, delete-orphan')
     payments = db.relationship('Payment', backref='user', lazy=True)

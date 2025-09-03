@@ -81,20 +81,54 @@ def load_user(user_id):
 with app.app_context():
     # Import models to ensure tables are created
     import models
-    db.create_all()
     
-    # Create admin user if not exists
-    from models import User
-    from werkzeug.security import generate_password_hash
-    admin = User.query.filter_by(username='Akramjon').first()
-    if not admin:
-        admin = User()
-        admin.username = 'Akramjon'
-        admin.email = 'admin@botfactory.uz'
-        admin.password_hash = generate_password_hash('Gisobot20141920*')
-        admin.language = 'uz'
-        admin.subscription_type = 'admin'
-        admin.is_admin = True
-        db.session.add(admin)
-        db.session.commit()
-        logging.info("Admin user created successfully")
+    # Create/update tables
+    try:
+        db.create_all()
+        
+        # Add new columns if they don't exist (for notification settings)
+        try:
+            from sqlalchemy import text
+            
+            # Check and add admin_chat_id column
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='admin_chat_id'"))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN admin_chat_id VARCHAR(50)"))
+                db.session.commit()
+                logging.info("Added admin_chat_id column")
+            
+            # Check and add notification_channel column
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='notification_channel'"))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN notification_channel VARCHAR(100)"))
+                db.session.commit()
+                logging.info("Added notification_channel column")
+            
+            # Check and add notifications_enabled column
+            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='notifications_enabled'"))
+            if not result.fetchone():
+                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN notifications_enabled BOOLEAN DEFAULT FALSE"))
+                db.session.commit()
+                logging.info("Added notifications_enabled column")
+                
+        except Exception as col_error:
+            logging.warning(f"Column migration warning: {col_error}")
+    
+        # Create admin user if not exists
+        from models import User
+        from werkzeug.security import generate_password_hash
+        admin = User.query.filter_by(username='Akramjon').first()
+        if not admin:
+            admin = User()
+            admin.username = 'Akramjon'
+            admin.email = 'admin@botfactory.uz'
+            admin.password_hash = generate_password_hash('Gisobot20141920*')
+            admin.language = 'uz'
+            admin.subscription_type = 'admin'
+            admin.is_admin = True
+            db.session.add(admin)
+            db.session.commit()
+            logging.info("Admin user created successfully")
+            
+    except Exception as e:
+        logging.error(f"Database initialization error: {e}")

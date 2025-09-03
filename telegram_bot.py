@@ -575,6 +575,27 @@ Masalan:
                         db.session.add(chat_history)
                         db.session.commit()
                         logger.info("DEBUG: Chat history saved")
+                        
+                        # Send notification to admin
+                        try:
+                            bot_owner = bot.owner
+                            if (bot_owner and bot_owner.notifications_enabled and 
+                                (bot_owner.admin_chat_id or bot_owner.notification_channel)):
+                                
+                                from notification_service import notification_service
+                                notification_service.send_chat_notification(
+                                    admin_chat_id=bot_owner.admin_chat_id,
+                                    channel_id=bot_owner.notification_channel,
+                                    bot_name=bot.name,
+                                    user_id=user_id,
+                                    user_message=safe_message,
+                                    bot_response=safe_response,
+                                    platform="Telegram"
+                                )
+                                logger.info("DEBUG: Notification sent to admin")
+                        except Exception as notif_error:
+                            logger.error(f"Notification error: {str(notif_error)[:100]}")
+                            
                     except Exception as db_error:
                         # Safe error logging
                         error_msg = str(db_error).encode('ascii', errors='ignore').decode('ascii')[:100]
