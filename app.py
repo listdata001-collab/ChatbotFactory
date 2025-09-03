@@ -13,11 +13,14 @@ try:
     setup_logging()
     logger = logging.getLogger(__name__)
     logger.info("BotFactory AI application starting with professional logging")
-except ImportError:
-    # Fallback basic logging
-    logging.basicConfig(level=logging.DEBUG)
+except Exception as e:
+    # Fallback basic logging for any error
+    logging.basicConfig(
+        level=logging.INFO,
+        format='[%(asctime)s] %(levelname)s: %(message)s'
+    )
     logger = logging.getLogger(__name__)
-    logger.warning("Using fallback logging configuration")
+    logger.warning(f"Using fallback logging configuration due to: {e}")
 
 class Base(DeclarativeBase):
     pass
