@@ -64,21 +64,20 @@ class TelegramNotificationService:
         short_message = user_message[:100] + "..." if len(user_message) > 100 else user_message
         short_response = bot_response[:150] + "..." if len(bot_response) > 150 else bot_response
         
-        notification = f"""
-🔔 **Yangi xabar keldi!**
+        notification = f"""🔔 **Yangi suhbat!**
 
 {platform_icon} **Bot:** {bot_name}
-👤 **Foydalanuvchi:** {user_id}
+👤 **Mijoz:** {user_id} 
 ⏰ **Vaqt:** {current_time}
 
-💬 **Xabar:**
-_{short_message}_
+📩 **Mijoz xabari:**
+{short_message}
 
 🤖 **Bot javobi:**
-_{short_response}_
+{short_response}
 
----
-_BotFactory AI Platform_
+━━━━━━━━━━━━━━━━━━━
+_BotFactory AI - Suhbat Kuzatuvi_
         """.strip()
         
         return notification

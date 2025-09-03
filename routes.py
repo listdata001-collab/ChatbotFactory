@@ -495,6 +495,17 @@ def create_bot():
         bot.whatsapp_token = whatsapp_token
         bot.whatsapp_phone_id = whatsapp_phone_id
         
+        # Suhbat kuzatuvi sozlamalarini saqlash
+        admin_chat_id = request.form.get('admin_chat_id')
+        notification_channel = request.form.get('notification_channel')
+        notifications_enabled = bool(request.form.get('notifications_enabled'))
+        
+        if admin_chat_id:
+            current_user.admin_chat_id = admin_chat_id.strip()
+        if notification_channel:
+            current_user.notification_channel = notification_channel.strip()
+        current_user.notifications_enabled = notifications_enabled
+        
         db.session.add(bot)
         db.session.commit()
         
@@ -555,6 +566,17 @@ def edit_bot(bot_id):
         bot.name = request.form.get('name', bot.name)
         bot.platform = request.form.get('platform', bot.platform)
         bot.telegram_token = request.form.get('telegram_token', bot.telegram_token)
+        
+        # Suhbat kuzatuvi sozlamalarini yangilash
+        admin_chat_id = request.form.get('admin_chat_id')
+        notification_channel = request.form.get('notification_channel')
+        notifications_enabled = bool(request.form.get('notifications_enabled'))
+        
+        if admin_chat_id is not None:
+            current_user.admin_chat_id = admin_chat_id.strip() if admin_chat_id.strip() else None
+        if notification_channel is not None:
+            current_user.notification_channel = notification_channel.strip() if notification_channel.strip() else None
+        current_user.notifications_enabled = notifications_enabled
         
         # Agar Telegram bot token o'zgargan bo'lsa, qayta ishga tushirish
         if bot.platform == 'Telegram' and bot.telegram_token:
