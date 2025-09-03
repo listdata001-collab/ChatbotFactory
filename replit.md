@@ -66,9 +66,9 @@ Three-tier subscription system:
   - Application running successfully with admin user auto-created
   - Using SQLite database (PostgreSQL ready via environment variable)
   - Cache control headers configured to prevent browser caching issues
-  - Google API key configured for AI chatbot responses
+  - Google API key and Telegram Bot token configured via Replit Secrets
   - **Import Status**: ✅ COMPLETED - Application fully functional in Replit environment
-  - **Setup Status**: ✅ READY FOR USE - All core features operational
+  - **Setup Status**: ✅ READY FOR USE - All core features operational with API keys configured
 
 ## External Dependencies
 
