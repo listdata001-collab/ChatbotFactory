@@ -24,30 +24,23 @@
             border-radius: 0.375rem !important;
         }
         
-        .knowledge-item span {
-            color: #212529 !important;
-        }
-        
-        .knowledge-item .text-muted {
-            color: #6c757d !important;
-        }
-        
         .knowledge-item:hover {
             background-color: #e9ecef !important;
         }
         
-        /* "Qo'shilgan ma'lumotlar" sarlavhasi va matnlari qora rangda */
-        h6.small.mb-2 {
+        /* Barcha matnlar qora rangda */
+        h6.small.mb-2,
+        .knowledge-item span,
+        .knowledge-item .text-truncate,
+        .knowledge-item div,
+        .knowledge-item i + span {
             color: #212529 !important;
         }
         
-        /* Mahsulot nomlari va sanalar qora rangda */
-        .knowledge-item .text-truncate {
-            color: #212529 !important;
-        }
-        
-        .knowledge-item .text-muted, .knowledge-item span.text-muted {
-            color: #495057 !important;
+        /* Sanalar och kulrang rangda */
+        .knowledge-item .text-muted,
+        .knowledge-item span.text-muted {
+            color: #6c757d !important;
         }
         
         @media (prefers-color-scheme: dark) {
@@ -57,28 +50,22 @@
                 border: 1px solid #505050 !important;
             }
             
-            .knowledge-item span {
-                color: #ffffff !important;
-            }
-            
-            .knowledge-item .text-muted {
-                color: #d1d1d1 !important;
-            }
-            
             .knowledge-item:hover {
                 background-color: #383838 !important;
             }
             
-            /* Dark mode uchun sarlavha va matnlar oq rangda */
-            h6.small.mb-2 {
+            /* Dark mode: Barcha matnlar oq rangda */
+            h6.small.mb-2,
+            .knowledge-item span,
+            .knowledge-item .text-truncate,
+            .knowledge-item div,
+            .knowledge-item i + span {
                 color: #ffffff !important;
             }
             
-            .knowledge-item .text-truncate {
-                color: #ffffff !important;
-            }
-            
-            .knowledge-item .text-muted, .knowledge-item span.text-muted {
+            /* Dark mode: Sanalar och kulrang */
+            .knowledge-item .text-muted,
+            .knowledge-item span.text-muted {
                 color: #d1d1d1 !important;
             }
         }
