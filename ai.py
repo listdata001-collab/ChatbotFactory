@@ -86,7 +86,16 @@ def process_knowledge_base(bot_id: int) -> str:
         combined_knowledge = ""
         
         for entry in knowledge_entries:
-            combined_knowledge += f"{entry.content}\n\n"
+            if entry.content_type == 'image':
+                # For images, add description about the image
+                image_info = f"Rasm: {entry.filename or 'Yuklangan rasm'}"
+                if entry.source_name:
+                    image_info += f" ({entry.source_name})"
+                image_info += f" - bu mahsulot/xizmat haqidagi vizual ma'lumot. Foydalanuvchi ushbu rasm haqida so'rasa, unga rasm haqida ma'lumot bering."
+                combined_knowledge += f"{image_info}\n\n"
+            else:
+                # For text and file content
+                combined_knowledge += f"{entry.content}\n\n"
         
         return combined_knowledge.strip()
     except Exception as e:

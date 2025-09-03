@@ -368,9 +368,31 @@ def upload_knowledge(bot_id):
     if file:
         filename = secure_filename(file.filename or 'unknown')
         content = ""
+        content_type = "file"
         
         try:
-            if filename.endswith('.txt'):
+            # Check if it's an image file
+            if filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                # Save image to static folder
+                import uuid
+                from datetime import datetime
+                
+                # Generate unique filename
+                file_extension = filename.split('.')[-1].lower()
+                unique_filename = f"kb_{bot_id}_{uuid.uuid4().hex[:8]}.{file_extension}"
+                file_path = os.path.join('static', 'uploads', unique_filename)
+                
+                # Create directory if it doesn't exist
+                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+                
+                # Save the file
+                file.save(file_path)
+                
+                # Store the URL path for the AI to use
+                content = f"/static/uploads/{unique_filename}"
+                content_type = "image"
+                
+            elif filename.endswith('.txt'):
                 # Handle different encodings for text files
                 try:
                     content = file.read().decode('utf-8')
@@ -401,6 +423,8 @@ def upload_knowledge(bot_id):
                 
                 for unicode_char, replacement in unicode_replacements.items():
                     content = content.replace(unicode_char, replacement)
+                    
+                content_type = "file"
                 
             elif filename.endswith('.docx'):
                 doc = docx.Document(file.stream)
@@ -419,14 +443,14 @@ def upload_knowledge(bot_id):
                     paragraphs.append(text)
                 content = '\n'.join(paragraphs)
             else:
-                flash('Faqat .txt va .docx fayllar qo\'llab-quvvatlanadi!', 'error')
+                flash('Faqat .txt, .docx, .jpg, .png, .gif formatdagi fayllar qo\'llab-quvvatlanadi!', 'error')
                 return redirect(url_for('main.edit_bot', bot_id=bot_id))
             
             knowledge = KnowledgeBase()
             knowledge.bot_id = bot_id
             knowledge.content = content
             knowledge.filename = filename
-            knowledge.content_type = 'file'
+            knowledge.content_type = content_type
             
             db.session.add(knowledge)
             db.session.commit()

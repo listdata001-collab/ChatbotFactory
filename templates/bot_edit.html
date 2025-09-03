@@ -143,8 +143,8 @@
                               enctype="multipart/form-data">
                             <div class="mb-3">
                                 <input type="file" class="form-control form-control-sm" name="file" 
-                                       accept=".txt,.docx" required>
-                                <div class="form-text">Maksimal: 16MB (.txt, .docx)</div>
+                                       accept=".txt,.docx,.jpg,.jpeg,.png,.gif,.webp" required>
+                                <div class="form-text">Maksimal: 16MB (.txt, .docx, .jpg, .png, .gif)</div>
                             </div>
                             <button type="submit" class="btn btn-sm btn-primary w-100">
                                 <i class="fas fa-upload me-1"></i>Fayl yuklash
@@ -171,26 +171,18 @@
                         </form>
                     </div>
 
-                    <!-- Image Link Tab -->
+                    <!-- Image Upload Tab -->
                     <div class="tab-pane fade" id="image-content" role="tabpanel">
-                        <form method="POST" action="{{ url_for('main.add_image_knowledge', bot_id=bot.id) }}">
+                        <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}" 
+                              enctype="multipart/form-data">
                             <div class="mb-3">
-                                <label for="img_source_name" class="form-label small">Nom (ixtiyoriy):</label>
-                                <input type="text" class="form-control form-control-sm" id="img_source_name" name="source_name" 
-                                       placeholder="Masalan: Mahsulot rasmi">
-                            </div>
-                            <div class="mb-3">
-                                <label for="image_url" class="form-label small">Rasm havolasi:</label>
-                                <input type="url" class="form-control form-control-sm" id="image_url" name="image_url" 
-                                       placeholder="https://example.com/image.jpg" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="description" class="form-label small">Tavsif (ixtiyoriy):</label>
-                                <textarea class="form-control form-control-sm" id="description" name="description" rows="2" 
-                                          placeholder="Rasm haqida qo'shimcha ma'lumot..."></textarea>
+                                <label for="image_file" class="form-label small">Rasm yuklash:</label>
+                                <input type="file" class="form-control form-control-sm" id="image_file" name="file" 
+                                       accept=".jpg,.jpeg,.png,.gif,.webp" required>
+                                <div class="form-text">Maksimal: 16MB (.jpg, .png, .gif, .webp)</div>
                             </div>
                             <button type="submit" class="btn btn-sm btn-info w-100">
-                                <i class="fas fa-link me-1"></i>Rasm qo'shish
+                                <i class="fas fa-upload me-1"></i>Rasm yuklash
                             </button>
                         </form>
                     </div>
@@ -203,14 +195,22 @@
                 {% for kb in bot.knowledge_base %}
                 <div class="d-flex justify-content-between align-items-center small mb-2 p-2 bg-light rounded">
                     <div class="d-flex align-items-center">
-                        {% if kb.content_type == 'file' %}
+                        {% if kb.content_type == 'image' %}
+                            <i class="fas fa-image me-2 text-warning"></i>
+                            <div class="d-flex align-items-center">
+                                <img src="{{ kb.content }}" alt="Preview" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;" class="me-2">
+                                <span class="text-truncate">{{ kb.source_name or kb.filename }}</span>
+                            </div>
+                        {% elif kb.content_type == 'file' %}
                             <i class="fas fa-file-text me-2 text-primary"></i>
+                            <span class="text-truncate">{{ kb.source_name or kb.filename }}</span>
                         {% elif kb.content_type == 'text' %}
                             <i class="fas fa-edit me-2 text-success"></i>
+                            <span class="text-truncate">{{ kb.source_name or kb.filename }}</span>
                         {% elif kb.content_type == 'image_link' %}
-                            <i class="fas fa-image me-2 text-info"></i>
+                            <i class="fas fa-link me-2 text-info"></i>
+                            <span class="text-truncate">{{ kb.source_name or kb.filename }}</span>
                         {% endif %}
-                        <span class="text-truncate">{{ kb.source_name or kb.filename }}</span>
                     </div>
                     <span class="text-muted">{{ kb.created_at.strftime('%d.%m') }}</span>
                 </div>
