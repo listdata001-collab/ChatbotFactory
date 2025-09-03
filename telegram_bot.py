@@ -521,12 +521,12 @@ Masalan:
                     
                     # Step 3: Final ASCII fallback if still problematic
                     if not cleaned_response.strip():
-                        cleaned_response = "✅ Javob tayyor!"
+                        cleaned_response = "Javob tayyor!"
                     
                     # Send the safe response
                     await update.message.reply_text(cleaned_response)
                 else:
-                    await update.message.reply_text("❌ Javob berishda xatolik yuz berdi!")
+                    await update.message.reply_text("Javob berishda xatolik yuz berdi!")
                     
             except Exception as e:
                 # Ultra-safe error logging - no Unicode at all
