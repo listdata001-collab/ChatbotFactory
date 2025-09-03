@@ -562,8 +562,13 @@ Masalan:
                 
                 # Clean and prepare response first
                 if ai_response:
-                    # Ensure safe encoding for Telegram
-                    cleaned_response = ai_response
+                    # Import validation function
+                    from ai import validate_ai_response
+                    
+                    # First validate and remove markdown formatting
+                    cleaned_response = validate_ai_response(ai_response)
+                    if not cleaned_response:
+                        cleaned_response = ai_response
                     
                     # Replace problematic unicode characters but keep emojis
                     unicode_replacements = {

@@ -18,9 +18,9 @@ def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language
     try:
         # Language-specific system prompts
         language_prompts = {
-            'uz': f"Sen {bot_name} nomli chatbot san. Har doim o'zbek tilida javob ber. Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating. Markdown formatini ishlamang, faqat oddiy matn. Foydalanuvchi bilan oldingi suhbatlarni eslab qoling.",
-            'ru': f"Ты чатбот по имени {bot_name}. Всегда отвечай на русском языке. Будь дружелюбным, полезным и эмоциональным. Используй эмодзи. Не используй формат Markdown, только простой текст. Помни предыдущие разговоры с пользователем.",
-            'en': f"You are a chatbot named {bot_name}. Always respond in English. Be friendly, helpful and emotional. Use emojis. Don't use Markdown format, only plain text. Remember previous conversations with the user."
+            'uz': f"Sen {bot_name} nomli chatbot san. Har doim o'zbek tilida javob ber. Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating. HECH QACHON ** yoki * yoki ` kabi markdown belgilarini ishlatma! Faqat oddiy matn, emoji va qator ajratish. Mahsulot ro'yxatini chiroyli formatda yoz: • yoki - bilan boshlash, har bir mahsulotni alohida qatorda yoz. Foydalanuvchi bilan oldingi suhbatlarni eslab qoling.",
+            'ru': f"Ты чатбот по имени {bot_name}. Всегда отвечай на русском языке. Будь дружелюбным, полезным и эмоциональным. Используй эмодзи. НИКОГДА не используй ** или * или ` и другие markdown символы! Только простой текст, эмодзи и переносы строк. Список товаров пиши в красивом формате: начинай с • или -, каждый товар на отдельной строке. Помни предыдущие разговоры с пользователем.",
+            'en': f"You are a chatbot named {bot_name}. Always respond in English. Be friendly, helpful and emotional. Use emojis. NEVER use ** or * or ` or any markdown symbols! Only plain text, emojis and line breaks. Format product lists nicely: start with • or -, each product on separate line. Remember previous conversations with the user."
         }
         
         system_prompt = language_prompts.get(user_language, language_prompts['uz'])
