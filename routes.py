@@ -1047,8 +1047,12 @@ def add_product_knowledge(bot_id):
         db.session.add(knowledge)
         db.session.commit()
         
+        # Debug: log mahsulot qo'shilishini
+        logging.info(f"DEBUG: New product added - Name: {product_name}, Bot ID: {bot_id}, Content: {content[:100]}...")
+        
         flash(f'"{product_name}" mahsuloti muvaffaqiyatli qo\'shildi!', 'success')
     except Exception as e:
+        logging.error(f"DEBUG: Product creation failed: {str(e)}")
         flash('Mahsulot qo\'shishda xatolik yuz berdi!', 'error')
     
     return redirect(url_for('main.edit_bot', bot_id=bot_id))
