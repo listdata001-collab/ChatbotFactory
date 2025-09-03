@@ -2,7 +2,8 @@ from typing import Optional, List
 from app import db
 from flask_login import UserMixin
 from datetime import datetime, timedelta
-from sqlalchemy import Text
+from sqlalchemy import Text, String
+from sqlalchemy.dialects import sqlite, mysql, postgresql
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -96,7 +97,12 @@ class Bot(db.Model):
 class KnowledgeBase(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     bot_id = db.Column(db.Integer, db.ForeignKey('bot.id'), nullable=False)
-    content = db.Column(Text, nullable=False)
+    # UTF-8 enabled text column for multilingual content
+    content = db.Column(Text().with_variant(
+        mysql.TEXT(charset='utf8mb4', collation='utf8mb4_unicode_ci'), 'mysql'
+    ).with_variant(
+        postgresql.TEXT(), 'postgresql'
+    ), nullable=False)
     filename = db.Column(db.String(200))
     content_type = db.Column(db.String(20), default='file')  # file, text, image_link
     source_name = db.Column(db.String(200))  # Custom name for text/image entries
@@ -124,8 +130,17 @@ class ChatHistory(db.Model):
     user_telegram_id = db.Column(db.String(50))
     user_instagram_id = db.Column(db.String(50))
     user_whatsapp_number = db.Column(db.String(20))
-    message = db.Column(Text)
-    response = db.Column(Text)
+    # UTF-8 enabled text columns for emoji support
+    message = db.Column(Text().with_variant(
+        mysql.TEXT(charset='utf8mb4', collation='utf8mb4_unicode_ci'), 'mysql'
+    ).with_variant(
+        postgresql.TEXT(), 'postgresql'
+    ), nullable=True)
+    response = db.Column(Text().with_variant(
+        mysql.TEXT(charset='utf8mb4', collation='utf8mb4_unicode_ci'), 'mysql'
+    ).with_variant(
+        postgresql.TEXT(), 'postgresql'
+    ), nullable=True)
     language = db.Column(db.String(2), default='uz')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     

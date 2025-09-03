@@ -41,24 +41,19 @@ def after_request(response):
     response.headers["Expires"] = "0"
     return response
 
-# Configure the database with UTF-8 support
-database_url = os.environ.get("DATABASE_URL", "sqlite:///botfactory.db")
+# Configure the database with UTF-8 support - force SQLite for now
+database_url = "sqlite:///botfactory.db"
 
-# Add UTF-8 encoding for SQLite
-if database_url.startswith("sqlite"):
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url + "?charset=utf8"
-else:
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-
+app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
     "echo": False,
-    # UTF-8 support for all database types
+    # UTF-8 support for SQLite with proper encoding
     "connect_args": {
-        "charset": "utf8mb4" if "mysql" in database_url else "utf8",
-        "check_same_thread": False if "sqlite" in database_url else True
-    } if "sqlite" in database_url or "mysql" in database_url else {}
+        "check_same_thread": False,
+        "isolation_level": None,  # Autocommit mode for SQLite
+    }
 }
 
 # Initialize extensions

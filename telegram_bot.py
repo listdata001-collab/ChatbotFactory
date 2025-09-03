@@ -568,16 +568,20 @@ Masalan:
                         def clean_text_for_db(text):
                             if not text:
                                 return ""
-                            # Convert to UTF-8 and handle errors
                             try:
-                                # Encode to UTF-8 bytes and back to ensure compatibility
-                                clean_text = text.encode('utf-8', errors='replace').decode('utf-8')
-                                # Remove or replace problematic control characters
-                                clean_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', clean_text)
+                                # Simple string processing - let Python handle Unicode natively
+                                if isinstance(text, bytes):
+                                    text = text.decode('utf-8', errors='replace')
+                                
+                                # Keep original text as much as possible, just remove control chars
+                                import re
+                                clean_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', str(text))
+                                
+                                # Return the clean text - Python 3 handles Unicode natively
                                 return clean_text
-                            except (UnicodeDecodeError, UnicodeEncodeError):
-                                # Fallback: remove non-ASCII characters except emojis
-                                return ''.join(char for char in text if ord(char) < 128 or ord(char) > 255)
+                            except Exception:
+                                # Ultimate fallback - return empty string
+                                return ""
                         
                         safe_message = clean_text_for_db(message_text)
                         safe_response = clean_text_for_db(cleaned_response)
