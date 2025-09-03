@@ -11,16 +11,16 @@ except ImportError:
     GEMINI_AVAILABLE = False
     logging.warning("Google Generative AI library not available. Install with: pip install google-generativeai")
 
-def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language: str = "uz", knowledge_base: str = "") -> Optional[str]:
+def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language: str = "uz", knowledge_base: str = "", chat_history: str = "") -> Optional[str]:
     """
-    Generate AI response using Google Gemini
+    Generate AI response using Google Gemini with chat history context
     """
     try:
         # Language-specific system prompts
         language_prompts = {
-            'uz': f"Sen {bot_name} nomli chatbot san. Har doim o'zbek tilida javob ber. Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating. Markdown formatini ishlamang, faqat oddiy matn.",
-            'ru': f"Ты чатбот по имени {bot_name}. Всегда отвечай на русском языке. Будь дружелюбным, полезным и эмоциональным. Используй эмодзи. Не используй формат Markdown, только простой текст.",
-            'en': f"You are a chatbot named {bot_name}. Always respond in English. Be friendly, helpful and emotional. Use emojis. Don't use Markdown format, only plain text."
+            'uz': f"Sen {bot_name} nomli chatbot san. Har doim o'zbek tilida javob ber. Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating. Markdown formatini ishlamang, faqat oddiy matn. Foydalanuvchi bilan oldingi suhbatlarni eslab qoling.",
+            'ru': f"Ты чатбот по имени {bot_name}. Всегда отвечай на русском языке. Будь дружелюбным, полезным и эмоциональным. Используй эмодзи. Не используй формат Markdown, только простой текст. Помни предыдущие разговоры с пользователем.",
+            'en': f"You are a chatbot named {bot_name}. Always respond in English. Be friendly, helpful and emotional. Use emojis. Don't use Markdown format, only plain text. Remember previous conversations with the user."
         }
         
         system_prompt = language_prompts.get(user_language, language_prompts['uz'])
@@ -28,6 +28,10 @@ def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language
         # Add knowledge base context if available
         if knowledge_base:
             system_prompt += f"\n\nSizda quyidagi bilim bazasi mavjud:\n{knowledge_base[:3000]}\n\nAgar foydalanuvchi yuqoridagi ma'lumotlar haqida so'rasa, aniq va to'liq javob bering. Mahsulot narxlari va ma'lumotlarini aniq aytib bering."
+        
+        # Add chat history context if available
+        if chat_history:
+            system_prompt += f"\n\nOldingi suhbatlar:\n{chat_history}\n\nYuqoridagi suhbatlarni eslab qoling va kontekst asosida javob bering."
         
         # Create the prompt
         full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"

@@ -19,7 +19,7 @@ class TelegramNotificationService:
     
     def send_chat_notification(self, admin_chat_id: str, channel_id: str, 
                              bot_name: str, user_id: str, user_message: str, 
-                             bot_response: str, platform: str = "Telegram") -> bool:
+                             bot_response: str, platform: str = "Telegram", username: str = "") -> bool:
         """
         Yangi yozishma haqida bildirishnoma yuborish
         """
@@ -28,7 +28,7 @@ class TelegramNotificationService:
             
         # Xabar formatini tayyorlash
         notification_text = self._format_chat_notification(
-            bot_name, user_id, user_message, bot_response, platform
+            bot_name, user_id, user_message, bot_response, platform, username
         )
         
         success = True
@@ -47,7 +47,7 @@ class TelegramNotificationService:
     
     def _format_chat_notification(self, bot_name: str, user_id: str, 
                                  user_message: str, bot_response: str, 
-                                 platform: str) -> str:
+                                 platform: str, username: str = "") -> str:
         """Bildirishnoma matnini formatlash"""
         
         # Platform ikonkasi
@@ -64,10 +64,15 @@ class TelegramNotificationService:
         short_message = user_message[:100] + "..." if len(user_message) > 100 else user_message
         short_response = bot_response[:150] + "..." if len(bot_response) > 150 else bot_response
         
+        # Mijoz ma'lumotini formatlash
+        customer_info = f"{user_id}"
+        if username and username.strip():
+            customer_info = f"@{username} ({user_id})"
+        
         notification = f"""🔔 **Yangi suhbat!**
 
 {platform_icon} **Bot:** {bot_name}
-👤 **Mijoz:** {user_id} 
+👤 **Mijoz:** {customer_info}
 ⏰ **Vaqt:** {current_time}
 
 📩 **Mijoz xabari:**

@@ -528,6 +528,24 @@ Masalan:
             knowledge_base = process_knowledge_base(self.bot_id)
             logger.info("DEBUG: Knowledge base processed")
             
+            # Get recent chat history for context
+            recent_history = ""
+            try:
+                # Get last 5 conversations for context
+                history_entries = ChatHistory.query.filter_by(
+                    bot_id=self.bot_id, 
+                    user_telegram_id=user_id
+                ).order_by(ChatHistory.created_at.desc()).limit(5).all()
+                
+                if history_entries:
+                    history_parts = []
+                    for entry in reversed(history_entries):  # Reverse to show oldest first
+                        history_parts.append(f"Foydalanuvchi: {entry.message}")
+                        history_parts.append(f"Bot: {entry.response}")
+                    recent_history = "\n".join(history_parts)
+            except Exception as hist_error:
+                logger.error(f"Chat history retrieval error: {str(hist_error)[:100]}")
+
             # Generate AI response
             try:
                 logger.info("DEBUG: Starting AI response generation")
@@ -536,7 +554,8 @@ Masalan:
                     message=message_text,
                     bot_name=bot.name,
                     user_language=db_user.language,
-                    knowledge_base=knowledge_base
+                    knowledge_base=knowledge_base,
+                    chat_history=recent_history
                 )
                 
                 logger.info("DEBUG: AI response received")
@@ -616,6 +635,15 @@ Masalan:
                                 from notification_service import TelegramNotificationService
                                 # Use current bot's token for notifications
                                 bot_notification_service = TelegramNotificationService(bot.telegram_token)
+                                
+                                # Get username from update
+                                username = ""
+                                try:
+                                    if update and update.effective_user and hasattr(update.effective_user, 'username'):
+                                        username = update.effective_user.username or ""
+                                except:
+                                    username = ""
+                                
                                 bot_notification_service.send_chat_notification(
                                     admin_chat_id=bot_owner.admin_chat_id,
                                     channel_id=bot_owner.notification_channel,
@@ -623,7 +651,8 @@ Masalan:
                                     user_id=user_id,
                                     user_message=safe_message,
                                     bot_response=safe_response,
-                                    platform="Telegram"
+                                    platform="Telegram",
+                                    username=username
                                 )
                                 logger.info("DEBUG: Notification sent to admin")
                         except Exception as notif_error:
