@@ -198,7 +198,7 @@ class TaskScheduler:
             logger.info("Checking subscriptions...")
             
             with app.app_context():
-                # 3 kun qolgan obunalar
+                # 3 kun qolgan obunalar (basic/premium)
                 three_days_later = datetime.utcnow() + timedelta(days=3)
                 expiring_soon = User.query.filter(
                     User.subscription_end_date <= three_days_later,
@@ -215,6 +215,26 @@ class TaskScheduler:
                             reminder_count += 1
                     except Exception as e:
                         logger.error(f"Reminder send error for user {user.id}: {str(e)}")
+
+                # 3 kun qolgan BEPUL ta'riflar uchun eslatma
+                free_expiring_soon = User.query.filter(
+                    User.subscription_end_date <= three_days_later,
+                    User.subscription_end_date > datetime.utcnow(),
+                    User.subscription_type == 'free'
+                ).all()
+                
+                free_reminder_count = 0
+                for user in free_expiring_soon:
+                    days_left = (user.subscription_end_date - datetime.utcnow()).days
+                    try:
+                        # Email va SMS eslatma yuborish
+                        email_success = self.campaigns.send_subscription_reminder(user, days_left)
+                        sms_success = self.campaigns.send_trial_ending_sms(user, days_left)
+                        
+                        if email_success or sms_success:
+                            free_reminder_count += 1
+                    except Exception as e:
+                        logger.error(f"Free trial reminder error for user {user.id}: {str(e)}")
                 
                 # Tugagan obunalar
                 expired_users = User.query.filter(
@@ -243,7 +263,28 @@ class TaskScheduler:
                         logger.error(f"Expiry processing error for user {user.id}: {str(e)}")
                         db.session.rollback()
                 
-                logger.info(f"Subscription check completed: {reminder_count} reminders, {expired_count} expired")
+                # Tugagan BEPUL ta'riflar uchun xabar
+                expired_free_users = User.query.filter(
+                    User.subscription_end_date <= datetime.utcnow(),
+                    User.subscription_type == 'free'
+                ).all()
+                
+                expired_free_count = 0
+                for user in expired_free_users:
+                    try:
+                        # Tugagan kun xabari
+                        self.campaigns.send_subscription_expired_notification(user)
+                        
+                        # Obunani bekor qilish
+                        user.subscription_end_date = None
+                        db.session.commit()
+                        expired_free_count += 1
+                        
+                    except Exception as e:
+                        logger.error(f"Free expiry processing error for user {user.id}: {str(e)}")
+                        db.session.rollback()
+                
+                logger.info(f"Subscription check completed: {reminder_count} paid reminders, {free_reminder_count} free reminders, {expired_count} paid expired, {expired_free_count} free expired")
                 
         except Exception as e:
             logger.error(f"Check subscriptions error: {str(e)}")

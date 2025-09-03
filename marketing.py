@@ -372,7 +372,12 @@ Savollar: support@botfactory.uz
                     </a>
                 </div>
                 
-                <p>Yordam kerakmi? <a href="mailto:support@botfactory.uz">support@botfactory.uz</a></p>
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #495057;">📞 Murojaat uchun:</h3>
+                    <p><strong>Telefon:</strong> <a href="tel:+998996448444">+998 99 644-84-44</a></p>
+                    <p><strong>Telegram:</strong> <a href="https://t.me/akramjon0011">@akramjon0011</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:support@botfactory.uz">support@botfactory.uz</a></p>
+                </div>
             </div>
         </body>
         </html>
@@ -391,13 +396,18 @@ Savollar: support@botfactory.uz
     def send_trial_ending_sms(self, user, days_left):
         """Sinov tugashi SMS"""
         message = f"""🤖 BotFactory AI
-        
+
 Hurmatli {user.username}, sinov muddatingiz {days_left} kundan keyin tugaydi.
 
-Davom etish uchun: botfactory.uz
+💰 Ta'riflar:
+Basic: 290,000 so'm/oy
+Premium: 590,000 so'm/oy
 
-Basic: 290,000 so'm
-Premium: 590,000 so'm"""
+🌐 To'lov: botfactory.uz
+
+📞 Murojaat:
++998 99 644-84-44
+https://t.me/akramjon0011"""
         
         # Get phone number from user
         phone = getattr(user, 'phone_number', None)
@@ -464,6 +474,118 @@ Premium: 590,000 so'm"""
         )
         
         return self.email_service.send_email(user.email, subject, html_content)
+    
+    def send_subscription_expired_notification(self, user):
+        """Bepul ta'rif tugagan kun uchun eslatma"""
+        subject = "⚠️ Bepul sinov muddati tugadi - Premium'ga o'ting!"
+        
+        html_template = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Bepul sinov tugadi</title>
+        </head>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                <h1 style="color: #dc2626;">⚠️ Bepul sinov muddati tugadi</h1>
+                
+                <p>Hurmatli {{ username }},</p>
+                
+                <div style="background: #fee2e2; border: 2px solid #fca5a5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <p><strong>🕐 Sizning 14 kunlik bepul sinov muddatingiz bugun tugadi!</strong></p>
+                    <p>Barcha premium imkoniyatlardan foydalanishni davom ettirish uchun to'lov ta'rifini tanlang.</p>
+                </div>
+                
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                           color: white; padding: 30px; border-radius: 15px; margin: 30px 0;">
+                    <h2 style="margin-top: 0; color: white;">🚀 Premium ta'riflari:</h2>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <h3 style="color: #fef3c7; margin-top: 0;">💰 Basic - 290,000 so'm/oy</h3>
+                        <ul style="color: white;">
+                            <li>✅ 1 ta bot yaratish</li>
+                            <li>✅ Barcha platformalar (Telegram/Instagram/WhatsApp)</li>
+                            <li>✅ 3 tilda AI (O'zbek/Rus/Ingliz)</li>
+                            <li>✅ Bilim bazasi yuklash</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <h3 style="color: #fde68a; margin-top: 0;">💎 Premium - 590,000 so'm/oy</h3>
+                        <ul style="color: white;">
+                            <li>✅ 5 ta bot yaratish</li>
+                            <li>✅ Barcha platformalar</li>
+                            <li>✅ 3 tilda AI</li>
+                            <li>✅ Prioritet yordam</li>
+                            <li>✅ Tahlil va statistika</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin: 30px 0;">
+                    <a href="https://botfactory.uz/subscription" 
+                       style="background: #dc2626; color: white; padding: 20px 40px; 
+                              text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 18px;">
+                        💳 Hozir to'lash va davom ettirish
+                    </a>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="color: #495057;">📞 Murojaat uchun:</h3>
+                    <p><strong>Telefon:</strong> <a href="tel:+998996448444">+998 99 644-84-44</a></p>
+                    <p><strong>Telegram:</strong> <a href="https://t.me/akramjon0011">@akramjon0011</a></p>
+                    <p><strong>Email:</strong> <a href="mailto:support@botfactory.uz">support@botfactory.uz</a></p>
+                </div>
+                
+                <p style="font-size: 12px; color: #666; text-align: center;">
+                    BotFactory AI - O'zbekistondagi birinchi AI chatbot platformasi<br>
+                    <a href="https://botfactory.uz">botfactory.uz</a>
+                </p>
+            </div>
+        </body>
+        </html>
+        """
+        
+        html_content = render_template_string(html_template, username=user.username)
+        
+        text_content = f"""Hurmatli {user.username},
+
+🕐 Sizning 14 kunlik bepul sinov muddatingiz bugun tugadi!
+
+🚀 Premium ta'riflari:
+💰 Basic - 290,000 so'm/oy
+💎 Premium - 590,000 so'm/oy
+
+💳 To'lov: https://botfactory.uz/subscription
+
+📞 Murojaat uchun:
++998 99 644-84-44
+https://t.me/akramjon0011"""
+        
+        # Email yuborish
+        email_success = self.email_service.send_email(user.email, subject, html_content, text_content)
+        
+        # SMS ham yuborish
+        sms_message = f"""🤖 BotFactory AI
+
+{user.username}, 14 kunlik bepul sinov tugadi!
+
+💰 Basic: 290,000 so'm
+💎 Premium: 590,000 so'm
+
+🌐 To'lov: botfactory.uz
+
+📞 +998 99 644-84-44
+📱 https://t.me/akramjon0011"""
+        
+        # SMS yuborish (agar phone_number mavjud bo'lsa)
+        phone = getattr(user, 'phone_number', None)
+        sms_success = False
+        if phone:
+            sms_success = self.sms_service.send_sms(phone, sms_message)
+        
+        return email_success or sms_success
     
     def send_bulk_marketing(self, user_ids, campaign_type):
         """Ommaviy marketing xabarlari"""
