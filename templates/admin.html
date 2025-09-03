@@ -96,6 +96,11 @@
         </button>
     </li>
     <li class="nav-item" role="presentation">
+        <button class="nav-link" id="chat-history-tab" data-bs-toggle="tab" data-bs-target="#chat-history" type="button">
+            <i class="fas fa-comments me-2"></i>Yozishmalar
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
         <button class="nav-link" id="marketing-tab" data-bs-toggle="tab" data-bs-target="#marketing" type="button">
             <i class="fas fa-bullhorn me-2"></i>Marketing
         </button>
@@ -314,6 +319,88 @@
         </div>
     </div>
     
+    <!-- Chat History Tab -->
+    <div class="tab-pane fade" id="chat-history" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-comments me-2"></i>Bot yozishmalar tarixi</h5>
+                <a href="{{ url_for('main.export_chat_history') }}" class="btn btn-success btn-sm">
+                    <i class="fas fa-download me-2"></i>Excel ga yuklash
+                </a>
+            </div>
+            <div class="card-body">
+                {% if chat_history %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Vaqt</th>
+                                <th>Bot</th>
+                                <th>Foydalanuvchi</th>
+                                <th>Xabar</th>
+                                <th>Bot javobi</th>
+                                <th>Til</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for chat in chat_history %}
+                            <tr>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ chat.created_at.strftime('%d.%m.%Y %H:%M') }}
+                                    </small>
+                                </td>
+                                <td>
+                                    {% for bot in bots %}
+                                        {% if bot.id == chat.bot_id %}
+                                            <span class="badge bg-primary">{{ bot.name }}</span>
+                                            <br><small class="text-muted">{{ bot.platform }}</small>
+                                        {% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    {% if chat.user_telegram_id %}
+                                        <i class="fab fa-telegram text-primary"></i> {{ chat.user_telegram_id }}
+                                    {% elif chat.user_instagram_id %}
+                                        <i class="fab fa-instagram text-warning"></i> {{ chat.user_instagram_id }}
+                                    {% elif chat.user_whatsapp_number %}
+                                        <i class="fab fa-whatsapp text-success"></i> {{ chat.user_whatsapp_number }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="message-text" style="max-width: 300px;">
+                                        {{ chat.message[:100] }}{% if chat.message|length > 100 %}...{% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="message-text" style="max-width: 300px;">
+                                        {{ chat.response[:100] }}{% if chat.response|length > 100 %}...{% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if chat.language == 'uz' %}
+                                        <span class="badge bg-info">O'zbek</span>
+                                    {% elif chat.language == 'ru' %}
+                                        <span class="badge bg-warning">Русский</span>
+                                    {% elif chat.language == 'en' %}
+                                        <span class="badge bg-success">English</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-comments fa-3x mb-3 opacity-25"></i>
+                    <p>Hozircha hech qanday yozishmalar mavjud emas</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <!-- Marketing Tab -->
     <div class="tab-pane fade" id="marketing" role="tabpanel">
         <div class="row">

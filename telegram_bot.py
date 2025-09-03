@@ -585,6 +585,23 @@ Masalan:
                         if update.message:
                             await update.message.reply_text(cleaned_response)
                             logger.info("DEBUG: Response sent successfully")
+                            
+                            # Check for relevant product images to send
+                            try:
+                                from ai import find_relevant_product_images
+                                relevant_images = find_relevant_product_images(self.bot_id, message_text)
+                                
+                                for image_info in relevant_images:
+                                    try:
+                                        await update.message.reply_photo(
+                                            photo=image_info['url'],
+                                            caption=image_info['caption']
+                                        )
+                                        logger.info(f"DEBUG: Product image sent for {image_info['product_name']}")
+                                    except Exception as img_error:
+                                        logger.error(f"Failed to send product image: {str(img_error)[:100]}")
+                            except Exception as img_search_error:
+                                logger.error(f"Failed to search product images: {str(img_search_error)[:100]}")
                     except Exception as send_error:
                         # Final fallback
                         logger.error(f"Failed to send response: {str(send_error)[:100]}")

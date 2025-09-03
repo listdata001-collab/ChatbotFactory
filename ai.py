@@ -106,6 +106,45 @@ def process_knowledge_base(bot_id: int) -> str:
         logging.error(f"Knowledge base processing error: {str(e)}")
         return ""
 
+def find_relevant_product_images(bot_id: int, user_message: str) -> list:
+    """
+    Find product images relevant to user's message
+    """
+    from models import KnowledgeBase
+    
+    try:
+        # Get products that match user's message
+        products = KnowledgeBase.query.filter_by(bot_id=bot_id, content_type='product').all()
+        
+        relevant_images = []
+        user_message_lower = user_message.lower()
+        
+        for product in products:
+            product_content = product.content.lower()
+            product_name = (product.source_name or "").lower()
+            
+            # Check if user's message relates to this product
+            if any(keyword in user_message_lower for keyword in ['mahsulot', 'narx', 'paket', 'zip']) or \
+               any(word in product_content for word in user_message_lower.split() if len(word) > 2) or \
+               any(word in product_name for word in user_message_lower.split() if len(word) > 2):
+                
+                # Look for image URL in product content
+                lines = product.content.split('\n')
+                for line in lines:
+                    if line.startswith('Rasm:') and 'http' in line:
+                        image_url = line.replace('Rasm:', '').strip()
+                        relevant_images.append({
+                            'url': image_url,
+                            'product_name': product.source_name or 'Mahsulot',
+                            'caption': f"📦 {product.source_name or 'Mahsulot'}"
+                        })
+                        break
+        
+        return relevant_images
+    except Exception as e:
+        logging.error(f"Error finding product images: {str(e)}")
+        return []
+
 def validate_ai_response(response: Optional[str], max_length: int = 4000) -> Optional[str]:
     """
     Validate and clean AI response

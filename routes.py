@@ -59,8 +59,72 @@ def admin():
     # Get broadcast messages
     broadcasts = BroadcastMessage.query.order_by(BroadcastMessage.created_at.desc()).limit(10).all()
     
+    # Get recent chat history
+    chat_history = ChatHistory.query.order_by(ChatHistory.created_at.desc()).limit(50).all()
+    
     return render_template('admin.html', users=users, payments=payments, 
-                         bots=bots, stats=stats, broadcasts=broadcasts)
+                         bots=bots, stats=stats, broadcasts=broadcasts, chat_history=chat_history)
+
+@main_bp.route('/admin/export-chat-history')
+@login_required
+def export_chat_history():
+    """Export chat history to Excel"""
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # Get all chat history
+        chat_data = ChatHistory.query.order_by(ChatHistory.created_at.desc()).all()
+        
+        # Prepare data for Excel
+        export_data = []
+        for chat in chat_data:
+            # Get bot name
+            bot = Bot.query.get(chat.bot_id)
+            bot_name = bot.name if bot else 'Noma\'lum bot'
+            
+            export_data.append({
+                'Vaqt': chat.created_at.strftime('%d.%m.%Y %H:%M:%S'),
+                'Bot nomi': bot_name,
+                'Platform': bot.platform if bot else 'Noma\'lum',
+                'Telegram ID': chat.user_telegram_id or '',
+                'Instagram ID': chat.user_instagram_id or '',
+                'WhatsApp raqami': chat.user_whatsapp_number or '',
+                'Foydalanuvchi xabari': chat.message or '',
+                'Bot javobi': chat.response or '',
+                'Til': chat.language or 'uz'
+            })
+        
+        if not export_data:
+            flash('Eksport qilish uchun yozishmalar mavjud emas!', 'warning')
+            return redirect(url_for('main.admin'))
+        
+        # Create Excel file
+        df = pd.DataFrame(export_data)
+        
+        # Create a BytesIO object
+        output = BytesIO()
+        
+        # Write to Excel
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, sheet_name='Bot Yozishmalari', index=False)
+        
+        output.seek(0)
+        
+        # Generate filename with current date
+        filename = f"bot_yozishmalari_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+        
+        return send_file(
+            output,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        flash(f'Eksport qilishda xatolik: {str(e)}', 'error')
+        return redirect(url_for('main.admin'))
 
 @main_bp.route('/admin/broadcast', methods=['POST'])
 @login_required
