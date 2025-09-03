@@ -30,10 +30,43 @@ class EmailService:
         self.sendgrid_url = "https://api.sendgrid.com/v3/mail/send"
     
     def send_smtp_email(self, to_email, subject, html_content, text_content=""):
-        """SMTP orqali email yuborish (placeholder)"""
-        # SMTP ni hozircha o'chirib qo'yamiz, faqat SendGrid ishlatamiz
-        logger.info(f"SMTP email placeholder to {to_email}")
-        return False
+        """SMTP orqali email yuborish"""
+        try:
+            import smtplib
+            from email.mime.multipart import MIMEMultipart
+            from email.mime.text import MIMEText
+            
+            if not self.smtp_user or not self.smtp_password:
+                logger.error("SMTP credentials not configured")
+                return False
+            
+            # Create message
+            msg = MIMEMultipart('alternative')
+            msg['Subject'] = subject
+            msg['From'] = self.from_email
+            msg['To'] = to_email
+            
+            # Add text and HTML parts
+            if text_content:
+                text_part = MIMEText(text_content, 'plain', 'utf-8')
+                msg.attach(text_part)
+            
+            if html_content:
+                html_part = MIMEText(html_content, 'html', 'utf-8')
+                msg.attach(html_part)
+            
+            # Send email
+            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+                server.starttls()
+                server.login(self.smtp_user, self.smtp_password)
+                server.send_message(msg)
+            
+            logger.info(f"SMTP email sent to {to_email}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"SMTP email error: {str(e)}")
+            return False
     
     def send_sendgrid_email(self, to_email, subject, html_content, text_content=""):
         """SendGrid API orqali email yuborish"""
@@ -75,10 +108,14 @@ class EmailService:
     
     def send_email(self, to_email, subject, html_content, text_content=""):
         """Email yuborish (SMTP yoki SendGrid)"""
-        if self.sendgrid_api_key:
+        # O'zbekistonda SMTP ni afzal ko'ramiz
+        if self.smtp_user and self.smtp_password:
+            return self.send_smtp_email(to_email, subject, html_content, text_content)
+        elif self.sendgrid_api_key:
             return self.send_sendgrid_email(to_email, subject, html_content, text_content)
         else:
-            return self.send_smtp_email(to_email, subject, html_content, text_content)
+            logger.error("No email service configured (SMTP or SendGrid)")
+            return False
 
 class SMSService:
     """SMS yuborish xizmati (O'zbekiston)"""
