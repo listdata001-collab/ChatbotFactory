@@ -261,8 +261,11 @@ class TelegramBot:
         self.application.add_handler(CallbackQueryHandler(self.language_callback))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
     
-    async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def start_command(self, update: Update, context) -> None:
         """Handle /start command"""
+        if not update or not update.effective_user or not update.message:
+            return
+        
         user = update.effective_user
         
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
@@ -290,9 +293,10 @@ class TelegramBot:
             welcome_message += "🌐 Tilni tanlash uchun /language buyrug'ini ishlating.\n"
             welcome_message += "❓ Yordam uchun /help buyrug'ini ishlating."
             
-            await update.message.reply_text(welcome_message)
+            if update.message:
+                await update.message.reply_text(welcome_message)
     
-    async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def help_command(self, update: Update, context) -> None:
         """Handle /help command"""
         help_text = """
 🤖 BotFactory AI Yordam
@@ -316,17 +320,22 @@ quyidagi buyruq orqali hisobingizni bog'lang:
 • Rus tili (Starter/Basic/Premium)
 • Ingliz tili (Starter/Basic/Premium)
         """
-        await update.message.reply_text(help_text)
+        if update and update.message:
+            await update.message.reply_text(help_text)
     
-    async def language_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def language_command(self, update: Update, context) -> None:
         """Handle /language command"""
+        if not update or not update.effective_user or not update.message:
+            return
+        
         user_id = str(update.effective_user.id)
         
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
             db_user = User.query.filter_by(telegram_id=user_id).first()
             if not db_user:
-                await update.message.reply_text("❌ Foydalanuvchi topilmadi!")
+                if update.message:
+                    await update.message.reply_text("❌ Foydalanuvchi topilmadi!")
                 return
             
             # Create language selection keyboard
@@ -352,18 +361,26 @@ quyidagi buyruq orqali hisobingizni bog'lang:
             message = f"🌐 Joriy til: {lang_names.get(current_lang, default_lang)}\n"
             message += "Tilni tanlang:"
             
-            await update.message.reply_text(message, reply_markup=reply_markup)
+            if update.message:
+                await update.message.reply_text(message, reply_markup=reply_markup)
     
-    async def language_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def language_callback(self, update: Update, context) -> None:
         """Handle language selection callback"""
+        if not update or not update.callback_query:
+            return
+        
         query = update.callback_query
         await query.answer()
+        
+        if not query.from_user or not query.data:
+            return
         
         user_id = str(query.from_user.id)
         language = query.data.split('_')[1] if '_' in query.data else None
         
         if query.data == "lang_locked":
-            await query.edit_message_text("🔒 Bu til faqat Starter, Basic yoki Premium obunachi uchun mavjud!")
+            if query:
+                await query.edit_message_text("🔒 Bu til faqat Starter, Basic yoki Premium obunachi uchun mavjud!")
             return
         
         if not language:
@@ -383,12 +400,17 @@ quyidagi buyruq orqali hisobingizni bog'lang:
                     'en': f"✅ Language changed to {lang_names[language]}!"
                 }
                 
-                await query.edit_message_text(success_messages.get(language, success_messages['uz']))
+                if query:
+                    await query.edit_message_text(success_messages.get(language, success_messages['uz']))
             else:
-                await query.edit_message_text("❌ Bu tilni tanlash uchun obunangizni yangilang!")
+                if query:
+                    await query.edit_message_text("❌ Bu tilni tanlash uchun obunangizni yangilang!")
     
-    async def link_account_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def link_account_command(self, update: Update, context) -> None:
         """Handle /link command to connect Telegram account with web account"""
+        if not update or not update.effective_user or not update.message:
+            return
+        
         user_id = str(update.effective_user.id)
         
         # Check if arguments provided
@@ -403,7 +425,8 @@ Masalan:
 /link onlinemobi mypassword
 
 ❗️ Bu buyruqdan foydalangach, obunangiz yangilanadi va barcha premium imkoniyatlar ochiladi!"""
-            await update.message.reply_text(message)
+            if update.message:
+                await update.message.reply_text(message)
             return
         
         username = context.args[0]
@@ -417,18 +440,21 @@ Masalan:
             web_user = User.query.filter_by(username=username).first()
             
             if not web_user:
-                await update.message.reply_text("❌ Bunday foydalanuvchi nomi topilmadi!")
+                if update.message:
+                    await update.message.reply_text("❌ Bunday foydalanuvchi nomi topilmadi!")
                 return
             
             # Check password
             if not check_password_hash(web_user.password_hash, password):
-                await update.message.reply_text("❌ Noto'g'ri parol!")
+                if update.message:
+                    await update.message.reply_text("❌ Noto'g'ri parol!")
                 return
             
             # Check if this telegram account is already linked to someone else
             existing_tg_user = User.query.filter_by(telegram_id=user_id).first()
             if existing_tg_user and existing_tg_user.id != web_user.id:
-                await update.message.reply_text("❌ Bu Telegram hisob boshqa foydalanuvchiga bog'langan!")
+                if update.message:
+                    await update.message.reply_text("❌ Bu Telegram hisob boshqa foydalanuvchiga bog'langan!")
                 return
             
             # Link telegram account to web account
@@ -453,12 +479,19 @@ Masalan:
             if web_user.subscription_type in ['starter', 'basic', 'premium', 'admin']:
                 success_message += "\n\n🌐 Endi /language buyrug'i bilan tilni tanlashingiz mumkin!"
             
-            await update.message.reply_text(success_message)
+            if update.message:
+                await update.message.reply_text(success_message)
     
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+    async def handle_message(self, update: Update, context) -> None:
         """Handle regular text messages"""
+        if not update or not update.effective_user or not update.message:
+            return
+        
         user_id = str(update.effective_user.id)
         message_text = update.message.text
+        
+        if not message_text:
+            return
         
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
