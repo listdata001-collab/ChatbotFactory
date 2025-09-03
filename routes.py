@@ -199,6 +199,9 @@ def create_bot():
         name = request.form.get('name')
         platform = request.form.get('platform', 'Telegram')
         telegram_token = request.form.get('telegram_token')
+        instagram_token = request.form.get('instagram_token')
+        whatsapp_token = request.form.get('whatsapp_token')
+        whatsapp_phone_id = request.form.get('whatsapp_phone_id')
         
         if not name:
             flash('Bot nomi kiritilishi shart!', 'error')
@@ -209,11 +212,14 @@ def create_bot():
         bot.name = name
         bot.platform = platform
         bot.telegram_token = telegram_token
+        bot.instagram_token = instagram_token
+        bot.whatsapp_token = whatsapp_token
+        bot.whatsapp_phone_id = whatsapp_phone_id
         
         db.session.add(bot)
         db.session.commit()
         
-        # Telegram bot uchun avtomatik ishga tushirish
+        # Platform uchun avtomatik ishga tushirish
         if platform == 'Telegram' and telegram_token:
             try:
                 from telegram_bot import start_bot_automatically
@@ -221,7 +227,31 @@ def create_bot():
                 if success:
                     bot.is_active = True
                     db.session.commit()
-                    flash('Bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
+                    flash('Telegram bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
+                else:
+                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
+            except Exception as e:
+                flash(f'Bot yaratildi, lekin aktivlashtirish xatoligi: {str(e)}', 'warning')
+        elif platform == 'Instagram' and instagram_token:
+            try:
+                from instagram_bot import start_instagram_bot_automatically
+                success = start_instagram_bot_automatically(bot.id, instagram_token)
+                if success:
+                    bot.is_active = True
+                    db.session.commit()
+                    flash('Instagram bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
+                else:
+                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
+            except Exception as e:
+                flash(f'Bot yaratildi, lekin aktivlashtirish xatoligi: {str(e)}', 'warning')
+        elif platform == 'WhatsApp' and whatsapp_token and whatsapp_phone_id:
+            try:
+                from whatsapp_bot import start_whatsapp_bot_automatically
+                success = start_whatsapp_bot_automatically(bot.id, whatsapp_token, whatsapp_phone_id)
+                if success:
+                    bot.is_active = True
+                    db.session.commit()
+                    flash('WhatsApp bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
                 else:
                     flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
             except Exception as e:

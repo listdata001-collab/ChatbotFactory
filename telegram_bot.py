@@ -134,12 +134,9 @@ class TelegramHTTPBot:
         # Handle commands
         if update.message and update.message.text:
             text = update.message.text
-            print(f"[DEBUG] Received message: {text}")
             if text.startswith('/'):
                 cmd = text.split()[0][1:]  # Remove '/'
-                print(f"[DEBUG] Processing command: {cmd}")
                 if 'start' in self.handlers and cmd == 'start':
-                    print(f"[DEBUG] Executing /start command")
                     for handler in self.handlers['start']:
                         await handler(update, None)
                 elif 'help' in self.handlers and cmd == 'help':

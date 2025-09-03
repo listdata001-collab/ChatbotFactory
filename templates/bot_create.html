@@ -44,10 +44,10 @@
                             </option>
                             {% if current_user.subscription_type in ['basic', 'premium', 'admin'] %}
                             <option value="Instagram">
-                                <i class="fab fa-instagram"></i> Instagram (tez orada)
+                                <i class="fab fa-instagram"></i> Instagram
                             </option>
                             <option value="WhatsApp">
-                                <i class="fab fa-whatsapp"></i> WhatsApp (tez orada)
+                                <i class="fab fa-whatsapp"></i> WhatsApp
                             </option>
                             {% endif %}
                         </select>
@@ -67,6 +67,37 @@
                                placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxyz" required>
                         <div class="form-text">
                             BotFather dan olgan tokenni kiriting. Format: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="instagram-settings" style="display: none;">
+                        <label for="instagram_token" class="form-label">
+                            <i class="fab fa-instagram me-1"></i>Instagram Access Token *
+                        </label>
+                        <input type="text" class="form-control font-monospace" id="instagram_token" name="instagram_token" 
+                               placeholder="Instagram Business API token">
+                        <div class="form-text">
+                            Instagram Business API dan olgan access tokenni kiriting
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="whatsapp-settings" style="display: none;">
+                        <label for="whatsapp_token" class="form-label">
+                            <i class="fab fa-whatsapp me-1"></i>WhatsApp Access Token *
+                        </label>
+                        <input type="text" class="form-control font-monospace" id="whatsapp_token" name="whatsapp_token" 
+                               placeholder="WhatsApp Business API token">
+                        <div class="form-text">
+                            WhatsApp Business API dan olgan access tokenni kiriting
+                        </div>
+                        
+                        <label for="whatsapp_phone_id" class="form-label mt-3">
+                            <i class="fas fa-phone me-1"></i>WhatsApp Phone Number ID *
+                        </label>
+                        <input type="text" class="form-control" id="whatsapp_phone_id" name="whatsapp_phone_id" 
+                               placeholder="123456789012345">
+                        <div class="form-text">
+                            WhatsApp Business API dan olgan telefon raqami ID-si
                         </div>
                     </div>
                     
@@ -121,18 +152,40 @@ document.addEventListener('DOMContentLoaded', function() {
     const telegramSettings = document.getElementById('telegram-settings');
     const tokenInput = document.getElementById('telegram_token');
     
-    function toggleTelegramSettings() {
+    const instagramSettings = document.getElementById('instagram-settings');
+    const whatsappSettings = document.getElementById('whatsapp-settings');
+    const instagramTokenInput = document.getElementById('instagram_token');
+    const whatsappTokenInput = document.getElementById('whatsapp_token');
+    const whatsappPhoneInput = document.getElementById('whatsapp_phone_id');
+    
+    function togglePlatformSettings() {
+        // Hide all settings
+        telegramSettings.style.display = 'none';
+        instagramSettings.style.display = 'none';
+        whatsappSettings.style.display = 'none';
+        
+        // Remove required from all inputs
+        tokenInput.required = false;
+        instagramTokenInput.required = false;
+        whatsappTokenInput.required = false;
+        whatsappPhoneInput.required = false;
+        
+        // Show relevant settings
         if (platformSelect.value === 'Telegram') {
             telegramSettings.style.display = 'block';
             tokenInput.required = true;
-        } else {
-            telegramSettings.style.display = 'none';
-            tokenInput.required = false;
+        } else if (platformSelect.value === 'Instagram') {
+            instagramSettings.style.display = 'block';
+            instagramTokenInput.required = true;
+        } else if (platformSelect.value === 'WhatsApp') {
+            whatsappSettings.style.display = 'block';
+            whatsappTokenInput.required = true;
+            whatsappPhoneInput.required = true;
         }
     }
     
-    platformSelect.addEventListener('change', toggleTelegramSettings);
-    toggleTelegramSettings(); // Initial call
+    platformSelect.addEventListener('change', togglePlatformSettings);
+    togglePlatformSettings(); // Initial call
     
     // Token validation
     tokenInput.addEventListener('input', function() {
