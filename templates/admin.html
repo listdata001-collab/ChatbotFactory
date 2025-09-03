@@ -387,21 +387,18 @@
                                         {% for user in users %}
                                             {% if user.telegram_id and user.telegram_id|string == chat.user_telegram_id|string %}
                                                 <i class="fab fa-telegram text-primary"></i> @{{ user.username }}
-                                                {% break %}
                                             {% endif %}
                                         {% endfor %}
                                     {% elif chat.user_instagram_id %}
                                         {% for user in users %}
                                             {% if user.instagram_id and user.instagram_id == chat.user_instagram_id %}
                                                 <i class="fab fa-instagram text-warning"></i> @{{ user.username }}
-                                                {% break %}
                                             {% endif %}
                                         {% endfor %}
                                     {% elif chat.user_whatsapp_number %}
                                         {% for user in users %}
                                             {% if user.whatsapp_number and user.whatsapp_number == chat.user_whatsapp_number %}
                                                 <i class="fab fa-whatsapp text-success"></i> @{{ user.username }}
-                                                {% break %}
                                             {% endif %}
                                         {% endfor %}
                                     {% endif %}
