@@ -94,28 +94,34 @@ with app.app_context():
     try:
         db.create_all()
         
-        # Add new columns if they don't exist (for notification settings)
+        # Add new columns if they don't exist (for notification settings) - SQLite compatible
         try:
             from sqlalchemy import text
             
+            # SQLite compatible column checking using PRAGMA table_info
+            def column_exists(table_name, column_name):
+                try:
+                    result = db.session.execute(text(f"PRAGMA table_info({table_name})"))
+                    columns = [row[1] for row in result.fetchall()]  # row[1] is column name
+                    return column_name in columns
+                except:
+                    return False
+            
             # Check and add admin_chat_id column
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='admin_chat_id'"))
-            if not result.fetchone():
-                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN admin_chat_id VARCHAR(50)"))
+            if not column_exists('user', 'admin_chat_id'):
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN admin_chat_id VARCHAR(50)'))
                 db.session.commit()
                 logging.info("Added admin_chat_id column")
             
             # Check and add notification_channel column
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='notification_channel'"))
-            if not result.fetchone():
-                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN notification_channel VARCHAR(100)"))
+            if not column_exists('user', 'notification_channel'):
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN notification_channel VARCHAR(100)'))
                 db.session.commit()
                 logging.info("Added notification_channel column")
             
             # Check and add notifications_enabled column
-            result = db.session.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name='user' AND column_name='notifications_enabled'"))
-            if not result.fetchone():
-                db.session.execute(text("ALTER TABLE \"user\" ADD COLUMN notifications_enabled BOOLEAN DEFAULT FALSE"))
+            if not column_exists('user', 'notifications_enabled'):
+                db.session.execute(text('ALTER TABLE "user" ADD COLUMN notifications_enabled BOOLEAN DEFAULT 0'))
                 db.session.commit()
                 logging.info("Added notifications_enabled column")
                 
