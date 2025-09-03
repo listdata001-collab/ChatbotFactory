@@ -71,10 +71,10 @@ class Bot(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     platform = db.Column(db.String(20), default='Telegram')  # Telegram/Instagram/WhatsApp
-    telegram_token = db.Column(db.String(200))
+    telegram_token = db.Column(db.String(500))
     telegram_username = db.Column(db.String(100))
-    instagram_token = db.Column(db.String(200))
-    whatsapp_token = db.Column(db.String(200))
+    instagram_token = db.Column(db.String(500))
+    whatsapp_token = db.Column(db.String(500))
     whatsapp_phone_id = db.Column(db.String(100))
     daily_messages = db.Column(db.Integer, default=0)
     weekly_messages = db.Column(db.Integer, default=0)

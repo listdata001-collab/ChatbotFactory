@@ -33,6 +33,14 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "botfactory-secret-key-2024")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
+# Cache busting for templates  
+@app.after_request
+def after_request(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache" 
+    response.headers["Expires"] = "0"
+    return response
+
 # Configure the database
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///botfactory.db")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
