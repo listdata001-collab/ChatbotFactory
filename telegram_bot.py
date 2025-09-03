@@ -145,6 +145,9 @@ class TelegramHTTPBot:
                 elif 'language' in self.handlers and cmd == 'language':
                     for handler in self.handlers['language']:
                         await handler(update, None)
+                elif 'link' in self.handlers and cmd == 'link':
+                    for handler in self.handlers['link']:
+                        await handler(update, None)
             else:
                 # Regular message
                 if 'message' in self.handlers:
