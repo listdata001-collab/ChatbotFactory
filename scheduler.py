@@ -210,8 +210,26 @@ class TaskScheduler:
                 for user in expiring_soon:
                     days_left = (user.subscription_end_date - datetime.utcnow()).days
                     try:
-                        success = self.campaigns.send_subscription_reminder(user, days_left)
-                        if success:
+                        # Email eslatma yuborish
+                        email_success = self.campaigns.send_subscription_reminder(user, days_left)
+                        
+                        # Telegram orqali ham eslatma yuborish (agar admin chat ID mavjud bo'lsa)
+                        telegram_success = False
+                        if user.admin_chat_id:
+                            from notification_service import TelegramNotificationService
+                            telegram_service = TelegramNotificationService()
+                            
+                            user_info = {
+                                'username': user.username,
+                                'subscription_type': user.subscription_type,
+                                'subscription_end_date': user.subscription_end_date.strftime('%d.%m.%Y') if user.subscription_end_date else 'Noma\'lum'
+                            }
+                            
+                            telegram_success = telegram_service.send_subscription_reminder(
+                                user.admin_chat_id, user_info, days_left
+                            )
+                        
+                        if email_success or telegram_success:
                             reminder_count += 1
                     except Exception as e:
                         logger.error(f"Reminder send error for user {user.id}: {str(e)}")
@@ -231,7 +249,23 @@ class TaskScheduler:
                         email_success = self.campaigns.send_subscription_reminder(user, days_left)
                         sms_success = self.campaigns.send_trial_ending_sms(user, days_left)
                         
-                        if email_success or sms_success:
+                        # Telegram orqali ham eslatma (agar admin chat ID mavjud bo'lsa)
+                        telegram_success = False
+                        if user.admin_chat_id:
+                            from notification_service import TelegramNotificationService
+                            telegram_service = TelegramNotificationService()
+                            
+                            user_info = {
+                                'username': user.username,
+                                'subscription_type': user.subscription_type,
+                                'subscription_end_date': user.subscription_end_date.strftime('%d.%m.%Y') if user.subscription_end_date else 'Noma\'lum'
+                            }
+                            
+                            telegram_success = telegram_service.send_subscription_reminder(
+                                user.admin_chat_id, user_info, days_left
+                            )
+                        
+                        if email_success or sms_success or telegram_success:
                             free_reminder_count += 1
                     except Exception as e:
                         logger.error(f"Free trial reminder error for user {user.id}: {str(e)}")
@@ -245,6 +279,7 @@ class TaskScheduler:
                 expired_count = 0
                 for user in expired_users:
                     try:
+                        old_subscription_type = user.subscription_type
                         user.subscription_type = 'free'
                         user.subscription_end_date = None
                         
@@ -256,7 +291,23 @@ class TaskScheduler:
                         db.session.commit()
                         expired_count += 1
                         
-                        # Tugash xabari (placeholder)
+                        # Telegram orqali tugash xabari yuborish
+                        if user.admin_chat_id:
+                            try:
+                                from notification_service import TelegramNotificationService
+                                telegram_service = TelegramNotificationService()
+                                
+                                user_info = {
+                                    'username': user.username,
+                                    'old_subscription_type': old_subscription_type
+                                }
+                                
+                                telegram_service.send_subscription_expired_notification(
+                                    user.admin_chat_id, user_info
+                                )
+                            except Exception as tg_error:
+                                logger.error(f"Telegram expiry notification error for user {user.id}: {str(tg_error)}")
+                        
                         logger.info(f"Subscription expired for user {user.id}")
                         
                     except Exception as e:

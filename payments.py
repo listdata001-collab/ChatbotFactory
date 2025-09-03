@@ -282,6 +282,25 @@ class PaymentProcessor:
             
             db.session.commit()
             
+            # Telegram orqali to'lov haqida bildirishnoma yuborish
+            if user and user.admin_chat_id:
+                try:
+                    from notification_service import TelegramNotificationService
+                    telegram_service = TelegramNotificationService()
+                    
+                    payment_info = {
+                        'username': user.username,
+                        'amount': payment.amount,
+                        'method': payment.method,
+                        'subscription_type': payment.subscription_type
+                    }
+                    
+                    telegram_service.send_payment_success_notification(
+                        user.admin_chat_id, payment_info
+                    )
+                except Exception as tg_error:
+                    logger.error(f"Telegram payment notification error: {str(tg_error)}")
+            
             logger.info(f"To'lov tasdiqlandi: {payment_id}")
             return {'success': True, 'payment': payment}
             

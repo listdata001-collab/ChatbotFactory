@@ -117,6 +117,117 @@ BotFactory AI - Suhbat Kuzatuvi
             logger.error(f"Error sending notification to {chat_id}: {str(e)}")
             return False
     
+    def send_subscription_reminder(self, admin_chat_id: str, user_info: dict, days_left: int) -> bool:
+        """Obuna tugashi haqida Telegram orqali eslatma yuborish"""
+        if not self.bot_token:
+            return False
+            
+        # Obuna turi nomlarini formatlash
+        subscription_names = {
+            'free': 'Bepul (Test)',
+            'basic': 'Basic',
+            'premium': 'Premium',
+            'admin': 'Admin'
+        }
+        
+        subscription_name = subscription_names.get(user_info.get('subscription_type', 'free'), 'Noma\'lum')
+        username = user_info.get('username', 'Noma\'lum')
+        end_date = user_info.get('subscription_end_date', 'Noma\'lum')
+        
+        # Xabar matni
+        if days_left <= 1:
+            urgency_icon = "🚨"
+            urgency_text = "SHOSHILINCH!"
+        elif days_left <= 3:
+            urgency_icon = "⚠️"
+            urgency_text = "MUHIM ESLATMA"
+        else:
+            urgency_icon = "⏰"
+            urgency_text = "Eslatma"
+        
+        notification_text = f"""{urgency_icon} {urgency_text}
+
+📋 Obuna tugash eslatmasi
+━━━━━━━━━━━━━━━━━━━
+
+👤 Foydalanuvchi: {username}
+💼 Obuna turi: {subscription_name}
+📅 Tugash sanasi: {end_date}
+⏳ Qolgan kunlar: {days_left} kun
+
+{"🔴 Obunangiz bugun tugaydi!" if days_left <= 1 else f"📢 Obunangiz {days_left} kundan keyin tugaydi!"}
+
+💡 Xizmatlardan uzluksiz foydalanish uchun obunani yangilang:
+• Basic: 290,000 so'm/oy
+• Premium: 590,000 so'm/oy
+
+🔗 Yangilash: https://botfactory.uz/subscription
+
+━━━━━━━━━━━━━━━━━━━
+BotFactory AI - Obuna boshqaruvi"""
+        
+        return self._send_message(admin_chat_id, notification_text)
+    
+    def send_payment_success_notification(self, admin_chat_id: str, payment_info: dict) -> bool:
+        """To'lov muvaffaqiyatli amalga oshirilgani haqida bildirishnoma"""
+        if not self.bot_token:
+            return False
+            
+        username = payment_info.get('username', 'Noma\'lum')
+        amount = payment_info.get('amount', 0)
+        method = payment_info.get('method', 'Noma\'lum')
+        subscription_type = payment_info.get('subscription_type', 'basic')
+        
+        subscription_names = {
+            'basic': 'Basic',
+            'premium': 'Premium'
+        }
+        
+        subscription_name = subscription_names.get(subscription_type, subscription_type)
+        
+        notification_text = f"""✅ YANGI TO'LOV!
+
+💰 To'lov muvaffaqiyatli qabul qilindi
+━━━━━━━━━━━━━━━━━━━
+
+👤 Foydalanuvchi: {username}
+💳 Summa: {amount:,.0f} so'm
+🏦 Usul: {method.upper()}
+📦 Obuna: {subscription_name}
+📅 Vaqt: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+🎉 Foydalanuvchi 30 kunlik obunaga ega bo'ldi!
+
+━━━━━━━━━━━━━━━━━━━
+BotFactory AI - To'lovlar"""
+        
+        return self._send_message(admin_chat_id, notification_text)
+    
+    def send_subscription_expired_notification(self, admin_chat_id: str, user_info: dict) -> bool:
+        """Obuna tugagani haqida bildirishnoma"""
+        if not self.bot_token:
+            return False
+            
+        username = user_info.get('username', 'Noma\'lum')
+        old_subscription = user_info.get('old_subscription_type', 'basic')
+        
+        notification_text = f"""❌ OBUNA TUGADI
+
+📋 Foydalanuvchi obunasi tugadi
+━━━━━━━━━━━━━━━━━━━
+
+👤 Foydalanuvchi: {username}
+📦 Eski obuna: {old_subscription.upper()}
+🔄 Yangi holat: BEPUL
+📅 Tugash vaqti: {datetime.now().strftime('%d.%m.%Y %H:%M')}
+
+⚠️ Telegram bo'lmagan botlar deaktivatsiya qilindi!
+
+━━━━━━━━━━━━━━━━━━━
+BotFactory AI - Obuna boshqaruvi"""
+        
+        return self._send_message(admin_chat_id, notification_text)
+
     def test_notification(self, chat_id: str) -> bool:
         """Test notification yuborish"""
         test_message = """
