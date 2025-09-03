@@ -129,8 +129,8 @@
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="image-tab" data-bs-toggle="pill" data-bs-target="#image-content" type="button" role="tab">
-                            <i class="fas fa-image me-1"></i>Rasm
+                        <button class="nav-link" id="product-tab" data-bs-toggle="pill" data-bs-target="#product-content" type="button" role="tab">
+                            <i class="fas fa-box me-1"></i>Mahsulot
                         </button>
                     </li>
                 </ul>
@@ -171,18 +171,36 @@
                         </form>
                     </div>
 
-                    <!-- Image Upload Tab -->
-                    <div class="tab-pane fade" id="image-content" role="tabpanel">
-                        <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}" 
-                              enctype="multipart/form-data">
+                    <!-- Product Tab -->
+                    <div class="tab-pane fade" id="product-content" role="tabpanel">
+                        <form method="POST" action="{{ url_for('main.add_product_knowledge', bot_id=bot.id) }}">
                             <div class="mb-3">
-                                <label for="image_file" class="form-label small">Rasm yuklash:</label>
-                                <input type="file" class="form-control form-control-sm" id="image_file" name="file" 
-                                       accept=".jpg,.jpeg,.png,.gif,.webp" required>
-                                <div class="form-text">Maksimal: 16MB (.jpg, .png, .gif, .webp)</div>
+                                <label for="product_name" class="form-label small">Mahsulot nomi *:</label>
+                                <input type="text" class="form-control form-control-sm" id="product_name" name="product_name" 
+                                       placeholder="Masalan: Kartoshka" required>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-info w-100">
-                                <i class="fas fa-upload me-1"></i>Rasm yuklash
+                            
+                            <div class="mb-3">
+                                <label for="product_price" class="form-label small">Narx:</label>
+                                <input type="text" class="form-control form-control-sm" id="product_price" name="product_price" 
+                                       placeholder="Masalan: 2500 so'm/kg">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="product_description" class="form-label small">Tavsif:</label>
+                                <textarea class="form-control form-control-sm" id="product_description" name="product_description" rows="3" 
+                                          placeholder="Mahsulot haqida batafsil ma'lumot, mavjudlik, minimal buyurtma miqdori..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="product_image_url" class="form-label small">Rasm havolasi (ixtiyoriy):</label>
+                                <input type="url" class="form-control form-control-sm" id="product_image_url" name="product_image_url" 
+                                       placeholder="https://example.com/mahsulot-rasmi.jpg">
+                                <div class="form-text">Mahsulot rasmining URL manzili</div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                <i class="fas fa-plus me-1"></i>Mahsulot qo'shish
                             </button>
                         </form>
                     </div>
@@ -195,7 +213,16 @@
                 {% for kb in bot.knowledge_base %}
                 <div class="d-flex justify-content-between align-items-center small mb-2 p-2 bg-light rounded">
                     <div class="d-flex align-items-center">
-                        {% if kb.content_type == 'image' %}
+                        {% if kb.content_type == 'product' %}
+                            <i class="fas fa-box me-2 text-success"></i>
+                            <div class="d-flex align-items-center">
+                                {% if kb.content and 'http' in kb.content %}
+                                    <img src="{{ kb.content.split('Rasm: ')[1].split(' ')[0] if 'Rasm: ' in kb.content else '' }}" alt="Preview" 
+                                         style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;" class="me-2" onerror="this.style.display='none'">
+                                {% endif %}
+                                <span class="text-truncate">{{ kb.source_name or 'Mahsulot' }}</span>
+                            </div>
+                        {% elif kb.content_type == 'image' %}
                             <i class="fas fa-image me-2 text-warning"></i>
                             <div class="d-flex align-items-center">
                                 <img src="{{ kb.content }}" alt="Preview" style="width: 30px; height: 30px; object-fit: cover; border-radius: 4px;" class="me-2">

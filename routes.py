@@ -667,3 +667,52 @@ def delete_bot(bot_id):
     
     flash('Bot muvaffaqiyatli o\'chirildi!', 'success')
     return redirect(url_for('main.dashboard'))
+@main_bp.route('/bot/<int:bot_id>/knowledge/product', methods=['POST'])
+@login_required
+def add_product_knowledge(bot_id):
+    """Mahsulot ma'lumotini qo'shish"""
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu botga mahsulot qo\'shish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    product_name = request.form.get('product_name', '').strip()
+    product_price = request.form.get('product_price', '').strip()
+    product_description = request.form.get('product_description', '').strip()
+    product_image_url = request.form.get('product_image_url', '').strip()
+    
+    if not product_name:
+        flash('Mahsulot nomi kiritilishi shart!', 'error')
+        return redirect(url_for('main.edit_bot', bot_id=bot_id))
+    
+    # Mahsulot ma'lumotlarini birlashtirish
+    content_parts = [f"Mahsulot: {product_name}"]
+    
+    if product_price:
+        content_parts.append(f"Narx: {product_price}")
+    
+    if product_description:
+        content_parts.append(f"Tavsif: {product_description}")
+    
+    if product_image_url:
+        content_parts.append(f"Rasm: {product_image_url}")
+    
+    content = "\n".join(content_parts)
+    
+    try:
+        knowledge = KnowledgeBase()
+        knowledge.bot_id = bot_id
+        knowledge.content = content
+        knowledge.filename = None
+        knowledge.content_type = 'product'
+        knowledge.source_name = product_name
+        
+        db.session.add(knowledge)
+        db.session.commit()
+        
+        flash(f'"{product_name}" mahsuloti muvaffaqiyatli qo\'shildi!', 'success')
+    except Exception as e:
+        flash('Mahsulot qo\'shishda xatolik yuz berdi!', 'error')
+    
+    return redirect(url_for('main.edit_bot', bot_id=bot_id))

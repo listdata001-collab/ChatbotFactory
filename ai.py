@@ -86,7 +86,10 @@ def process_knowledge_base(bot_id: int) -> str:
         combined_knowledge = ""
         
         for entry in knowledge_entries:
-            if entry.content_type == 'image':
+            if entry.content_type == 'product':
+                # For products, format them nicely for AI
+                combined_knowledge += f"📦 {entry.content}\n\n"
+            elif entry.content_type == 'image':
                 # For images, add description about the image
                 image_info = f"Rasm: {entry.filename or 'Yuklangan rasm'}"
                 if entry.source_name:
