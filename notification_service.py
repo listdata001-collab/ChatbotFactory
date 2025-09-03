@@ -69,20 +69,20 @@ class TelegramNotificationService:
         if username and username.strip():
             customer_info = f"@{username} ({user_id})"
         
-        notification = f"""🔔 **Yangi suhbat!**
+        notification = f"""🔔 Yangi suhbat!
 
-{platform_icon} **Bot:** {bot_name}
-👤 **Mijoz:** {customer_info}
-⏰ **Vaqt:** {current_time}
+{platform_icon} Bot: {bot_name}
+👤 Mijoz: {customer_info}
+⏰ Vaqt: {current_time}
 
-📩 **Mijoz xabari:**
+📩 Mijoz xabari:
 {short_message}
 
-🤖 **Bot javobi:**
+🤖 Bot javobi:
 {short_response}
 
 ━━━━━━━━━━━━━━━━━━━
-_BotFactory AI - Suhbat Kuzatuvi_
+BotFactory AI - Suhbat Kuzatuvi
         """.strip()
         
         return notification
@@ -94,7 +94,6 @@ _BotFactory AI - Suhbat Kuzatuvi_
             data = {
                 'chat_id': chat_id,
                 'text': text,
-                'parse_mode': 'Markdown',
                 'disable_web_page_preview': True
             }
             
@@ -121,11 +120,11 @@ _BotFactory AI - Suhbat Kuzatuvi_
     def test_notification(self, chat_id: str) -> bool:
         """Test notification yuborish"""
         test_message = """
-🧪 **Test Bildirishnoma**
+🧪 Test Bildirishnoma
 
 Bu test xabaridir. Agar bu xabarni olgan bo'lsangiz, bildirishnomalar tizimi to'g'ri ishlayapti! ✅
 
-_BotFactory AI Platform_
+BotFactory AI Platform
         """.strip()
         
         return self._send_message(chat_id, test_message)
