@@ -486,16 +486,45 @@ Masalan:
                 db.session.add(chat_history)
                 db.session.commit()
                 
-                # Send response
+                # Send response - clean it first to prevent encoding issues
                 if ai_response:
-                    await update.message.reply_text(ai_response)
+                    # Clean the AI response to remove problematic Unicode
+                    cleaned_response = ai_response
+                    
+                    # Replace problematic Unicode characters
+                    unicode_replacements = {
+                        '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                        '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                        '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                    }
+                    
+                    for unicode_char, replacement in unicode_replacements.items():
+                        cleaned_response = cleaned_response.replace(unicode_char, replacement)
+                    
+                    await update.message.reply_text(cleaned_response)
                 else:
                     await update.message.reply_text("❌ Javob berishda xatolik yuz berdi!")
                     
             except Exception as e:
                 # Safe error logging to prevent encoding issues
-                error_msg = str(e).encode('utf-8', errors='ignore').decode('utf-8')
-                logger.error(f"Message handling error: {error_msg}")
+                try:
+                    error_msg = str(e)
+                    # Clean Unicode characters that might cause issues
+                    unicode_replacements = {
+                        '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                        '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                        '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                    }
+                    
+                    for unicode_char, replacement in unicode_replacements.items():
+                        error_msg = error_msg.replace(unicode_char, replacement)
+                    
+                    # Convert to safe ASCII
+                    error_msg = error_msg.encode('ascii', errors='ignore').decode('ascii')
+                    logger.error(f"Message handling error: {error_msg}")
+                except:
+                    logger.error("Message handling error: Unicode encoding issue")
+                
                 await update.message.reply_text("❌ Xatolik yuz berdi! Iltimos, keyinroq urinib ko'ring.")
     
     async def handle_voice_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):

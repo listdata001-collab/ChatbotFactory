@@ -40,14 +40,40 @@ def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language
         response = model.generate_content(full_prompt)
         
         if response.text:
-            return response.text
+            # Clean the response to prevent encoding issues
+            clean_text = response.text
+            
+            # Replace problematic Unicode characters
+            unicode_replacements = {
+                '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+            }
+            
+            for unicode_char, replacement in unicode_replacements.items():
+                clean_text = clean_text.replace(unicode_char, replacement)
+            
+            return clean_text
         else:
             return get_fallback_response(user_language)
             
     except Exception as e:
         # Safe error logging to prevent encoding issues  
-        error_msg = str(e).encode('utf-8', errors='ignore').decode('utf-8')
-        logging.error(f"AI response error: {error_msg}")
+        try:
+            error_msg = str(e)
+            unicode_replacements = {
+                '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+            }
+            
+            for unicode_char, replacement in unicode_replacements.items():
+                error_msg = error_msg.replace(unicode_char, replacement)
+            
+            error_msg = error_msg.encode('ascii', errors='ignore').decode('ascii')
+            logging.error(f"AI response error: {error_msg}")
+        except:
+            logging.error("AI response error: Unicode encoding issue")
         return get_fallback_response(user_language)
 
 def get_fallback_response(language: str = "uz") -> str:
