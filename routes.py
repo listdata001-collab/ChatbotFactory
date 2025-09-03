@@ -104,6 +104,32 @@ def set_telegram_id():
     try:
         telegram_id = request.form.get('telegram_id')
         if telegram_id and telegram_id.isdigit():
+            # Mavjud foydalanuvchini tekshirish
+            existing_user = User.query.filter_by(telegram_id=telegram_id).first()
+            
+            if existing_user and existing_user.id != current_user.id:
+                if existing_user.username.startswith('tg_'):
+                    # Avtomatik yaratilgan foydalanuvchini o'chirish
+                    # Avval uning barcha ma'lumotlarini admin ga ko'chirish
+                    
+                    # Botlarni ko'chirish
+                    from models import Bot
+                    for bot in existing_user.bots:
+                        bot.user_id = current_user.id
+                    
+                    # Chat history va boshqa ma'lumotlarni ko'chirish kerak emas
+                    # chunki ular admin bilan bog'liq emas
+                    
+                    # Eski foydalanuvchini o'chirish
+                    db.session.delete(existing_user)
+                    db.session.flush()  # O'chirish operatsiyasini bajarish
+                    
+                    flash(f'✅ Telegram ID {telegram_id} ga ega avtomatik foydalanuvchi admin bilan birlashtirildi!', 'info')
+                else:
+                    flash(f'❌ Telegram ID {telegram_id} boshqa haqiqiy foydalanuvchi tomonidan ishlatilmoqda!', 'error')
+                    return redirect(url_for('main.admin'))
+            
+            # Admin ga Telegram ID ni tayinlash
             current_user.telegram_id = telegram_id
             db.session.commit()
             flash('✅ Telegram ID muvaffaqiyatli saqlandi!', 'success')
@@ -111,6 +137,7 @@ def set_telegram_id():
             flash('❌ To\'g\'ri Telegram ID kiriting (faqat raqamlar)!', 'error')
             
     except Exception as e:
+        db.session.rollback()
         flash(f'❌ Xatolik: {str(e)}', 'error')
         
     return redirect(url_for('main.admin'))
