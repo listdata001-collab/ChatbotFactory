@@ -67,6 +67,33 @@ def admin():
     return render_template('admin.html', users=users, payments=payments, 
                          bots=bots, stats=stats, broadcasts=broadcasts, chat_history=chat_history)
 
+@main_bp.route('/admin/test_message', methods=['POST'])
+@login_required
+def test_message():
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        from telegram_bot import send_admin_message_to_user
+        
+        test_message_text = "🧪 TEST XABARI\n\nSalom! Bu BotFactory AI dan test xabari.\n\n✅ Telegram bot to'g'ri ishlayapti!\n\n📅 Vaqt: " + datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # Admin foydalanuvchining telegram_id sini olish
+        if current_user.telegram_id:
+            result = send_admin_message_to_user(current_user.telegram_id, test_message_text)
+            if result:
+                flash('✅ Test xabari muvaffaqiyatli yuborildi!', 'success')
+            else:
+                flash('❌ Test xabarini yuborishda xatolik yuz berdi!', 'error')
+        else:
+            flash('❌ Telegram ID topilmadi. Avval botga /start buyrug\'ini yuboring!', 'error')
+            
+    except Exception as e:
+        flash(f'❌ Xatolik: {str(e)}', 'error')
+        
+    return redirect(url_for('main.admin'))
+
 @main_bp.route('/admin/export-chat-history')
 @login_required
 def export_chat_history():

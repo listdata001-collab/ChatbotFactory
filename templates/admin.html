@@ -11,6 +11,25 @@
     </div>
 </div>
 
+<!-- Admin Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Tezkor amallar</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('main.test_message') }}" style="display: inline;">
+                    <button type="submit" class="btn btn-success me-2">
+                        <i class="fas fa-paper-plane me-1"></i>📧 Test xabar yuborish
+                    </button>
+                </form>
+                <small class="text-muted">Bu tugma sizga Telegram orqali test xabari yuboradi</small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Statistics Cards -->
 <div class="row mb-4">
     <div class="col-md-3 mb-3">
