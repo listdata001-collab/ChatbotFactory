@@ -313,8 +313,8 @@
                     {% elif current_user.subscription_type in ['basic', 'premium', 'admin'] %}
                     <button class="plan-button basic" disabled>Yuqori tarif faol</button>
                     {% else %}
-                    <button class="plan-button basic" data-bs-toggle="modal" data-bs-target="#paymentModal" 
-                            data-subscription="starter" data-amount="165000">Tanlash</button>
+                    <button class="plan-button basic" data-bs-toggle="modal" data-bs-target="#contactModal" 
+                            data-subscription="starter" data-amount="165000">Bog'lanish</button>
                     {% endif %}
                 </div>
             </div>
@@ -373,8 +373,8 @@
                     {% elif current_user.subscription_type in ['premium', 'admin'] %}
                     <button class="plan-button basic" disabled>Yuqori tarif faol</button>
                     {% else %}
-                    <button class="plan-button basic" data-bs-toggle="modal" data-bs-target="#paymentModal" 
-                            data-subscription="basic" data-amount="290000">Tanlash</button>
+                    <button class="plan-button basic" data-bs-toggle="modal" data-bs-target="#contactModal" 
+                            data-subscription="basic" data-amount="290000">Bog'lanish</button>
                     {% endif %}
                 </div>
             </div>
@@ -439,8 +439,8 @@
                     {% elif current_user.subscription_type == 'admin' %}
                     <button class="plan-button premium" disabled>Admin tarif faol</button>
                     {% else %}
-                    <button class="plan-button premium" data-bs-toggle="modal" data-bs-target="#paymentModal" 
-                            data-subscription="premium" data-amount="590000">Tanlash</button>
+                    <button class="plan-button premium" data-bs-toggle="modal" data-bs-target="#contactModal" 
+                            data-subscription="premium" data-amount="590000">Bog'lanish</button>
                     {% endif %}
                 </div>
             </div>
@@ -448,68 +448,53 @@
     </div>
 </div>
 
-<!-- Payment Modal -->
-<div class="modal fade" id="paymentModal" tabindex="-1">
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content" style="background: #2d2d2d; color: white;">
             <div class="modal-header">
                 <h5 class="modal-title">
-                    <i class="fas fa-credit-card me-2"></i>To'lov usulini tanlang
+                    <i class="fab fa-telegram-plane me-2"></i>Tarif almashish uchun bog'laning
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div id="paymentDetails" class="alert alert-info">
-                    <!-- Payment details will be filled by JavaScript -->
+            <div class="modal-body text-center">
+                <div id="contactDetails" class="alert alert-info">
+                    <h6 class="mb-3">Tanlangan tarif: <span id="selectedPlan"></span></h6>
+                    <p class="mb-3">Narxi: <span id="selectedAmount"></span> so'm/oy</p>
                 </div>
                 
-                <form id="paymentForm" method="POST" action="{{ url_for('payment.create_payment') }}">
-                    <input type="hidden" name="subscription_type" id="subscriptionType">
-                    <input type="hidden" name="amount" id="paymentAmount">
-                    
-                    <div class="row">
-                        <div class="col-md-4 mb-3">
-                            <label class="payment-method">
-                                <input type="radio" name="method" value="Payme" required>
-                                <div class="payment-card text-center p-3 border rounded">
-                                    <i class="fas fa-mobile-alt fs-1 text-primary mb-2"></i>
-                                    <h6>Payme</h6>
-                                    <small class="text-muted">Mobil to'lovlar</small>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label class="payment-method">
-                                <input type="radio" name="method" value="Click" required>
-                                <div class="payment-card text-center p-3 border rounded">
-                                    <i class="fas fa-credit-card fs-1 text-warning mb-2"></i>
-                                    <h6>Click</h6>
-                                    <small class="text-muted">Bank kartalar</small>
-                                </div>
-                            </label>
-                        </div>
-                        
-                        <div class="col-md-4 mb-3">
-                            <label class="payment-method">
-                                <input type="radio" name="method" value="Uzum" required>
-                                <div class="payment-card text-center p-3 border rounded">
-                                    <i class="fas fa-wallet fs-1 text-success mb-2"></i>
-                                    <h6>Uzum</h6>
-                                    <small class="text-muted">Uzum Bank</small>
-                                </div>
-                            </label>
-                        </div>
+                <div class="contact-info">
+                    <div class="mb-4">
+                        <i class="fab fa-telegram-plane fs-1 text-primary mb-3"></i>
+                        <h5>Telegram orqali bog'laning</h5>
+                        <p class="text-muted mb-3">
+                            Hozirda to'lov tizimi ishlab chiqilmoqda. Tarif almashish uchun quyidagi Telegram orqali bog'laning:
+                        </p>
+                        <a href="https://t.me/akramjon0011" target="_blank" class="btn btn-primary btn-lg">
+                            <i class="fab fa-telegram-plane me-2"></i>
+                            @akramjon0011
+                        </a>
                     </div>
-                </form>
+                    
+                    <div class="contact-instructions mt-4">
+                        <h6>Xabar yuborishda quyidagilarni ko'rsating:</h6>
+                        <ul class="list-unstyled text-start mt-3">
+                            <li><i class="fas fa-check text-success me-2"></i>Tanlagan tarif nomi</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Hisob ma'lumotlaringiz (username)</li>
+                            <li><i class="fas fa-check text-success me-2"></i>To'lov usuli (naqd/karta)</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    Bekor qilish
+                    Yopish
                 </button>
-                <button type="button" id="paymentSubmitBtn" class="btn btn-primary">
-                    To'lovni amalga oshirish
-                </button>
+                <a href="https://t.me/akramjon0011" target="_blank" class="btn btn-primary">
+                    <i class="fab fa-telegram-plane me-2"></i>
+                    Telegram orqali bog'lanish
+                </a>
             </div>
         </div>
     </div>
@@ -519,68 +504,24 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const paymentModal = document.getElementById('paymentModal');
-    const paymentForm = document.getElementById('paymentForm');
-    const paymentDetails = document.getElementById('paymentDetails');
+    const contactModal = document.getElementById('contactModal');
     
-    // Handle payment modal
-    paymentModal.addEventListener('show.bs.modal', function(event) {
+    // Handle contact modal
+    contactModal.addEventListener('show.bs.modal', function(event) {
         const button = event.relatedTarget;
         const subscription = button.getAttribute('data-subscription');
         const amount = button.getAttribute('data-amount');
         
-        // Update hidden fields
-        document.getElementById('subscriptionType').value = subscription;
-        document.getElementById('paymentAmount').value = amount;
-        
-        // Update payment details
-        const subscriptionNames = {
+        // Update plan information
+        const planNames = {
             'starter': 'Starter',
             'basic': 'Basic',
             'premium': 'Premium'
         };
         
-        paymentDetails.innerHTML = `
-            <strong>Tarif:</strong> ${subscriptionNames[subscription]}<br>
-            <strong>Miqdor:</strong> ${parseInt(amount).toLocaleString()} so'm
-        `;
-    });
-    
-    // Handle payment form submission
-    document.getElementById('paymentSubmitBtn').addEventListener('click', function() {
-        const selectedMethod = document.querySelector('input[name="method"]:checked');
-        if (selectedMethod) {
-            paymentForm.submit();
-        } else {
-            alert('Iltimos, to\'lov usulini tanlang!');
-        }
-    });
-    
-    // Style payment method cards
-    document.querySelectorAll('.payment-method').forEach(function(label) {
-        label.addEventListener('click', function() {
-            document.querySelectorAll('.payment-method').forEach(function(l) {
-                l.classList.remove('active');
-            });
-            this.classList.add('active');
-        });
+        document.getElementById('selectedPlan').textContent = planNames[subscription] || subscription;
+        document.getElementById('selectedAmount').textContent = new Intl.NumberFormat('uz-UZ').format(amount);
     });
 });
 </script>
-
-<style>
-.payment-method {
-    cursor: pointer;
-    display: block;
-}
-
-.payment-method.active .payment-card {
-    border-color: #007bff !important;
-    background-color: rgba(0, 123, 255, 0.1);
-}
-
-.payment-method input[type="radio"] {
-    display: none;
-}
-</style>
 {% endblock %}
