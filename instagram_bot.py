@@ -72,7 +72,12 @@ class InstagramBot:
             if caption:
                 payload['message']['text'] = caption
             
-            response = requests.post(url, json=payload, timeout=30)
+            headers = {
+                'Authorization': f'Bearer {self.access_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
             
             if response.status_code == 200:
                 logger.info(f"Instagram media sent to {recipient_id}")
@@ -91,7 +96,7 @@ class InstagramBot:
             url = f"{self.base_url}/{user_id}"
             params = {
                 'fields': 'name,profile_pic',
-
+                'access_token': self.access_token
             }
             
             response = requests.get(url, params=params, timeout=30)
@@ -128,7 +133,12 @@ class InstagramBot:
 
             }
             
-            response = requests.post(url, json=payload, timeout=30)
+            headers = {
+                'Authorization': f'Bearer {self.access_token}',
+                'Content-Type': 'application/json'
+            }
+            
+            response = requests.post(url, headers=headers, json=payload, timeout=30)
             
             if response.status_code == 200:
                 logger.info(f"Instagram quick reply sent to {recipient_id}")
@@ -393,7 +403,7 @@ def instagram_webhook(bot_id):
             
             bot = instagram_manager.get_bot(bot_id)
             if bot and verify_token == bot.verify_token:
-                return challenge
+                return str(challenge)
             else:
                 return 'Verification failed', 403
         
