@@ -94,6 +94,27 @@ def test_message():
         
     return redirect(url_for('main.admin'))
 
+@main_bp.route('/admin/set_telegram_id', methods=['POST'])
+@login_required
+def set_telegram_id():
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        telegram_id = request.form.get('telegram_id')
+        if telegram_id and telegram_id.isdigit():
+            current_user.telegram_id = telegram_id
+            db.session.commit()
+            flash('✅ Telegram ID muvaffaqiyatli saqlandi!', 'success')
+        else:
+            flash('❌ To\'g\'ri Telegram ID kiriting (faqat raqamlar)!', 'error')
+            
+    except Exception as e:
+        flash(f'❌ Xatolik: {str(e)}', 'error')
+        
+    return redirect(url_for('main.admin'))
+
 @main_bp.route('/admin/export-chat-history')
 @login_required
 def export_chat_history():

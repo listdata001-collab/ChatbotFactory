@@ -19,12 +19,43 @@
                 <h5 class="mb-0"><i class="fas fa-tools me-2"></i>Tezkor amallar</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('main.test_message') }}" style="display: inline;">
-                    <button type="submit" class="btn btn-success me-2">
-                        <i class="fas fa-paper-plane me-1"></i>📧 Test xabar yuborish
-                    </button>
-                </form>
-                <small class="text-muted">Bu tugma sizga Telegram orqali test xabari yuboradi</small>
+                <div class="row">
+                    <div class="col-md-6">
+                        <!-- Telegram ID Settings -->
+                        <h6><i class="fab fa-telegram me-1"></i>Telegram sozlamalari</h6>
+                        {% if current_user.telegram_id %}
+                        <p><strong>Sizning Telegram ID:</strong> <span class="badge bg-success">{{ current_user.telegram_id }}</span></p>
+                        <form method="POST" action="{{ url_for('main.test_message') }}" style="display: inline;">
+                            <button type="submit" class="btn btn-success me-2">
+                                <i class="fas fa-paper-plane me-1"></i>📧 Test xabar yuborish
+                            </button>
+                        </form>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <strong>⚠️ Telegram ID mavjud emas!</strong><br>
+                            Test xabar yuborish uchun Telegram ID ni kiriting:
+                        </div>
+                        <form method="POST" action="{{ url_for('main.set_telegram_id') }}" class="mb-3">
+                            <div class="input-group">
+                                <input type="text" name="telegram_id" class="form-control" placeholder="Telegram ID raqamingizni kiriting" required>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Saqlash
+                                </button>
+                            </div>
+                            <small class="text-muted">Telegram ID ni bilish uchun: @userinfobot ga "/start" yuboring</small>
+                        </form>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-info-circle me-1"></i>Telegram ID ni qanday topish mumkin:</h6>
+                        <ol class="small">
+                            <li>Telegramda <strong>@userinfobot</strong> ga yozing</li>
+                            <li><code>/start</code> buyrug'ini yuboring</li>
+                            <li>Bot sizga ID raqamingizni yuboradi</li>
+                            <li>O'sha raqamni bu yerga kiriting</li>
+                        </ol>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
