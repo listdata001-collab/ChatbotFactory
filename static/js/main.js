@@ -395,7 +395,14 @@ function handleFileUpload(input) {
     const file = input.files[0];
     if (!file) return;
     
-    const allowedTypes = ['text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/csv', 'application/csv'];
+    const allowedTypes = [
+        'text/plain', 
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 
+        'text/csv', 
+        'application/csv',
+        'application/vnd.ms-excel',  // CSV fayl ba'zan Excel sifatida taniladi
+        'text/comma-separated-values' // Ba'zi brauzerlar buni ishlatadi
+    ];
     const maxSize = 16 * 1024 * 1024; // 16MB
     
     if (!allowedTypes.includes(file.type)) {
