@@ -541,54 +541,58 @@ Masalan:
                 
                 logger.info("DEBUG: AI response received")
                 
-                # Save chat history
-                chat_history = ChatHistory()
-                chat_history.bot_id = self.bot_id
-                chat_history.user_telegram_id = user_id
-                chat_history.message = message_text
-                chat_history.response = ai_response
-                chat_history.language = db_user.language
-                db.session.add(chat_history)
-                db.session.commit()
-                
-                logger.info("DEBUG: Chat history saved")
-                
-                # Clean and send response safely
+                # Clean and prepare response first
                 if ai_response:
+                    # Ensure safe encoding for Telegram
+                    cleaned_response = ai_response
+                    
+                    # Replace problematic unicode characters but keep emojis
+                    unicode_replacements = {
+                        '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                        '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                        '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                    }
+                    
+                    for unicode_char, replacement in unicode_replacements.items():
+                        cleaned_response = cleaned_response.replace(unicode_char, replacement)
+                    
+                    # Fallback if empty
+                    if not cleaned_response.strip():
+                        cleaned_response = "Javob tayyor! 🤖"
+                    
+                    # Save chat history with safe encoding
                     try:
-                        # Ensure safe encoding for Telegram
-                        cleaned_response = ai_response
+                        # Ensure database-safe text
+                        safe_message = message_text.encode('utf-8', errors='ignore').decode('utf-8')
+                        safe_response = cleaned_response.encode('utf-8', errors='ignore').decode('utf-8')
                         
-                        # Replace problematic unicode characters but keep emojis
-                        unicode_replacements = {
-                            '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
-                            '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
-                            '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
-                        }
-                        
-                        for unicode_char, replacement in unicode_replacements.items():
-                            cleaned_response = cleaned_response.replace(unicode_char, replacement)
-                        
-                        # Ensure the response is properly encoded
-                        try:
-                            # Test if the string can be encoded safely
-                            cleaned_response.encode('utf-8')
-                        except UnicodeEncodeError:
-                            # If there are encoding issues, use a safe fallback
-                            cleaned_response = "Javob tayyor! 🤖"
-                        
-                        # Fallback if empty
-                        if not cleaned_response.strip():
-                            cleaned_response = "Javob tayyor! 🤖"
-                        
-                        # Send the response
+                        chat_history = ChatHistory()
+                        chat_history.bot_id = self.bot_id
+                        chat_history.user_telegram_id = user_id
+                        chat_history.message = safe_message
+                        chat_history.response = safe_response
+                        chat_history.language = db_user.language
+                        db.session.add(chat_history)
+                        db.session.commit()
+                        logger.info("DEBUG: Chat history saved")
+                    except Exception as db_error:
+                        # Safe error logging
+                        error_msg = str(db_error).encode('ascii', errors='ignore').decode('ascii')[:100]
+                        logger.error(f"Failed to save chat history: {error_msg}")
+                    
+                    # Send the response
+                    try:
                         if update.message:
                             await update.message.reply_text(cleaned_response)
+                            logger.info("DEBUG: Response sent successfully")
                     except Exception as send_error:
-                        # Final fallback with logging
+                        # Final fallback
                         logger.error(f"Failed to send response: {str(send_error)[:100]}")
-                        if update.message:
-                            await update.message.reply_text("Javob tayyor! 🤖")
+                        try:
+                            if update.message:
+                                await update.message.reply_text("Javob tayyor! 🤖")
+                        except:
+                            logger.error("Failed to send fallback message")
                 else:
                     await update.message.reply_text("Javob berishda xatolik yuz berdi! Keyinroq urinib ko'ring. ⚠️")
                     
