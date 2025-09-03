@@ -560,21 +560,48 @@ Masalan:
                     if not cleaned_response.strip():
                         cleaned_response = "Javob tayyor! 🤖"
                     
-                    # Save chat history with safe encoding
+                    # Save chat history with proper error handling
                     try:
-                        # Ensure database-safe text
-                        safe_message = message_text.encode('utf-8', errors='ignore').decode('utf-8')
-                        safe_response = cleaned_response.encode('utf-8', errors='ignore').decode('utf-8')
+                        # Clean text and remove problematic Unicode characters
+                        import re
                         
-                        chat_history = ChatHistory()
-                        chat_history.bot_id = self.bot_id
-                        chat_history.user_telegram_id = user_id
-                        chat_history.message = safe_message
-                        chat_history.response = safe_response
-                        chat_history.language = db_user.language
-                        db.session.add(chat_history)
-                        db.session.commit()
-                        logger.info("DEBUG: Chat history saved")
+                        def clean_text_for_db(text):
+                            if not text:
+                                return ""
+                            # Convert to UTF-8 and handle errors
+                            try:
+                                # Encode to UTF-8 bytes and back to ensure compatibility
+                                clean_text = text.encode('utf-8', errors='replace').decode('utf-8')
+                                # Remove or replace problematic control characters
+                                clean_text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '', clean_text)
+                                return clean_text
+                            except (UnicodeDecodeError, UnicodeEncodeError):
+                                # Fallback: remove non-ASCII characters except emojis
+                                return ''.join(char for char in text if ord(char) < 128 or ord(char) > 255)
+                        
+                        safe_message = clean_text_for_db(message_text)
+                        safe_response = clean_text_for_db(cleaned_response)
+                        
+                        # Create new session for chat history to avoid rollback issues
+                        try:
+                            chat_history = ChatHistory()
+                            chat_history.bot_id = self.bot_id
+                            chat_history.user_telegram_id = str(user_id)  # Ensure string
+                            chat_history.message = safe_message[:1000]  # Limit length
+                            chat_history.response = safe_response[:2000]  # Limit length
+                            chat_history.language = db_user.language or 'uz'
+                            
+                            db.session.add(chat_history)
+                            db.session.commit()
+                            logger.info("DEBUG: Chat history saved successfully")
+                            
+                        except Exception as db_error:
+                            # Rollback on any database error
+                            try:
+                                db.session.rollback()
+                                logger.error(f"Chat history save failed, rolled back: {str(db_error)[:100]}")
+                            except:
+                                logger.error("Chat history save failed and rollback failed")
                         
                         # Send notification to admin
                         try:
