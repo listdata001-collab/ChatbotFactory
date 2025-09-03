@@ -354,16 +354,38 @@ def upload_knowledge(bot_id):
                         content = file.read().decode('latin-1', errors='ignore')
                 
                 # Clean problematic Unicode characters
-                content = content.replace('\u2019', "'").replace('\u2018', "'")
-                content = content.replace('\u201c', '"').replace('\u201d', '"')
+                unicode_replacements = {
+                    '\u2019': "'",  # Right single quotation mark
+                    '\u2018': "'",  # Left single quotation mark
+                    '\u201c': '"',  # Left double quotation mark
+                    '\u201d': '"',  # Right double quotation mark
+                    '\u2013': '-',  # En dash
+                    '\u2014': '-',  # Em dash
+                    '\u2026': '...',  # Horizontal ellipsis
+                    '\u00a0': ' ',  # Non-breaking space
+                    '\u2010': '-',  # Hyphen
+                    '\u2011': '-',  # Non-breaking hyphen
+                    '\u2012': '-',  # Figure dash
+                    '\u2015': '-',  # Horizontal bar
+                }
+                
+                for unicode_char, replacement in unicode_replacements.items():
+                    content = content.replace(unicode_char, replacement)
                 
             elif filename.endswith('.docx'):
                 doc = docx.Document(file.stream)
                 paragraphs = []
                 for paragraph in doc.paragraphs:
                     # Clean Unicode characters from each paragraph
-                    text = paragraph.text.replace('\u2019', "'").replace('\u2018', "'")
-                    text = text.replace('\u201c', '"').replace('\u201d', '"')
+                    text = paragraph.text
+                    unicode_replacements = {
+                        '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                        '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                        '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                    }
+                    
+                    for unicode_char, replacement in unicode_replacements.items():
+                        text = text.replace(unicode_char, replacement)
                     paragraphs.append(text)
                 content = '\n'.join(paragraphs)
             else:
@@ -385,8 +407,17 @@ def upload_knowledge(bot_id):
             error_msg = 'Fayl yuklashda xatolik yuz berdi.'
             try:
                 # Safely convert error to string, handling Unicode characters
-                error_details = str(e).replace('\u2019', "'").replace('\u2018', "'")
-                # Remove any other problematic Unicode characters
+                error_details = str(e)
+                unicode_replacements = {
+                    '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                    '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                    '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                }
+                
+                for unicode_char, replacement in unicode_replacements.items():
+                    error_details = error_details.replace(unicode_char, replacement)
+                
+                # Remove any remaining problematic Unicode characters
                 error_details = error_details.encode('ascii', errors='ignore').decode('ascii')
                 if error_details.strip():
                     error_msg = f'Fayl yuklashda xatolik: {error_details}'
@@ -417,9 +448,15 @@ def add_text_knowledge(bot_id):
     
     try:
         # Clean problematic Unicode characters from user input
-        content = content.replace('\u2019', "'").replace('\u2018', "'")
-        content = content.replace('\u201c', '"').replace('\u201d', '"')
-        source_name = source_name.replace('\u2019', "'").replace('\u2018', "'")
+        unicode_replacements = {
+            '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+            '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+            '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+        }
+        
+        for unicode_char, replacement in unicode_replacements.items():
+            content = content.replace(unicode_char, replacement)
+            source_name = source_name.replace(unicode_char, replacement)
         
         knowledge = KnowledgeBase()
         knowledge.bot_id = bot_id
@@ -434,7 +471,16 @@ def add_text_knowledge(bot_id):
     except Exception as e:
         error_msg = 'Matn qo\'shishda xatolik yuz berdi.'
         try:
-            error_details = str(e).replace('\u2019', "'").replace('\u2018', "'")
+            error_details = str(e)
+            unicode_replacements = {
+                '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+            }
+            
+            for unicode_char, replacement in unicode_replacements.items():
+                error_details = error_details.replace(unicode_char, replacement)
+            
             error_details = error_details.encode('ascii', errors='ignore').decode('ascii')
             if error_details.strip():
                 error_msg = f'Matn qo\'shishda xatolik: {error_details}'
