@@ -593,9 +593,9 @@ Masalan:
                     await update.message.reply_text("Javob berishda xatolik yuz berdi! Keyinroq urinib ko'ring. ⚠️")
                     
             except Exception as e:
-                # Debug: log which step failed
+                # Debug: log which step failed (with safe encoding)
                 try:
-                    error_str = str(e)[:200]  # First 200 chars only
+                    error_str = str(e).encode('ascii', errors='ignore').decode('ascii')[:200]
                     logger.error(f"DEBUG: Message handling failed: {error_str}")
                 except:
                     logger.error("DEBUG: Message handling failed with encoding error")
