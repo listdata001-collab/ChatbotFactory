@@ -222,8 +222,8 @@ def handle_bulk_product_upload(file, bot_id):
         errors = []
         
         for idx, row in df.iterrows():
+            row_num = idx + 2  # Excel qator raqami
             try:
-                row_num = int(idx) + 2  # Excel qator raqami
                 product_name = str(row.get('mahsulot_nomi', '')).strip()
                 if not product_name or product_name == 'nan':
                     continue
@@ -1075,8 +1075,8 @@ def upload_bulk_products(bot_id):
         errors = []
         
         for idx, row in df.iterrows():
+            row_num = idx + 2  # Excel qator raqami
             try:
-                row_num = int(idx) + 2  # Excel qator raqami
                 product_name = str(row.get('mahsulot_nomi', '')).strip()
                 if not product_name or product_name == 'nan':
                     continue
@@ -1139,19 +1139,21 @@ def download_template():
     """Excel namuna fayl yuklash"""
     # Namuna ma'lumotlar
     sample_data = {
-        'Mahsulot nomi': ['Kartoshka', 'Piyoz', 'Sabzi', 'Pomidor'],
-        'Narx': ['2500 som/kg', '3000 som/kg', '4000 som/kg', '5000 som/kg'],
-        'Tavsif': [
+        'mahsulot_nomi': ['Kartoshka', 'Piyoz', 'Sabzi', 'Pomidor', 'Olcha'],
+        'narx': ['2500 som/kg', '3000 som/kg', '4000 som/kg', '5000 som/kg', '8000 som/kg'],
+        'tavsif': [
             'Yangi hosil kartoshka, yuqori sifat, minimal 100kg',
             'Quruq piyoz, saqlash muddati uzoq, minimal 50kg', 
             'Toza sabzi, organik o\'stirilgan, minimal 20kg',
-            'Qizil pomidor, yangi terilgan, minimal 30kg'
+            'Qizil pomidor, yangi terilgan, minimal 30kg',
+            'Shirin olcha, organik, minimal 10kg'
         ],
-        'Rasm URL': [
+        'rasm_url': [
             'https://example.com/kartoshka.jpg',
             'https://example.com/piyoz.jpg', 
             'https://example.com/sabzi.jpg',
-            'https://example.com/pomidor.jpg'
+            'https://example.com/pomidor.jpg',
+            'https://example.com/olcha.jpg'
         ]
     }
     
