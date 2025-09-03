@@ -134,7 +134,7 @@
                             <tr>
                                 <td>{{ user.id }}</td>
                                 <td>
-                                    <strong>{{ user.username }}</strong>
+                                    <strong>@{{ user.username }}</strong>
                                     {% if user.is_admin %}
                                     <span class="badge bg-danger ms-1">Admin</span>
                                     {% endif %}
@@ -170,7 +170,7 @@
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#changeSubscriptionModal"
                                                 data-user-id="{{ user.id }}"
-                                                data-user-name="{{ user.username }}"
+                                                data-user-name="@{{ user.username }}"
                                                 data-current-subscription="{{ user.subscription_type }}">
                                             <i class="fas fa-crown"></i>
                                         </button>
@@ -213,7 +213,7 @@
                             {% for payment in payments %}
                             <tr>
                                 <td>{{ payment.id }}</td>
-                                <td>{{ payment.user.username }}</td>
+                                <td>@{{ payment.user.username }}</td>
                                 <td><strong>{{ "{:,.0f}".format(payment.amount) }} so'm</strong></td>
                                 <td>
                                     {% if payment.method == 'Payme' %}
@@ -275,7 +275,7 @@
                             <tr>
                                 <td>{{ bot.id }}</td>
                                 <td><strong>{{ bot.name }}</strong></td>
-                                <td>{{ bot.owner.username }}</td>
+                                <td>@{{ bot.owner.username }}</td>
                                 <td>
                                     {% if bot.platform == 'Telegram' %}
                                     <span class="badge bg-info">
