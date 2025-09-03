@@ -36,9 +36,18 @@
             background-color: #e9ecef !important;
         }
         
-        /* "Qo'shilgan ma'lumotlar" sarlavhasi qora rangda */
+        /* "Qo'shilgan ma'lumotlar" sarlavhasi va matnlari qora rangda */
         h6.small.mb-2 {
             color: #212529 !important;
+        }
+        
+        /* Mahsulot nomlari va sanalar qora rangda */
+        .knowledge-item .text-truncate {
+            color: #212529 !important;
+        }
+        
+        .knowledge-item .text-muted, .knowledge-item span.text-muted {
+            color: #495057 !important;
         }
         
         @media (prefers-color-scheme: dark) {
@@ -60,9 +69,17 @@
                 background-color: #383838 !important;
             }
             
-            /* Dark mode uchun sarlavha oq rangda */
+            /* Dark mode uchun sarlavha va matnlar oq rangda */
             h6.small.mb-2 {
                 color: #ffffff !important;
+            }
+            
+            .knowledge-item .text-truncate {
+                color: #ffffff !important;
+            }
+            
+            .knowledge-item .text-muted, .knowledge-item span.text-muted {
+                color: #d1d1d1 !important;
             }
         }
     </style>
