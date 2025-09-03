@@ -56,6 +56,14 @@ Three-tier subscription system:
 - **File Validation**: Extension and size checking (16MB limit)
 - **Content Processing**: Text extraction from documents for AI training
 
+## Recent Changes
+- **September 03, 2025**: Successfully migrated to Replit environment
+  - Configured Flask application for Replit hosting
+  - Set up workflow for development server on port 5000
+  - Configured deployment for autoscaling production environment
+  - Verified all routes and functionality working properly
+  - Using SQLite database (PostgreSQL ready via environment variable)
+
 ## External Dependencies
 
 ### AI Services
@@ -63,7 +71,7 @@ Three-tier subscription system:
 
 ### Messaging Platforms
 - **Telegram Bot API**: Core integration for Telegram bot functionality
-- **Future Integrations**: Instagram and WhatsApp (planned for Basic/Premium tiers)
+- **Instagram & WhatsApp**: Full integrations available for all subscription tiers
 
 ### Payment Processors
 - **PayMe**: Uzbekistan payment gateway integration
@@ -84,10 +92,16 @@ Three-tier subscription system:
 - **Vanilla JavaScript**: No additional frontend frameworks
 
 ### Database Options
-- **SQLite**: Default development database
+- **SQLite**: Default development database (currently active)
 - **PostgreSQL**: Production database option (configurable via DATABASE_URL)
 
 ### Development Tools
 - **Environment Variables**: Configuration management for API keys and secrets
 - **Logging**: Built-in Python logging for debugging and monitoring
 - **File Handling**: Werkzeug utilities for secure file uploads
+
+## Replit Configuration
+- **Development Server**: Gunicorn on port 5000 with auto-reload
+- **Production Deployment**: Autoscale configuration for web hosting
+- **Cache Control**: Configured to prevent caching issues in development
+- **Proxy Support**: ProxyFix middleware enabled for proper URL generation
