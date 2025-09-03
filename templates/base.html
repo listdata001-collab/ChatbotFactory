@@ -10,7 +10,52 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}?v=2024030312" rel="stylesheet">
+    
+    <!-- Inline CSS fix for knowledge base visibility -->
+    <style>
+        /* Knowledge base items visibility fix */
+        .knowledge-item {
+            background-color: #f8f9fa !important;
+            color: #212529 !important;
+            border: 1px solid #dee2e6 !important;
+            padding: 0.5rem 0.75rem !important;
+            margin-bottom: 0.5rem !important;
+            border-radius: 0.375rem !important;
+        }
+        
+        .knowledge-item span {
+            color: #212529 !important;
+        }
+        
+        .knowledge-item .text-muted {
+            color: #6c757d !important;
+        }
+        
+        .knowledge-item:hover {
+            background-color: #e9ecef !important;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .knowledge-item {
+                background-color: #2d2d2d !important;
+                color: #ffffff !important;
+                border: 1px solid #505050 !important;
+            }
+            
+            .knowledge-item span {
+                color: #ffffff !important;
+            }
+            
+            .knowledge-item .text-muted {
+                color: #d1d1d1 !important;
+            }
+            
+            .knowledge-item:hover {
+                background-color: #383838 !important;
+            }
+        }
+    </style>
 </head>
 <body>
     <!-- Navigation -->
