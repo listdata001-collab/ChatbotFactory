@@ -173,36 +173,81 @@
 
                     <!-- Product Tab -->
                     <div class="tab-pane fade" id="product-content" role="tabpanel">
-                        <form method="POST" action="{{ url_for('main.add_product_knowledge', bot_id=bot.id) }}">
-                            <div class="mb-3">
-                                <label for="product_name" class="form-label small">Mahsulot nomi *:</label>
-                                <input type="text" class="form-control form-control-sm" id="product_name" name="product_name" 
-                                       placeholder="Masalan: Kartoshka" required>
+                        <!-- Excel/CSV Bulk Upload -->
+                        <div class="card mb-3">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-file-excel me-2 text-success"></i>Excel/CSV orqali ko'p mahsulot qo'shish
+                                </h6>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="product_price" class="form-label small">Narx:</label>
-                                <input type="text" class="form-control form-control-sm" id="product_price" name="product_price" 
-                                       placeholder="Masalan: 2500 so'm/kg">
+                            <div class="card-body p-3">
+                                <form method="POST" action="{{ url_for('main.upload_bulk_products', bot_id=bot.id) }}" enctype="multipart/form-data">
+                                    <div class="mb-3">
+                                        <label for="bulk_file" class="form-label small">Excel yoki CSV fayl yuklash:</label>
+                                        <input type="file" class="form-control form-control-sm" id="bulk_file" name="bulk_file" 
+                                               accept=".xlsx,.xls,.csv" required>
+                                        <div class="form-text">
+                                            <small>Qo'llab-quvvatlanadigan formatlar: .xlsx, .xls, .csv</small><br>
+                                            <small class="text-muted">Maksimal fayl hajmi: 5MB</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="fas fa-upload me-1"></i>Faylni yuklash
+                                        </button>
+                                        <a href="{{ url_for('main.download_template') }}" class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-download me-1"></i>Namuna yuklash
+                                        </a>
+                                    </div>
+                                </form>
+                                
+                                <div class="alert alert-info mt-3 p-2" style="font-size: 0.8rem;">
+                                    <strong>Excel format:</strong> A ustun - Mahsulot nomi, B ustun - Narx, C ustun - Tavsif, D ustun - Rasm URL
+                                </div>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="product_description" class="form-label small">Tavsif:</label>
-                                <textarea class="form-control form-control-sm" id="product_description" name="product_description" rows="3" 
-                                          placeholder="Mahsulot haqida batafsil ma'lumot, mavjudlik, minimal buyurtma miqdori..."></textarea>
+                        </div>
+                        
+                        <!-- Single Product Add -->
+                        <div class="card">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-plus me-2"></i>Bitta mahsulot qo'shish
+                                </h6>
                             </div>
-                            
-                            <div class="mb-3">
-                                <label for="product_image_url" class="form-label small">Rasm havolasi (ixtiyoriy):</label>
-                                <input type="url" class="form-control form-control-sm" id="product_image_url" name="product_image_url" 
-                                       placeholder="https://example.com/mahsulot-rasmi.jpg">
-                                <div class="form-text">Mahsulot rasmining URL manzili</div>
+                            <div class="card-body p-3">
+                                <form method="POST" action="{{ url_for('main.add_product_knowledge', bot_id=bot.id) }}">
+                                    <div class="mb-3">
+                                        <label for="product_name" class="form-label small">Mahsulot nomi *:</label>
+                                        <input type="text" class="form-control form-control-sm" id="product_name" name="product_name" 
+                                               placeholder="Masalan: Kartoshka" required>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="product_price" class="form-label small">Narx:</label>
+                                        <input type="text" class="form-control form-control-sm" id="product_price" name="product_price" 
+                                               placeholder="Masalan: 2500 so'm/kg">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="product_description" class="form-label small">Tavsif:</label>
+                                        <textarea class="form-control form-control-sm" id="product_description" name="product_description" rows="3" 
+                                                  placeholder="Mahsulot haqida batafsil ma'lumot, mavjudlik, minimal buyurtma miqdori..."></textarea>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="product_image_url" class="form-label small">Rasm havolasi (ixtiyoriy):</label>
+                                        <input type="url" class="form-control form-control-sm" id="product_image_url" name="product_image_url" 
+                                               placeholder="https://example.com/mahsulot-rasmi.jpg">
+                                        <div class="form-text">Mahsulot rasmining URL manzili</div>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-sm btn-success w-100">
+                                        <i class="fas fa-plus me-1"></i>Mahsulot qo'shish
+                                    </button>
+                                </form>
                             </div>
-                            
-                            <button type="submit" class="btn btn-sm btn-success w-100">
-                                <i class="fas fa-plus me-1"></i>Mahsulot qo'shish
-                            </button>
-                        </form>
+                        </div>
                     </div>
                 </div>
                 
