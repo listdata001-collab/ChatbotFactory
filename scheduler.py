@@ -198,12 +198,12 @@ class TaskScheduler:
             logger.info("Checking subscriptions...")
             
             with app.app_context():
-                # 3 kun qolgan obunalar (basic/premium)
+                # 3 kun qolgan obunalar (starter/basic/premium)
                 three_days_later = datetime.utcnow() + timedelta(days=3)
                 expiring_soon = User.query.filter(
                     User.subscription_end_date <= three_days_later,
                     User.subscription_end_date > datetime.utcnow(),
-                    User.subscription_type.in_(['basic', 'premium'])
+                    User.subscription_type.in_(['starter', 'basic', 'premium'])
                 ).all()
                 
                 reminder_count = 0
@@ -273,7 +273,7 @@ class TaskScheduler:
                 # Tugagan obunalar
                 expired_users = User.query.filter(
                     User.subscription_end_date <= datetime.utcnow(),
-                    User.subscription_type.in_(['basic', 'premium'])
+                    User.subscription_type.in_(['starter', 'basic', 'premium'])
                 ).all()
                 
                 expired_count = 0

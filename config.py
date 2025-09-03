@@ -45,6 +45,7 @@ class Config:
     
     # Subscription prices (in UZS)
     SUBSCRIPTION_PRICES = {
+        'starter': 165000,
         'basic': 290000,
         'premium': 590000
     }
@@ -52,6 +53,7 @@ class Config:
     # Bot limits
     BOT_LIMITS = {
         'free': 1,
+        'starter': 1,
         'basic': 1,
         'premium': 5
     }
@@ -59,6 +61,7 @@ class Config:
     # Language restrictions
     LANGUAGE_RESTRICTIONS = {
         'free': ['uz'],
+        'starter': ['uz', 'ru', 'en'],
         'basic': ['uz', 'ru', 'en'],
         'premium': ['uz', 'ru', 'en'],
         'admin': ['uz', 'ru', 'en']

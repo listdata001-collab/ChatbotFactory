@@ -125,6 +125,7 @@ BotFactory AI - Suhbat Kuzatuvi
         # Obuna turi nomlarini formatlash
         subscription_names = {
             'free': 'Bepul (Test)',
+            'starter': 'Starter',
             'basic': 'Basic',
             'premium': 'Premium',
             'admin': 'Admin'
@@ -158,6 +159,7 @@ BotFactory AI - Suhbat Kuzatuvi
 {"🔴 Obunangiz bugun tugaydi!" if days_left <= 1 else f"📢 Obunangiz {days_left} kundan keyin tugaydi!"}
 
 💡 Xizmatlardan uzluksiz foydalanish uchun obunani yangilang:
+• Starter: 165,000 so'm/oy
 • Basic: 290,000 so'm/oy
 • Premium: 590,000 so'm/oy
 
@@ -179,6 +181,7 @@ BotFactory AI - Obuna boshqaruvi"""
         subscription_type = payment_info.get('subscription_type', 'basic')
         
         subscription_names = {
+            'starter': 'Starter',
             'basic': 'Basic',
             'premium': 'Premium'
         }

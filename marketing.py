@@ -344,16 +344,26 @@ Savollar: support@botfactory.uz
                 
                 <p>Xizmatlarimizdan uzluksiz foydalanish uchun obunangizni yangilang:</p>
                 
-                <div style="display: flex; gap: 15px; margin: 30px 0;">
-                    <div style="flex: 1; background: #f3f4f6; padding: 20px; border-radius: 8px;">
+                <div style="display: flex; gap: 10px; margin: 30px 0; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 180px; background: #ecfccb; padding: 20px; border-radius: 8px;">
+                        <h3 style="color: #65a30d;">🚀 Starter - 165,000 so'm/oy</h3>
+                        <ul>
+                            <li>1 ta bot</li>
+                            <li>Faqat Telegram</li>
+                            <li>3 til AI</li>
+                            <li>Bilim bazasi</li>
+                        </ul>
+                    </div>
+                    <div style="flex: 1; min-width: 180px; background: #f3f4f6; padding: 20px; border-radius: 8px;">
                         <h3 style="color: #059669;">💰 Basic - 290,000 so'm/oy</h3>
                         <ul>
                             <li>1 ta bot</li>
                             <li>Barcha platformalar</li>
                             <li>3 til AI</li>
+                            <li>Bilim bazasi</li>
                         </ul>
                     </div>
-                    <div style="flex: 1; background: #fef3c7; padding: 20px; border-radius: 8px;">
+                    <div style="flex: 1; min-width: 180px; background: #fef3c7; padding: 20px; border-radius: 8px;">
                         <h3 style="color: #d97706;">💎 Premium - 590,000 so'm/oy</h3>
                         <ul>
                             <li>5 ta bot</li>

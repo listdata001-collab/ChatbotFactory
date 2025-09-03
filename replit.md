@@ -40,10 +40,11 @@ The system uses a relational database with the following key entities:
 - **Subscription Management**: Feature access based on subscription tiers
 
 ### Subscription Model
-Three-tier subscription system:
+Four-tier subscription system:
 - **Free/Test (14 days)**: 1 bot, Telegram only, Uzbek language AI responses
-- **Basic (290,000 UZS/month)**: 1 bot, multiple platforms, multilingual AI (Uzbek/Russian/English)
-- **Premium (590,000 UZS/month)**: 5 bots, all platforms, multilingual AI support
+- **Starter (165,000 UZS/month)**: 1 bot, Telegram only, multilingual AI (Uzbek/Russian/English), knowledge base, technical support
+- **Basic (290,000 UZS/month)**: 1 bot, multiple platforms, multilingual AI (Uzbek/Russian/English), knowledge base, technical support
+- **Premium (590,000 UZS/month)**: 5 bots, all platforms, multilingual AI support, knowledge base, priority technical support
 
 ### AI Response System
 - **Language Detection**: Automatic language routing based on user subscription
@@ -77,6 +78,13 @@ Three-tier subscription system:
     - Enhanced payment confirmation system (payments.py) to send Telegram notifications
     - Notifications include formatted messages with emojis, user details, and subscription information
     - Works alongside existing email/SMS notification system for comprehensive coverage
+  - **ADDED STARTER SUBSCRIPTION TIER**: Fully integrated new Starter subscription plan
+    - Added Starter tier (165,000 UZS/month) to config.py with complete pricing and limits
+    - Updated payment system (payments.py) to support Starter subscription payments
+    - Enhanced notification templates to include Starter tier in all communications
+    - Updated scheduler system to handle Starter subscription expiry notifications
+    - Modified email templates in marketing.py to showcase Starter tier alongside Basic and Premium
+    - Starter features: 1 bot, Telegram only, 3 languages, knowledge base, technical support
   - Application running successfully with admin user auto-created (username: Akramjon)
   - Using SQLite database (PostgreSQL ready via environment variable)
   - Cache control headers configured to prevent browser caching issues

@@ -208,6 +208,7 @@ class PaymentProcessor:
         try:
             # Subscription narxlarini olish
             prices = {
+                'starter': 165000,
                 'basic': 290000,
                 'premium': 590000
             }
