@@ -293,15 +293,23 @@ class PaymentProcessor:
 # Flask routes
 processor = PaymentProcessor()
 
-@payment_bp.route('/create/<subscription_type>/<method>', methods=['POST'])
+@payment_bp.route('/create_payment', methods=['POST'])
 @login_required
-def create_payment(subscription_type, method):
+def create_payment():
     """To'lov yaratish route"""
     try:
+        # Form dan ma'lumotlarni olish
+        subscription_type = request.form.get('subscription_type')
+        method = request.form.get('method')
+        
+        if not subscription_type or not method:
+            flash('Iltimos, barcha maydonlarni to\'ldiring!', 'error')
+            return redirect(url_for('main.subscription'))
+        
         result = processor.create_payment(
             user_id=current_user.id,
             subscription_type=subscription_type,
-            payment_method=method
+            payment_method=method.lower()
         )
         
         if result['success']:
