@@ -492,31 +492,45 @@ Masalan:
             return
         
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+        logger.info("DEBUG: Dependencies loaded")
+        
         with app.app_context():
             # Get user info
             db_user = User.query.filter_by(telegram_id=user_id).first()
             if not db_user:
-                await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
+                logger.info("DEBUG: User not found")
+                if update.message:
+                    await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
                 return
+            
+            logger.info("DEBUG: User found")
             
             # Get bot info
             bot = Bot.query.get(self.bot_id)
             if not bot:
-                await update.message.reply_text("❌ Bot topilmadi!")
+                logger.info("DEBUG: Bot not found")
+                if update.message:
+                    await update.message.reply_text("❌ Bot topilmadi!")
                 return
+            
+            logger.info("DEBUG: Bot found")
             
             # Check subscription
             if not db_user.subscription_active():
-                await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+                logger.info("DEBUG: Subscription not active")
+                if update.message:
+                    await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
                 return
+            
+            logger.info("DEBUG: Subscription active")
             
             # Get knowledge base
             knowledge_base = process_knowledge_base(self.bot_id)
+            logger.info("DEBUG: Knowledge base processed")
             
             # Generate AI response
             try:
-                # Skip typing indicator for now (context implementation needed)
-                # await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+                logger.info("DEBUG: Starting AI response generation")
                 
                 ai_response = get_ai_response(
                     message=message_text,
@@ -524,6 +538,8 @@ Masalan:
                     user_language=db_user.language,
                     knowledge_base=knowledge_base
                 )
+                
+                logger.info("DEBUG: AI response received")
                 
                 # Save chat history
                 chat_history = ChatHistory()
@@ -534,6 +550,8 @@ Masalan:
                 chat_history.language = db_user.language
                 db.session.add(chat_history)
                 db.session.commit()
+                
+                logger.info("DEBUG: Chat history saved")
                 
                 # Clean and send response safely
                 if ai_response:
@@ -567,13 +585,12 @@ Masalan:
                     await update.message.reply_text("Javob berishda xatolik yuz berdi!")
                     
             except Exception as e:
-                # Ultra-safe error logging - no Unicode at all
+                # Debug: log which step failed
                 try:
-                    # Use only basic error message, no emoji/unicode details
-                    logger.error("Message handling error occurred")
+                    error_str = str(e)[:200]  # First 200 chars only
+                    logger.error(f"DEBUG: Message handling failed: {error_str}")
                 except:
-                    # If even basic logging fails, continue silently
-                    pass
+                    logger.error("DEBUG: Message handling failed with encoding error")
                 
                 # Send simple error message
                 try:
