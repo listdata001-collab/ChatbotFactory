@@ -27,7 +27,13 @@ def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language
         
         # Add knowledge base context if available
         if knowledge_base:
-            system_prompt += f"\n\nSizda quyidagi bilim bazasi mavjud:\n{knowledge_base[:3000]}\n\nAgar foydalanuvchi yuqoridagi ma'lumotlar haqida so'rasa, aniq va to'liq javob bering. Mahsulot narxlari va ma'lumotlarini aniq aytib bering."
+            # Increase knowledge base limit for better product information
+            kb_limit = 5000  # Increased from 3000 to include more products
+            limited_kb = knowledge_base[:kb_limit]
+            system_prompt += f"\n\nSizda quyidagi bilim bazasi mavjud:\n{limited_kb}\n\nAgar foydalanuvchi yuqoridagi ma'lumotlar haqida so'rasa, aniq va to'liq javob bering. Mahsulot narxlari va ma'lumotlarini aniq aytib bering."
+            
+            # Debug: log knowledge base uzunligi
+            logging.info(f"DEBUG: Knowledge base length: {len(knowledge_base)}, Limited to: {len(limited_kb)}")
         
         # Add chat history context if available
         if chat_history:
@@ -89,11 +95,17 @@ def process_knowledge_base(bot_id: int) -> str:
         knowledge_entries = KnowledgeBase.query.filter_by(bot_id=bot_id).all()
         combined_knowledge = ""
         
+        # Debug: log bilim bazasi mavjudligi
+        logging.info(f"DEBUG: Bot {bot_id} uchun {len(knowledge_entries)} ta bilim bazasi yozuvi topildi")
+        
         for entry in knowledge_entries:
+            logging.info(f"DEBUG: Processing entry - Type: {entry.content_type}, Source: {entry.source_name}")
+            
             if entry.content_type == 'product':
                 # For products, format them clearly for AI with detailed structure
                 product_text = f"=== MAHSULOT MA'LUMOTI ===\n{entry.content}\n=== MAHSULOT OXIRI ===\n"
                 combined_knowledge += product_text + "\n"
+                logging.info(f"DEBUG: Product added to knowledge: {entry.source_name}")
             elif entry.content_type == 'image':
                 # For images, add description about the image
                 image_info = f"Rasm: {entry.filename or 'Yuklangan rasm'}"
@@ -101,9 +113,15 @@ def process_knowledge_base(bot_id: int) -> str:
                     image_info += f" ({entry.source_name})"
                 image_info += f" - bu mahsulot/xizmat haqidagi vizual ma'lumot. Foydalanuvchi ushbu rasm haqida so'rasa, unga rasm haqida ma'lumot bering."
                 combined_knowledge += f"{image_info}\n\n"
+                logging.info(f"DEBUG: Image added to knowledge: {entry.source_name or entry.filename}")
             else:
                 # For text and file content
                 combined_knowledge += f"{entry.content}\n\n"
+                logging.info(f"DEBUG: File content added to knowledge: {entry.filename}")
+        
+        logging.info(f"DEBUG: Combined knowledge length: {len(combined_knowledge)} characters")
+        if combined_knowledge:
+            logging.info(f"DEBUG: First 200 chars of knowledge: {combined_knowledge[:200]}...")
         
         return combined_knowledge.strip()
     except Exception as e:
