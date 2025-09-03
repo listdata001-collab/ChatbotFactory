@@ -134,9 +134,12 @@ class TelegramHTTPBot:
         # Handle commands
         if update.message and update.message.text:
             text = update.message.text
+            print(f"[DEBUG] Received message: {text}")
             if text.startswith('/'):
                 cmd = text.split()[0][1:]  # Remove '/'
+                print(f"[DEBUG] Processing command: {cmd}")
                 if 'start' in self.handlers and cmd == 'start':
+                    print(f"[DEBUG] Executing /start command")
                     for handler in self.handlers['start']:
                         await handler(update, None)
                 elif 'help' in self.handlers and cmd == 'help':
@@ -634,13 +637,13 @@ Masalan:
     async def _get_telegram_file_url(self, file_id):
         """Get file URL from Telegram API"""
         try:
-            url = f"https://api.telegram.org/bot{self.token}/getFile"
+            url = f"https://api.telegram.org/bot{self.bot_token}/getFile"
             response = requests.get(url, params={'file_id': file_id})
             data = response.json()
             
             if data.get('ok') and 'result' in data:
                 file_path = data['result']['file_path']
-                return f"https://api.telegram.org/file/bot{self.token}/{file_path}"
+                return f"https://api.telegram.org/file/bot{self.bot_token}/{file_path}"
             else:
                 logger.error(f"Telegram getFile API error: {data}")
                 return None
