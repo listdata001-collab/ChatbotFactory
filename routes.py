@@ -347,10 +347,25 @@ def upload_knowledge(bot_id):
                 except UnicodeDecodeError:
                     # Try with different encoding if UTF-8 fails
                     file.seek(0)
-                    content = file.read().decode('latin-1')
+                    try:
+                        content = file.read().decode('cp1251')  # Windows Cyrillic
+                    except UnicodeDecodeError:
+                        file.seek(0)
+                        content = file.read().decode('latin-1', errors='ignore')
+                
+                # Clean problematic Unicode characters
+                content = content.replace('\u2019', "'").replace('\u2018', "'")
+                content = content.replace('\u201c', '"').replace('\u201d', '"')
+                
             elif filename.endswith('.docx'):
                 doc = docx.Document(file.stream)
-                content = '\n'.join([paragraph.text for paragraph in doc.paragraphs])
+                paragraphs = []
+                for paragraph in doc.paragraphs:
+                    # Clean Unicode characters from each paragraph
+                    text = paragraph.text.replace('\u2019', "'").replace('\u2018', "'")
+                    text = text.replace('\u201c', '"').replace('\u201d', '"')
+                    paragraphs.append(text)
+                content = '\n'.join(paragraphs)
             else:
                 flash('Faqat .txt va .docx fayllar qo\'llab-quvvatlanadi!', 'error')
                 return redirect(url_for('main.edit_bot', bot_id=bot_id))
@@ -369,8 +384,11 @@ def upload_knowledge(bot_id):
             # Safe error message handling to prevent encoding issues
             error_msg = 'Fayl yuklashda xatolik yuz berdi.'
             try:
-                error_details = str(e).encode('utf-8', errors='ignore').decode('utf-8')
-                if error_details:
+                # Safely convert error to string, handling Unicode characters
+                error_details = str(e).replace('\u2019', "'").replace('\u2018', "'")
+                # Remove any other problematic Unicode characters
+                error_details = error_details.encode('ascii', errors='ignore').decode('ascii')
+                if error_details.strip():
                     error_msg = f'Fayl yuklashda xatolik: {error_details}'
             except:
                 pass
@@ -398,6 +416,11 @@ def add_text_knowledge(bot_id):
         source_name = f'Matn kirish - {datetime.utcnow().strftime("%d.%m.%Y %H:%M")}'
     
     try:
+        # Clean problematic Unicode characters from user input
+        content = content.replace('\u2019', "'").replace('\u2018', "'")
+        content = content.replace('\u201c', '"').replace('\u201d', '"')
+        source_name = source_name.replace('\u2019', "'").replace('\u2018', "'")
+        
         knowledge = KnowledgeBase()
         knowledge.bot_id = bot_id
         knowledge.content = content
@@ -409,7 +432,15 @@ def add_text_knowledge(bot_id):
         
         flash('Matn muvaffaqiyatli qo\'shildi!', 'success')
     except Exception as e:
-        flash('Matn qo\'shishda xatolik yuz berdi.', 'error')
+        error_msg = 'Matn qo\'shishda xatolik yuz berdi.'
+        try:
+            error_details = str(e).replace('\u2019', "'").replace('\u2018', "'")
+            error_details = error_details.encode('ascii', errors='ignore').decode('ascii')
+            if error_details.strip():
+                error_msg = f'Matn qo\'shishda xatolik: {error_details}'
+        except:
+            pass
+        flash(error_msg, 'error')
     
     return redirect(url_for('main.edit_bot', bot_id=bot_id))
 
