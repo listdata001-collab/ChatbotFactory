@@ -40,20 +40,8 @@ def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language
         response = model.generate_content(full_prompt)
         
         if response.text:
-            # Clean the response to prevent encoding issues
-            clean_text = response.text
-            
-            # Replace problematic Unicode characters
-            unicode_replacements = {
-                '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
-                '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
-                '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
-            }
-            
-            for unicode_char, replacement in unicode_replacements.items():
-                clean_text = clean_text.replace(unicode_char, replacement)
-            
-            return clean_text
+            # Return response as-is, let Telegram handler deal with encoding
+            return response.text
         else:
             return get_fallback_response(user_language)
             
