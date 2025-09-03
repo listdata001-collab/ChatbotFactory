@@ -54,10 +54,9 @@ class TelegramHTTPBot:
         except Exception as e:
             # Ultra-safe logging
             try:
-                error_safe = str(e).encode('ascii', errors='ignore').decode('ascii')
-                logger.error(f"Error sending message: {error_safe}")
+                logger.error("Error sending message occurred")
             except:
-                logger.error("Error sending message: encoding issue")
+                pass
             return None
     
     def get_updates(self, offset=None):
@@ -72,10 +71,9 @@ class TelegramHTTPBot:
         except Exception as e:
             # Ultra-safe logging
             try:
-                error_safe = str(e).encode('ascii', errors='ignore').decode('ascii')
-                logger.error(f"Error getting updates: {error_safe}")
+                logger.error("Error getting updates occurred")
             except:
-                logger.error("Error getting updates: encoding issue")
+                pass
             return {'ok': False, 'result': []}
             
     async def process_update(self, update_data):
@@ -537,46 +535,45 @@ Masalan:
                 db.session.add(chat_history)
                 db.session.commit()
                 
-                # Clean and send response - always clean first
+                # Clean and send response safely
                 if ai_response:
-                    # Always clean the response first to prevent ANY encoding issues
-                    import re
-                    
-                    # Step 1: Remove all problematic Unicode (emoji, special chars)
-                    cleaned_response = re.sub(r'[^\x00-\x7F\u00A0-\u024F\u0400-\u04FF]', '', ai_response)
-                    
-                    # Step 2: Replace remaining problematic characters
-                    unicode_replacements = {
-                        '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
-                        '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
-                        '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
-                    }
-                    
-                    for unicode_char, replacement in unicode_replacements.items():
-                        cleaned_response = cleaned_response.replace(unicode_char, replacement)
-                    
-                    # Step 3: Final ASCII fallback if still problematic
-                    if not cleaned_response.strip():
-                        cleaned_response = "Javob tayyor!"
-                    
-                    # Send the safe response
-                    await update.message.reply_text(cleaned_response)
+                    try:
+                        # Keep emojis but ensure safe encoding
+                        import re
+                        
+                        # Replace problematic unicode characters
+                        unicode_replacements = {
+                            '\u2019': "'", '\u2018': "'", '\u201c': '"', '\u201d': '"',
+                            '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u00a0': ' ',
+                            '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '-'
+                        }
+                        
+                        cleaned_response = ai_response
+                        for unicode_char, replacement in unicode_replacements.items():
+                            cleaned_response = cleaned_response.replace(unicode_char, replacement)
+                        
+                        # Fallback if empty
+                        if not cleaned_response.strip():
+                            cleaned_response = "Javob tayyor!"
+                        
+                        # Send the response
+                        if update.message:
+                            await update.message.reply_text(cleaned_response)
+                    except:
+                        # Final fallback
+                        if update.message:
+                            await update.message.reply_text("Javob tayyor!")
                 else:
                     await update.message.reply_text("Javob berishda xatolik yuz berdi!")
                     
             except Exception as e:
                 # Ultra-safe error logging - no Unicode at all
                 try:
-                    # Convert to simple ASCII
-                    error_ascii = str(e).encode('ascii', errors='ignore').decode('ascii')
-                    if error_ascii.strip():
-                        # Use print instead of logger to avoid any encoding issues
-                        print(f"[ERROR] Message handling: {error_ascii}")
-                        logger.error("Message handling error: see console")
-                    else:
-                        logger.error("Message handling error: unicode issue")
+                    # Use only basic error message, no emoji/unicode details
+                    logger.error("Message handling error occurred")
                 except:
-                    logger.error("Message handling error: critical issue")
+                    # If even basic logging fails, continue silently
+                    pass
                 
                 # Send simple error message
                 try:
