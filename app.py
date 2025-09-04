@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
@@ -33,28 +33,44 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "botfactory-secret-key-2024")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# Cache busting for templates  
+# Cache control for different environments
 @app.after_request
 def after_request(response):
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache" 
-    response.headers["Expires"] = "0"
+    # Only disable cache in development, enable in production for static assets
+    if app.config.get('DEVELOPMENT', False):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache" 
+        response.headers["Expires"] = "0"
+    else:
+        # Production cache control - allow caching for static files
+        if request.endpoint and 'static' in request.endpoint:
+            response.headers["Cache-Control"] = "public, max-age=31536000"  # 1 year
+        else:
+            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return response
 
-# Configure the database with UTF-8 support - force SQLite for now
-database_url = "sqlite:///botfactory.db"
+# Configure the database with UTF-8 support
+database_url = os.environ.get("DATABASE_URL", "sqlite:///botfactory.db")
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-    "echo": False,
-    # UTF-8 support for SQLite with proper encoding
-    "connect_args": {
-        "check_same_thread": False,
-        "isolation_level": None,  # Autocommit mode for SQLite
+# Database configuration based on URL type
+if database_url.startswith('postgresql'):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+        "echo": False,
     }
-}
+else:
+    # SQLite configuration for development
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+        "echo": False,
+        "connect_args": {
+            "check_same_thread": False,
+            "isolation_level": None,
+        }
+    }
 
 # Initialize extensions
 db.init_app(app)
