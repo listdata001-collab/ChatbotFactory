@@ -110,39 +110,8 @@ with app.app_context():
     try:
         db.create_all()
         
-        # Add new columns if they don't exist (for notification settings) - SQLite compatible
-        try:
-            from sqlalchemy import text
-            
-            # SQLite compatible column checking using PRAGMA table_info
-            def column_exists(table_name, column_name):
-                try:
-                    result = db.session.execute(text(f"PRAGMA table_info({table_name})"))
-                    columns = [row[1] for row in result.fetchall()]  # row[1] is column name
-                    return column_name in columns
-                except:
-                    return False
-            
-            # Check and add admin_chat_id column
-            if not column_exists('user', 'admin_chat_id'):
-                db.session.execute(text('ALTER TABLE "user" ADD COLUMN admin_chat_id VARCHAR(50)'))
-                db.session.commit()
-                logging.info("Added admin_chat_id column")
-            
-            # Check and add notification_channel column
-            if not column_exists('user', 'notification_channel'):
-                db.session.execute(text('ALTER TABLE "user" ADD COLUMN notification_channel VARCHAR(100)'))
-                db.session.commit()
-                logging.info("Added notification_channel column")
-            
-            # Check and add notifications_enabled column
-            if not column_exists('user', 'notifications_enabled'):
-                db.session.execute(text('ALTER TABLE "user" ADD COLUMN notifications_enabled BOOLEAN DEFAULT 0'))
-                db.session.commit()
-                logging.info("Added notifications_enabled column")
-                
-        except Exception as col_error:
-            logging.warning(f"Column migration warning: {col_error}")
+        # Database columns are now defined in models.py - no migration needed
+        logging.info("Database schema up to date")
     
         # Create admin user if not exists
         from models import User
