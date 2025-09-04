@@ -154,9 +154,6 @@ class TelegramHTTPBot:
                 elif 'language' in self.handlers and cmd == 'language':
                     for handler in self.handlers['language']:
                         await handler(update, context)
-                elif 'link' in self.handlers and cmd == 'link':
-                    for handler in self.handlers['link']:
-                        await handler(update, context)
             else:
                 # Regular message
                 if 'message' in self.handlers:
@@ -267,7 +264,6 @@ class TelegramBot:
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
         self.application.add_handler(CommandHandler("language", self.language_command))
-        self.application.add_handler(CommandHandler("link", self.link_account_command))
         self.application.add_handler(CallbackQueryHandler(self.language_callback))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
     
@@ -315,15 +311,8 @@ class TelegramBot:
 /start - Botni qayta ishga tushirish
 /help - Yordam ma'lumotlari
 /language - Tilni tanlash
-/link - Web hisobni Telegram bilan bog'lash
 
 💬 Oddiy xabar yuborib, men bilan suhbatlashishingiz mumkin!
-
-🔗 Hisobni bog'lash:
-Agar siz web-saytda Basic yoki Premium obunani sotib olgan bo'lsangiz, 
-quyidagi buyruq orqali hisobingizni bog'lang:
-
-/link username password
 
 🌐 Qo'llab-quvvatlanadigan tillar:
 • O'zbek tili (bepul)
@@ -416,81 +405,6 @@ quyidagi buyruq orqali hisobingizni bog'lang:
                 if query:
                     await query.edit_message_text("❌ Bu tilni tanlash uchun obunangizni yangilang!")
     
-    async def link_account_command(self, update: Update, context) -> None:
-        """Handle /link command to connect Telegram account with web account"""
-        if not update or not update.effective_user or not update.message:
-            return
-        
-        user_id = str(update.effective_user.id)
-        
-        # Check if arguments provided
-        if not context or not hasattr(context, 'args') or not context.args or len(context.args) < 2:
-            message = """🔗 Hisobni bog'lash
-
-Telegram hisobingizni web-saytdagi hisobingiz bilan bog'lash uchun quyidagi formatda yozing:
-
-/link username password
-
-Masalan:
-/link onlinemobi mypassword
-
-❗️ Bu buyruqdan foydalangach, obunangiz yangilanadi va barcha premium imkoniyatlar ochiladi!"""
-            if update.message:
-                await update.message.reply_text(message)
-            return
-        
-        username = context.args[0]
-        password = context.args[1]
-        
-        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
-        with app.app_context():
-            from werkzeug.security import check_password_hash
-            
-            # Find user by username
-            web_user = User.query.filter_by(username=username).first()
-            
-            if not web_user:
-                if update.message:
-                    await update.message.reply_text("❌ Bunday foydalanuvchi nomi topilmadi!")
-                return
-            
-            # Check password
-            if not check_password_hash(web_user.password_hash, password):
-                if update.message:
-                    await update.message.reply_text("❌ Noto'g'ri parol!")
-                return
-            
-            # Check if this telegram account is already linked to someone else
-            existing_tg_user = User.query.filter_by(telegram_id=user_id).first()
-            if existing_tg_user and existing_tg_user.id != web_user.id:
-                if update.message:
-                    await update.message.reply_text("❌ Bu Telegram hisob boshqa foydalanuvchiga bog'langan!")
-                return
-            
-            # Link telegram account to web account
-            web_user.telegram_id = user_id
-            db.session.commit()
-            
-            # Send success message with subscription info
-            subscription_names = {
-                'free': 'Bepul (Test)',
-                'starter': 'Starter',
-                'basic': 'Basic',
-                'premium': 'Premium',
-                'admin': 'Admin'
-            }
-            
-            unknown_text = "Noma'lum"
-            success_message = f"""✅ Hisoblar muvaffaqiyatli bog'landi!
-
-👤 Foydalanuvchi: {web_user.username}
-📦 Obuna: {subscription_names.get(web_user.subscription_type, unknown_text)}"""
-            
-            if web_user.subscription_type in ['starter', 'basic', 'premium', 'admin']:
-                success_message += "\n\n🌐 Endi /language buyrug'i bilan tilni tanlashingiz mumkin!"
-            
-            if update.message:
-                await update.message.reply_text(success_message)
     
     async def handle_message(self, update: Update, context) -> None:
         """Handle regular text messages"""
