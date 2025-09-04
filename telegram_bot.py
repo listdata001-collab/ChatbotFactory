@@ -129,33 +129,45 @@ class TelegramHTTPBot:
         # Process update
         update = SimpleUpdate(update_data)
         
+        # Create context object
+        class SimpleContext:
+            def __init__(self, text=None):
+                self.args = []
+                if text and text.startswith('/'):
+                    # Split command and arguments
+                    parts = text.split()[1:]  # Remove command itself
+                    self.args = parts
+        
         # Handle commands
         if update.message and update.message.text:
             text = update.message.text
+            context = SimpleContext(text)
+            
             if text.startswith('/'):
                 cmd = text.split()[0][1:]  # Remove '/'
                 if 'start' in self.handlers and cmd == 'start':
                     for handler in self.handlers['start']:
-                        await handler(update, None)
+                        await handler(update, context)
                 elif 'help' in self.handlers and cmd == 'help':
                     for handler in self.handlers['help']:
-                        await handler(update, None)
+                        await handler(update, context)
                 elif 'language' in self.handlers and cmd == 'language':
                     for handler in self.handlers['language']:
-                        await handler(update, None)
+                        await handler(update, context)
                 elif 'link' in self.handlers and cmd == 'link':
                     for handler in self.handlers['link']:
-                        await handler(update, None)
+                        await handler(update, context)
             else:
                 # Regular message
                 if 'message' in self.handlers:
                     for handler in self.handlers['message']:
-                        await handler(update, None)
+                        await handler(update, context)
         
         # Handle callback queries
         if update.callback_query and 'callback' in self.handlers:
+            context = SimpleContext()  # Empty context for callbacks
             for handler in self.handlers['callback']:
-                await handler(update, None)
+                await handler(update, context)
 
 class TelegramApplication:
     def __init__(self, token):
@@ -412,7 +424,7 @@ quyidagi buyruq orqali hisobingizni bog'lang:
         user_id = str(update.effective_user.id)
         
         # Check if arguments provided
-        if not context.args or len(context.args) < 2:
+        if not context or not hasattr(context, 'args') or not context.args or len(context.args) < 2:
             message = """🔗 Hisobni bog'lash
 
 Telegram hisobingizni web-saytdagi hisobingiz bilan bog'lash uchun quyidagi formatda yozing:
