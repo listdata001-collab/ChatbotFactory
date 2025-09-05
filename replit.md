@@ -69,6 +69,13 @@ Four-tier subscription system:
   - **PROXY CONFIGURATION**: ProxyFix middleware enabled for proper Replit iframe hosting
   - **CACHE CONTROL**: Configured cache headers to prevent browser caching issues in development
   - **STATUS**: ✅ FULLY OPERATIONAL - Application ready for use with all core features working
+  - **WEBHOOK SYSTEM ADDED**: Complete webhook infrastructure for Render.com production deployment
+    - Added `/webhook/telegram/<bot_id>` endpoint for receiving Telegram updates
+    - Implemented `setup_webhook` route for easy webhook configuration via UI
+    - Added automatic Render.com domain detection and webhook URL generation
+    - Created `process_webhook_update` function for handling incoming webhook data
+    - Enhanced bot edit page with "Webhook o'rnatish" button for production setup
+    - Fixed database model compatibility issues with ChatHistory and User models
 - **September 05, 2025**: Enhanced database reliability and production deployment fixes
   - **PRODUCTION DATABASE FIXES**: Comprehensive PostgreSQL connection improvements
     - Added database connection retry mechanism with exponential backoff

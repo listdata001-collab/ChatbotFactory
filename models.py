@@ -12,6 +12,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     language = db.Column(db.String(2), default='uz')  # uz/ru/en
     subscription_type = db.Column(db.String(20), default='free')  # free/basic/premium/admin
+    subscription_start_date = db.Column(db.DateTime, default=datetime.utcnow)
     subscription_end_date = db.Column(db.DateTime)
     is_admin = db.Column(db.Boolean, default=False)
     _is_active = db.Column('is_active', db.Boolean, default=True)

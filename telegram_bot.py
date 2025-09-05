@@ -925,11 +925,11 @@ def process_webhook_update(bot_id, bot_token, update_data):
                     chat_history = ""
                     recent_chats = ChatHistory.query.filter_by(
                         bot_id=bot_id, 
-                        telegram_chat_id=str(chat_id)
+                        user_telegram_id=str(chat_id)
                     ).order_by(ChatHistory.created_at.desc()).limit(5).all()
                     
                     for chat in reversed(recent_chats):
-                        chat_history += f"Foydalanuvchi: {chat.user_message}\nBot: {chat.bot_response}\n\n"
+                        chat_history += f"Foydalanuvchi: {chat.message}\nBot: {chat.response}\n\n"
                     
                     # AI javob olish
                     ai_response = get_ai_response(
@@ -946,9 +946,9 @@ def process_webhook_update(bot_id, bot_token, update_data):
                     # Suhbat tarixini saqlash
                     chat_record = ChatHistory()
                     chat_record.bot_id = bot_id
-                    chat_record.telegram_chat_id = str(chat_id)
-                    chat_record.user_message = text[:1000]
-                    chat_record.bot_response = ai_response[:2000]
+                    chat_record.user_telegram_id = str(chat_id)
+                    chat_record.message = text[:1000]
+                    chat_record.response = ai_response[:2000]
                     chat_record.created_at = datetime.now()
                     db.session.add(chat_record)
                     db.session.commit()

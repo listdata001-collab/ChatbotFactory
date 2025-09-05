@@ -1355,10 +1355,9 @@ def setup_webhook(bot_id):
 def get_webhook_url(bot_id):
     """Webhook URL ni aniqlash"""
     # Production muhitni aniqlash
-    if os.environ.get('RENDER'):
-        # Render.com muhiti
-        service_name = os.environ.get('RENDER_SERVICE_NAME', 'chatbotfactory')
-        return f"https://{service_name}.onrender.com/webhook/telegram/{bot_id}"
+    if os.environ.get('RENDER') or 'render' in request.headers.get('Host', '').lower():
+        # Render.com muhiti - to'g'ri service name
+        return f"https://chatbotfactory.onrender.com/webhook/telegram/{bot_id}"
     elif request.headers.get('Host'):
         # Boshqa hosting xizmatlari uchun
         host = request.headers.get('Host')
