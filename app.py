@@ -31,22 +31,22 @@ login_manager = LoginManager()
 # Create the app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "botfactory-secret-key-2024")
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 # Cache control for different environments
 @app.after_request
 def after_request(response):
-    # Only disable cache in development, enable in production for static assets
-    if app.config.get('DEVELOPMENT', False):
-        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-        response.headers["Pragma"] = "no-cache" 
-        response.headers["Expires"] = "0"
-    else:
-        # Production cache control - allow caching for static files
-        if request.endpoint and 'static' in request.endpoint:
-            response.headers["Cache-Control"] = "public, max-age=31536000"  # 1 year
-        else:
-            response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    # Always disable cache in development for Replit
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache" 
+    response.headers["Expires"] = "0"
+    
+    # Add CORS headers for Replit iframe
+    response.headers["X-Frame-Options"] = "ALLOWALL"
+    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    
     return response
 
 # Configure the database with UTF-8 support
