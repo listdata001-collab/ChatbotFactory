@@ -21,7 +21,12 @@ def login():
             flash('Foydalanuvchi nomi va parol kiritilishi shart!', 'error')
             return render_template('login.html')
         
-        user = User.query.filter_by(username=username).first()
+        try:
+            user = User.query.filter_by(username=username).first()
+        except Exception as db_error:
+            logging.error(f"Database connection error during login: {str(db_error)}")
+            flash('Ma\'lumotlar bazasi bilan bog\'lanishda muammo. Iltimos keyinroq urinib ko\'ring.', 'error')
+            return render_template('login.html')
         
         if user and check_password_hash(user.password_hash, password):
             if user.is_active:
@@ -63,13 +68,20 @@ def register():
                 flash('Parol kamida 6 ta belgidan iborat bo\'lishi kerak!', 'error')
                 return render_template('register.html')
             
-            # Check if user exists
-            if User.query.filter_by(username=username).first():
-                flash('Bu foydalanuvchi nomi band!', 'error')
-                return render_template('register.html')
-            
-            if User.query.filter_by(email=email).first():
-                flash('Bu email band!', 'error')
+            # Check if user exists with database error handling
+            try:
+                existing_user = User.query.filter_by(username=username).first()
+                if existing_user:
+                    flash('Bu foydalanuvchi nomi band!', 'error')
+                    return render_template('register.html')
+                
+                existing_email = User.query.filter_by(email=email).first()
+                if existing_email:
+                    flash('Bu email band!', 'error')
+                    return render_template('register.html')
+            except Exception as db_check_error:
+                logging.error(f"Database check error: {str(db_check_error)}")
+                flash('Ma\'lumotlar bazasi bilan bog\'lanishda muammo. Iltimos keyinroq urinib ko\'ring.', 'error')
                 return render_template('register.html')
             
             # Create new user with test subscription (14 days)
