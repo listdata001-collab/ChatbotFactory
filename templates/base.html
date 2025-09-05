@@ -15,14 +15,14 @@
     <meta name="apple-mobile-web-app-title" content="Chatbot Factory AI">
     
     <!-- Favicon and Icons -->
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
-    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/favicon.png') }}">
-    <link rel="apple-touch-icon" sizes="167x167" href="{{ url_for('static', filename='images/favicon.png') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}?v=2024090512" type="image/x-icon">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}?v=2024090512" type="image/x-icon">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='images/favicon.png') }}?v=2024090512">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ url_for('static', filename='images/favicon.png') }}?v=2024090512">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/favicon.png') }}?v=2024090512">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='images/favicon.png') }}?v=2024090512">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='images/favicon.png') }}?v=2024090512">
+    <link rel="apple-touch-icon" sizes="167x167" href="{{ url_for('static', filename='images/favicon.png') }}?v=2024090512">
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -33,6 +33,11 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <!-- Custom CSS -->
     <link href="{{ url_for('static', filename='css/style.css') }}?v=2024030312" rel="stylesheet">
+    
+    <!-- Cache busting for favicon -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
     <!-- Inline CSS fix for knowledge base visibility -->
     <style>
