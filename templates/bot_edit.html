@@ -102,7 +102,18 @@
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-2"></i>Saqlash
                     </button>
-                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    
+                    {% if bot.platform == 'Telegram' and bot.telegram_token %}
+                    <div class="btn-group ms-2" role="group">
+                        <form method="POST" action="{{ url_for('main.setup_webhook', bot_id=bot.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-success" onclick="return confirm('Webhook ni o\'rnatishni xohlaysizmi? Bu production muhitida bot ishlashi uchun kerak.')">
+                                <i class="fas fa-link me-2"></i>Webhook o'rnatish
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary ms-2">
                         <i class="fas fa-arrow-left me-2"></i>Orqaga
                     </a>
                 </form>

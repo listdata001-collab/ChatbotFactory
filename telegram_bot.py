@@ -4,6 +4,7 @@ import asyncio
 import requests
 import tempfile
 from typing import Optional
+from datetime import datetime, timedelta
 from audio_processor import download_and_process_audio, process_audio_message
 
 # Set telegram as available and use real bot implementation
@@ -850,6 +851,151 @@ def start_bot_automatically(bot_id, bot_token):
             
     except Exception as e:
         logger.error(f"Auto start error for bot {bot_id}: {str(e)}")
+        return False
+
+def process_webhook_update(bot_id, bot_token, update_data):
+    """Webhook orqali kelgan update ni qayta ishlash"""
+    try:
+        # Dependencies ni olish
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+        
+        logger.info(f"DEBUG: Processing webhook update for bot {bot_id}")
+        
+        # Update ma'lumotlarini tahlil qilish
+        if 'message' in update_data:
+            message = update_data['message']
+            chat_id = message.get('chat', {}).get('id')
+            user_id = message.get('from', {}).get('id')
+            text = message.get('text', '')
+            
+            if not chat_id or not user_id:
+                return False
+                
+            # Foydalanuvchini topish yoki yaratish
+            with app.app_context():
+                telegram_user = User.query.filter_by(telegram_id=str(user_id)).first()
+                if not telegram_user:
+                    # Yangi foydalanuvchi yaratish
+                    telegram_user = User()
+                    telegram_user.username = f"tg_{user_id}"
+                    telegram_user.email = f"telegram_{user_id}@botfactory.ai"
+                    telegram_user.telegram_id = str(user_id)
+                    telegram_user.language = 'uz'
+                    telegram_user.subscription_type = 'free'
+                    telegram_user.subscription_start_date = datetime.now()
+                    telegram_user.subscription_end_date = datetime.now() + timedelta(days=14)
+                    db.session.add(telegram_user)
+                    db.session.commit()
+                    
+                # Botni topish
+                bot = Bot.query.get(bot_id)
+                if not bot or not bot.telegram_token:
+                    return False
+                    
+                # Obunani tekshirish
+                if not telegram_user.subscription_active():
+                    send_webhook_message(bot_token, chat_id, "Sizning obunangiz tugagan. Iltimos, yangilang!")
+                    return True
+                    
+                # Komandalarni qayta ishlash
+                if text.startswith('/start'):
+                    welcome_msg = f"Assalomu alaykum! 👋\n\nMen {bot.name} botiman. Menga savollaringizni bering, men sizga yordam beraman! 🤖"
+                    send_webhook_message(bot_token, chat_id, welcome_msg)
+                    return True
+                elif text.startswith('/help'):
+                    help_msg = "Yordam 📋\n\nMenga har qanday savol bering, men sizga AI yordamida javob beraman.\n\nTil sozlamalari uchun /language buyrug'ini ishlating."
+                    send_webhook_message(bot_token, chat_id, help_msg)
+                    return True
+                elif text.startswith('/language'):
+                    lang_msg = "Tilni tanlang / Выберите язык / Choose language:"
+                    # Language buttons qo'shish mumkin
+                    send_webhook_message(bot_token, chat_id, lang_msg)
+                    return True
+                    
+                # AI javob olish
+                try:
+                    # Bilim bazasini olish
+                    knowledge_base = ""
+                    if hasattr(bot, 'knowledge_base') and bot.knowledge_base:
+                        for kb in bot.knowledge_base:
+                            if kb.content:
+                                knowledge_base += f"{kb.content}\n\n"
+                                
+                    # Suhbat tarixini olish
+                    chat_history = ""
+                    recent_chats = ChatHistory.query.filter_by(
+                        bot_id=bot_id, 
+                        telegram_chat_id=str(chat_id)
+                    ).order_by(ChatHistory.created_at.desc()).limit(5).all()
+                    
+                    for chat in reversed(recent_chats):
+                        chat_history += f"Foydalanuvchi: {chat.user_message}\nBot: {chat.bot_response}\n\n"
+                    
+                    # AI javob olish
+                    ai_response = get_ai_response(
+                        message=text,
+                        bot_name=bot.name,
+                        user_language=telegram_user.language,
+                        knowledge_base=knowledge_base,
+                        chat_history=chat_history
+                    )
+                    
+                    if not ai_response:
+                        ai_response = "Kechirasiz, hozir javob bera olmayapman. Keyinroq qayta urinib ko'ring."
+                        
+                    # Suhbat tarixini saqlash
+                    chat_record = ChatHistory()
+                    chat_record.bot_id = bot_id
+                    chat_record.telegram_chat_id = str(chat_id)
+                    chat_record.user_message = text[:1000]
+                    chat_record.bot_response = ai_response[:2000]
+                    chat_record.created_at = datetime.now()
+                    db.session.add(chat_record)
+                    db.session.commit()
+                    
+                    # Javobni yuborish
+                    send_webhook_message(bot_token, chat_id, ai_response)
+                    return True
+                    
+                except Exception as e:
+                    logger.error(f"AI processing error: {str(e)}")
+                    error_msg = "Kechirasiz, xatolik yuz berdi. Iltimos, qayta urinib ko'ring."
+                    send_webhook_message(bot_token, chat_id, error_msg)
+                    return True
+                    
+        elif 'callback_query' in update_data:
+            # Callback query ni qayta ishlash
+            callback = update_data['callback_query']
+            chat_id = callback.get('message', {}).get('chat', {}).get('id')
+            callback_data = callback.get('data', '')
+            
+            if chat_id and callback_data:
+                # Callback javobini qayta ishlash
+                response = f"Siz {callback_data} ni tanladingiz."
+                send_webhook_message(bot_token, chat_id, response)
+                return True
+                
+        return True
+        
+    except Exception as e:
+        logger.error(f"Webhook processing error for bot {bot_id}: {str(e)}")
+        return False
+
+def send_webhook_message(bot_token, chat_id, text):
+    """Webhook orqali xabar yuborish"""
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            'chat_id': chat_id,
+            'text': text,
+            'parse_mode': 'HTML'
+        }
+        
+        response = requests.post(url, json=payload)
+        return response.json().get('ok', False)
+        
+    except Exception as e:
+        logger.error(f"Send webhook message error: {str(e)}")
         return False
 
 def send_admin_message_to_user(telegram_id, message_text):

@@ -5,6 +5,7 @@ from models import User, Bot, KnowledgeBase, Payment, ChatHistory, BroadcastMess
 from werkzeug.utils import secure_filename
 import os
 import logging
+import requests
 from datetime import datetime, timedelta
 import docx
 import pandas as pd
@@ -1290,3 +1291,103 @@ def download_template():
         download_name='mahsulotlar_namuna.xlsx',
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
+
+@main_bp.route('/webhook/telegram/<int:bot_id>', methods=['POST'])
+def telegram_webhook(bot_id):
+    """Telegram webhook endpoint for production"""
+    try:
+        # Bot mavjudligini tekshirish
+        bot = Bot.query.get_or_404(bot_id)
+        
+        # Webhook ma'lumotlarini olish
+        update_data = request.get_json()
+        
+        if not update_data:
+            return jsonify({'error': 'No data received'}), 400
+            
+        # Telegram bot instance yaratish va update ni qayta ishlash
+        from telegram_bot import process_webhook_update
+        result = process_webhook_update(bot_id, bot.telegram_token, update_data)
+        
+        if result:
+            return jsonify({'status': 'ok'}), 200
+        else:
+            return jsonify({'error': 'Processing failed'}), 500
+            
+    except Exception as e:
+        logging.error(f"Webhook error for bot {bot_id}: {str(e)}")
+        return jsonify({'error': 'Internal error'}), 500
+
+@main_bp.route('/bot/<int:bot_id>/setup_webhook', methods=['POST'])
+@login_required
+def setup_webhook(bot_id):
+    """Webhook ni o'rnatish"""
+    try:
+        bot = Bot.query.get_or_404(bot_id)
+        
+        # Foydalanuvchi huquqini tekshirish
+        if bot.user_id != current_user.id and not current_user.is_admin:
+            flash('Sizda bu botga ruxsat yo\'q!', 'error')
+            return redirect(url_for('main.dashboard'))
+            
+        if not bot.telegram_token:
+            flash('Avval Telegram token ni kiriting!', 'error')
+            return redirect(url_for('main.edit_bot', bot_id=bot_id))
+            
+        # Domain ni aniqlash
+        webhook_url = get_webhook_url(bot_id)
+        
+        # Telegram API orqali webhook o'rnatish
+        success = set_telegram_webhook(bot.telegram_token, webhook_url)
+        
+        if success:
+            flash('✅ Webhook muvaffaqiyatli o\'rnatildi!', 'success')
+            bot.is_active = True
+            db.session.commit()
+        else:
+            flash('❌ Webhook o\'rnatishda xatolik yuz berdi!', 'error')
+            
+    except Exception as e:
+        flash(f'Xatolik: {str(e)}', 'error')
+        
+    return redirect(url_for('main.edit_bot', bot_id=bot_id))
+
+def get_webhook_url(bot_id):
+    """Webhook URL ni aniqlash"""
+    # Production muhitni aniqlash
+    if os.environ.get('RENDER'):
+        # Render.com muhiti
+        service_name = os.environ.get('RENDER_SERVICE_NAME', 'chatbotfactory')
+        return f"https://{service_name}.onrender.com/webhook/telegram/{bot_id}"
+    elif request.headers.get('Host'):
+        # Boshqa hosting xizmatlari uchun
+        host = request.headers.get('Host')
+        scheme = 'https' if request.headers.get('X-Forwarded-Proto') == 'https' else 'http'
+        return f"{scheme}://{host}/webhook/telegram/{bot_id}"
+    else:
+        # Fallback - Render URL
+        return f"https://chatbotfactory.onrender.com/webhook/telegram/{bot_id}"
+
+def set_telegram_webhook(bot_token, webhook_url):
+    """Telegram API orqali webhook o'rnatish"""
+    try:
+        api_url = f"https://api.telegram.org/bot{bot_token}/setWebhook"
+        payload = {
+            'url': webhook_url,
+            'max_connections': 40,
+            'allowed_updates': ['message', 'callback_query']
+        }
+        
+        response = requests.post(api_url, json=payload)
+        result = response.json()
+        
+        if result.get('ok'):
+            logging.info(f"Webhook set successfully: {webhook_url}")
+            return True
+        else:
+            logging.error(f"Webhook setup failed: {result.get('description', 'Unknown error')}")
+            return False
+            
+    except Exception as e:
+        logging.error(f"Webhook setup error: {str(e)}")
+        return False
