@@ -51,11 +51,15 @@ def after_request(response):
 
 # Configure the database with UTF-8 support
 import os
-if not os.path.exists('instance'):
-    os.makedirs('instance', exist_ok=True)
+# Get absolute path for database
+base_dir = os.path.abspath(os.path.dirname(__file__))
+instance_dir = os.path.join(base_dir, 'instance')
+if not os.path.exists(instance_dir):
+    os.makedirs(instance_dir, exist_ok=True)
 
-# Doimo SQLite ishlatamiz
-database_url = "sqlite:///instance/botfactory.db"
+# Use absolute path for SQLite database
+database_path = os.path.join(instance_dir, 'botfactory.db')
+database_url = f"sqlite:///{database_path}"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
