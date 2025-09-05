@@ -25,12 +25,12 @@ def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_lan
         
         system_prompt = language_prompts.get(user_language, language_prompts['uz'])
         
-        # Add knowledge base context if available
+        # Add knowledge base context if available (optimized for speed)
         if knowledge_base:
-            # Increase knowledge base limit for better product information
-            kb_limit = 5000  # Increased from 3000 to include more products
+            # Reduced knowledge base limit for faster processing
+            kb_limit = 2000  # Reduced from 5000 for faster processing
             limited_kb = knowledge_base[:kb_limit]
-            system_prompt += f"\n\nSizda quyidagi bilim bazasi mavjud:\n{limited_kb}\n\nAgar foydalanuvchi yuqoridagi ma'lumotlar haqida so'rasa, aniq va to'liq javob bering. Mahsulot narxlari va ma'lumotlarini aniq aytib bering."
+            system_prompt += f"\n\nSizda quyidagi bilim bazasi mavjud:\n{limited_kb}\n\nAgar foydalanuvchi yuqoridagi ma'lumotlar haqida so'rasa, aniq va to'liq javob bering."
             
             # Debug: log knowledge base uzunligi
             logging.info(f"DEBUG: Knowledge base length: {len(knowledge_base)}, Limited to: {len(limited_kb)}")
@@ -39,14 +39,28 @@ def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_lan
         if chat_history:
             system_prompt += f"\n\nOldingi suhbatlar:\n{chat_history}\n\nYuqoridagi suhbatlarni eslab qoling va kontekst asosida javob bering."
         
-        # Create the prompt
+        # Create the prompt (optimize for shorter context)
+        if len(system_prompt) > 3000:  # Limit system prompt length for speed
+            system_prompt = system_prompt[:3000] + "..."
+        
         full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"
         
-        # Generate response using Gemini
+        # Generate response using Gemini with optimization settings
         if not GEMINI_AVAILABLE:
             return get_fallback_response(user_language)
             
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        # Use faster model configuration for quicker responses
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.7,  # Slightly lower for faster generation
+            max_output_tokens=500,  # Limit output for speed
+            top_p=0.9,
+            top_k=40
+        )
+        
+        model = genai.GenerativeModel(
+            'gemini-1.5-flash',
+            generation_config=generation_config
+        )
         response = model.generate_content(full_prompt)
         
         if response.text:

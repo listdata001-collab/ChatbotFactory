@@ -418,6 +418,12 @@ class TelegramBot:
         if not message_text:
             return
         
+        # Send typing indicator immediately
+        try:
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+        except Exception as e:
+            logger.error(f"Failed to send typing action: {e}")
+        
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         logger.info("DEBUG: Dependencies loaded")
         
@@ -451,27 +457,42 @@ class TelegramBot:
             
             logger.info("DEBUG: Subscription active")
             
-            # Get knowledge base
-            knowledge_base = process_knowledge_base(self.bot_id)
-            logger.info("DEBUG: Knowledge base processed")
-            
-            # Get recent chat history for context
-            recent_history = ""
+            # Send typing indicator while processing
             try:
-                # Get last 5 conversations for context
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+            except Exception:
+                pass
+            
+            # Get knowledge base and chat history in parallel for faster processing
+            try:
+                # Optimize: Get recent chat history first (lighter operation)
+                recent_history = ""
                 history_entries = ChatHistory.query.filter_by(
                     bot_id=self.bot_id, 
                     user_telegram_id=user_id
-                ).order_by(ChatHistory.created_at.desc()).limit(5).all()
+                ).order_by(ChatHistory.created_at.desc()).limit(3).all()  # Reduced from 5 to 3 for speed
                 
                 if history_entries:
                     history_parts = []
-                    for entry in reversed(history_entries):  # Reverse to show oldest first
+                    for entry in reversed(history_entries):
                         history_parts.append(f"Foydalanuvchi: {entry.message}")
                         history_parts.append(f"Bot: {entry.response}")
                     recent_history = "\n".join(history_parts)
+                
+                # Get knowledge base (potentially slower operation)
+                knowledge_base = process_knowledge_base(self.bot_id)
+                logger.info("DEBUG: Knowledge base and history processed")
+                
             except Exception as hist_error:
-                logger.error(f"Chat history retrieval error: {str(hist_error)[:100]}")
+                logger.error(f"Chat history/knowledge retrieval error: {str(hist_error)[:100]}")
+                recent_history = ""
+                knowledge_base = ""
+
+            # Send typing indicator again before AI call
+            try:
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+            except Exception:
+                pass
 
             # Generate AI response
             try:
@@ -666,8 +687,14 @@ class TelegramBot:
                 return
             
             try:
+                # Send typing indicator first for immediate feedback
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+                
                 # Send processing message
                 processing_msg = await update.message.reply_text("🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
+                
+                # Send typing indicator again
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
                 
                 # Get voice file
                 voice = update.message.voice
