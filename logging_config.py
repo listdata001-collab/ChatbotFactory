@@ -1,5 +1,5 @@
 """
-Professional logging konfiguratsiyasi BotFactory AI uchun
+Professional logging konfiguratsiyasi Chatbot Factory AI uchun
 """
 
 import os
@@ -37,7 +37,7 @@ LOGGING_CONFIG: Dict[str, Any] = {
             'class': 'logging.handlers.RotatingFileHandler',
             'level': 'DEBUG',
             'formatter': 'detailed',
-            'filename': 'logs/botfactory.log',
+            'filename': 'logs/chatbot-factory.log',
             'maxBytes': 10485760,  # 10MB
             'backupCount': 5,
             'encoding': 'utf8'
@@ -86,7 +86,7 @@ def setup_logging() -> None:
         
         # Test log
         logger = logging.getLogger(__name__)
-        logger.info("BotFactory AI logging system initialized successfully")
+        logger.info("Chatbot Factory AI logging system initialized successfully")
         
     except Exception as e:
         print(f"Failed to setup logging: {str(e)}")

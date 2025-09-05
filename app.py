@@ -12,7 +12,7 @@ try:
     from logging_config import setup_logging, error_tracker, ContextLogger
     setup_logging()
     logger = logging.getLogger(__name__)
-    logger.info("BotFactory AI application starting with professional logging")
+    logger.info("Chatbot Factory AI application starting with professional logging")
 except Exception as e:
     # Fallback basic logging for any error
     logging.basicConfig(

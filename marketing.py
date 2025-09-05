@@ -23,7 +23,7 @@ class EmailService:
         self.smtp_port = int(os.environ.get('SMTP_PORT', '587'))
         self.smtp_user = os.environ.get('SMTP_USER', '')
         self.smtp_password = os.environ.get('SMTP_PASSWORD', '')
-        self.from_email = os.environ.get('FROM_EMAIL', 'noreply@botfactory.uz')
+        self.from_email = os.environ.get('FROM_EMAIL', 'noreply@chatbotfactory.uz')
         
         # SendGrid API (alternative)
         self.sendgrid_api_key = os.environ.get('SENDGRID_API_KEY', '')
@@ -81,7 +81,7 @@ class EmailService:
                     'to': [{'email': to_email}],
                     'subject': subject
                 }],
-                'from': {'email': self.from_email, 'name': 'BotFactory AI'},
+                'from': {'email': self.from_email, 'name': 'Chatbot Factory AI'},
                 'content': [
                     {'type': 'text/plain', 'value': text_content},
                     {'type': 'text/html', 'value': html_content}
@@ -247,7 +247,7 @@ class MarketingCampaigns:
     
     def send_welcome_email(self, user):
         """Xush kelibsiz emaili"""
-        subject = "🎉 BotFactory AI ga xush kelibsiz!"
+        subject = "🎉 Chatbot Factory AI ga xush kelibsiz!"
         
         html_template = """
         <!DOCTYPE html>
@@ -258,10 +258,10 @@ class MarketingCampaigns:
         </head>
         <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h1 style="color: #2563eb;">🤖 BotFactory AI</h1>
+                <h1 style="color: #2563eb;">🤖 Chatbot Factory AI</h1>
                 <h2>Salom, {{ username }}!</h2>
                 
-                <p>BotFactory AI platformasiga xush kelibsiz! Siz endi o'zingizning AI chatbotlaringizni yaratishingiz mumkin.</p>
+                <p>Chatbot Factory AI platformasiga xush kelibsiz! Siz endi o'zingizning AI chatbotlaringizni yaratishingiz mumkin.</p>
                 
                 <div style="background: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
                     <h3>🎁 14 kunlik bepul sinov:</h3>
@@ -293,7 +293,7 @@ class MarketingCampaigns:
                 
                 <hr style="margin: 30px 0;">
                 <p style="font-size: 12px; color: #666;">
-                    BotFactory AI - O'zbekistondagi birinchi AI chatbot platformasi<br>
+                    Chatbot Factory AI - O'zbekistondagi birinchi AI chatbot platformasi<br>
                     <a href="https://botfactory.uz">botfactory.uz</a>
                 </p>
             </div>
@@ -306,7 +306,7 @@ class MarketingCampaigns:
         text_content = f"""
 Salom, {user.username}!
 
-BotFactory AI ga xush kelibsiz! Siz endi o'zingizning AI chatbotlaringizni yaratishingiz mumkin.
+Chatbot Factory AI ga xush kelibsiz! Siz endi o'zingizning AI chatbotlaringizni yaratishingiz mumkin.
 
 14 kunlik bepul sinov:
 - 1 ta bot yaratish
@@ -405,7 +405,7 @@ Savollar: support@botfactory.uz
     
     def send_trial_ending_sms(self, user, days_left):
         """Sinov tugashi SMS"""
-        message = f"""🤖 BotFactory AI
+        message = f"""🤖 Chatbot Factory AI
 
 Hurmatli {user.username}, sinov muddatingiz {days_left} kundan keyin tugaydi.
 
@@ -442,7 +442,7 @@ https://t.me/akramjon0011"""
                 
                 <p>Salom, {{ username }}!</p>
                 
-                <p>Siz BotFactory AI dan yaxshi foydalanyapsiz. Ko'proq imkoniyatlar qanday?</p>
+                <p>Siz Chatbot Factory AI dan yaxshi foydalanyapsiz. Ko'proq imkoniyatlar qanday?</p>
                 
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
                            color: white; padding: 30px; border-radius: 15px; margin: 30px 0;">
@@ -549,7 +549,7 @@ https://t.me/akramjon0011"""
                 </div>
                 
                 <p style="font-size: 12px; color: #666; text-align: center;">
-                    BotFactory AI - O'zbekistondagi birinchi AI chatbot platformasi<br>
+                    Chatbot Factory AI - O'zbekistondagi birinchi AI chatbot platformasi<br>
                     <a href="https://botfactory.uz">botfactory.uz</a>
                 </p>
             </div>
@@ -577,7 +577,7 @@ https://t.me/akramjon0011"""
         email_success = self.email_service.send_email(user.email, subject, html_content, text_content)
         
         # SMS ham yuborish
-        sms_message = f"""🤖 BotFactory AI
+        sms_message = f"""🤖 Chatbot Factory AI
 
 {user.username}, 14 kunlik bepul sinov tugadi!
 

@@ -82,7 +82,7 @@ class TelegramNotificationService:
 {short_response}
 
 ━━━━━━━━━━━━━━━━━━━
-BotFactory AI - Suhbat Kuzatuvi
+Chatbot Factory AI - Suhbat Kuzatuvi
         """.strip()
         
         return notification
@@ -166,7 +166,7 @@ BotFactory AI - Suhbat Kuzatuvi
 🔗 Yangilash: https://botfactory.uz/subscription
 
 ━━━━━━━━━━━━━━━━━━━
-BotFactory AI - Obuna boshqaruvi"""
+Chatbot Factory AI - Obuna boshqaruvi"""
         
         return self._send_message(admin_chat_id, notification_text)
     
@@ -202,7 +202,7 @@ BotFactory AI - Obuna boshqaruvi"""
 🎉 Foydalanuvchi 30 kunlik obunaga ega bo'ldi!
 
 ━━━━━━━━━━━━━━━━━━━
-BotFactory AI - To'lovlar"""
+Chatbot Factory AI - To'lovlar"""
         
         return self._send_message(admin_chat_id, notification_text)
     
@@ -227,7 +227,7 @@ BotFactory AI - To'lovlar"""
 ⚠️ Telegram bo'lmagan botlar deaktivatsiya qilindi!
 
 ━━━━━━━━━━━━━━━━━━━
-BotFactory AI - Obuna boshqaruvi"""
+Chatbot Factory AI - Obuna boshqaruvi"""
         
         return self._send_message(admin_chat_id, notification_text)
 
@@ -238,7 +238,7 @@ BotFactory AI - Obuna boshqaruvi"""
 
 Bu test xabaridir. Agar bu xabarni olgan bo'lsangiz, bildirishnomalar tizimi to'g'ri ishlayapti! ✅
 
-BotFactory AI Platform
+Chatbot Factory AI Platform
         """.strip()
         
         return self._send_message(chat_id, test_message)

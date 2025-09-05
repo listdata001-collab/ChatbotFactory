@@ -536,7 +536,7 @@ class TaskScheduler:
                 }
                 
                 # Hisobot emaili
-                subject = f"📊 BotFactory AI - Haftalik hisobot ({datetime.utcnow().strftime('%d.%m.%Y')})"
+                subject = f"📊 Chatbot Factory AI - Haftalik hisobot ({datetime.utcnow().strftime('%d.%m.%Y')})"
                 
                 report_html = f"""
                 <h2>📊 Haftalik hisobot</h2>

@@ -11,7 +11,7 @@ except ImportError:
     GEMINI_AVAILABLE = False
     logging.warning("Google Generative AI library not available. Install with: pip install google-generativeai")
 
-def get_ai_response(message: str, bot_name: str = "BotFactory AI", user_language: str = "uz", knowledge_base: str = "", chat_history: str = "") -> Optional[str]:
+def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_language: str = "uz", knowledge_base: str = "", chat_history: str = "") -> Optional[str]:
     """
     Generate AI response using Google Gemini with chat history context
     """

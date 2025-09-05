@@ -1,8 +1,8 @@
-# BotFactory AI
+# Chatbot Factory AI
 
 ## Overview
 
-BotFactory AI is a Telegram AI chatbot platform designed for Uzbek language users. The system allows users to create and manage AI-powered chatbots with subscription-based features and multi-language support. The platform integrates with Google Gemini AI for natural language processing and uses a tiered subscription model offering different levels of functionality.
+Chatbot Factory AI is a Telegram AI chatbot platform designed for Uzbek language users. The system allows users to create and manage AI-powered chatbots with subscription-based features and multi-language support. The platform integrates with Google Gemini AI for natural language processing and uses a tiered subscription model offering different levels of functionality.
 
 ## User Preferences
 

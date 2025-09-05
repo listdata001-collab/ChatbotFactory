@@ -150,7 +150,7 @@ class UzumAPI:
                 'amount': int(amount * 100),  # Tiyin hisobida
                 'currency': 'UZS',
                 'order_id': str(order_id),
-                'description': f'BotFactory AI - Obuna to\'lovi #{order_id}',
+                'description': f'Chatbot Factory AI - Obuna to\'lovi #{order_id}',
                 'return_url': return_url,
                 'callback_url': url_for('payment.uzum_callback', _external=True)
             }
