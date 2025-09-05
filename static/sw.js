@@ -1,10 +1,12 @@
 // Service Worker for BotFactory AI PWA
-const CACHE_NAME = 'botfactory-ai-v1';
+const CACHE_NAME = 'botfactory-ai-v2';
 const urlsToCache = [
   '/',
   '/static/css/style.css',
   '/static/js/main.js',
+  '/static/images/favicon.png',
   '/static/images/logo.png',
+  '/static/favicon.ico',
   '/static/manifest.json'
 ];
 
