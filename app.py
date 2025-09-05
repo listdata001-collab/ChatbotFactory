@@ -54,39 +54,20 @@ import os
 if not os.path.exists('instance'):
     os.makedirs('instance', exist_ok=True)
 
-database_url = os.environ.get("DATABASE_URL", "sqlite:///instance/botfactory.db")
-
-# PostgreSQL URL ni to'g'rilash agar kerak bo'lsa
-if database_url and database_url.startswith('postgres://'):
-    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+# Doimo SQLite ishlatamiz
+database_url = "sqlite:///instance/botfactory.db"
 
 app.config["SQLALCHEMY_DATABASE_URI"] = database_url
 
-# Database configuration based on URL type
-if database_url.startswith('postgresql'):
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-        "echo": False,
-        "pool_timeout": 20,
-        "pool_size": 10,
-        "max_overflow": 20,
-        "connect_args": {
-            "connect_timeout": 10,
-            "application_name": "BotFactory_AI"
-        }
+# SQLite configuration
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_recycle": 300,
+    "pool_pre_ping": True,
+    "echo": False,
+    "connect_args": {
+        "check_same_thread": False,
     }
-else:
-    # SQLite configuration for development
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-        "echo": False,
-        "connect_args": {
-            "check_same_thread": False,
-            "isolation_level": None,
-        }
-    }
+}
 
 # Initialize extensions
 db.init_app(app)
@@ -122,68 +103,39 @@ with app.app_context():
     # Import models to ensure tables are created
     import models
     
-    # Create/update tables with retry mechanism
-    max_retries = 3
-    retry_count = 0
-    
-    while retry_count < max_retries:
-        try:
-            # Test database connection first
-            db.engine.connect()
-            
-            # Create tables
-            db.create_all()
-            logging.info("Database schema up to date")
+    # Create tables
+    try:
+        db.create_all()
+        logging.info("Database schema up to date")
         
-            # Create admin user if not exists
-            from models import User
-            from werkzeug.security import generate_password_hash
+        # Create admin user if not exists
+        from models import User
+        from werkzeug.security import generate_password_hash
+        
+        admin = User.query.filter_by(username='Akramjon').first()
+        if not admin:
+            admin = User()
+            admin.username = 'Akramjon'
+            admin.email = 'admin@botfactory.uz'
+            admin.password_hash = generate_password_hash('Gisobot20141920*')
+            admin.language = 'uz'
+            admin.subscription_type = 'admin'
+            admin.is_admin = True
+            db.session.add(admin)
+            db.session.commit()
+            logging.info("Admin user created successfully")
+        else:
+            logging.info("Admin user already exists")
             
-            try:
-                admin = User.query.filter_by(username='Akramjon').first()
-                if not admin:
-                    admin = User()
-                    admin.username = 'Akramjon'
-                    admin.email = 'admin@botfactory.uz'
-                    admin.password_hash = generate_password_hash('Gisobot20141920*')
-                    admin.language = 'uz'
-                    admin.subscription_type = 'admin'
-                    admin.is_admin = True
-                    db.session.add(admin)
-                    db.session.commit()
-                    logging.info("Admin user created successfully")
-            except Exception as user_error:
-                logging.warning(f"Admin user creation skipped: {user_error}")
-                
-            break  # Success, exit retry loop
-            
-        except Exception as e:
-            retry_count += 1
-            if retry_count >= max_retries:
-                logging.error(f"Database initialization failed after {max_retries} retries: {e}")
-                # Fallback agar PostgreSQL ishlamasa
-                if database_url.startswith('postgresql'):
-                    logging.warning("Falling back to SQLite due to PostgreSQL connection issues")
-                    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///instance/botfactory.db"
-                    # SQLite konfiguratsiyasini o'rnatish
-                    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-                        "pool_recycle": 300,
-                        "pool_pre_ping": True,
-                        "echo": False,
-                        "connect_args": {
-                            "check_same_thread": False,
-                            "isolation_level": None,
-                        }
-                    }
-                    # SQLite uchun qayta urinish
-                    try:
-                        db.create_all()
-                        logging.info("Fallback to SQLite successful")
-                    except Exception as sqlite_error:
-                        logging.error(f"SQLite fallback also failed: {sqlite_error}")
-                break
-            else:
-                import time
-                wait_time = 2 ** retry_count  # Exponential backoff
-                logging.warning(f"Database connection failed (attempt {retry_count}/{max_retries}), retrying in {wait_time} seconds...")
-                time.sleep(wait_time)
+    except Exception as e:
+        logging.error(f"Database initialization error: {e}")
+        # Try creating the file manually
+        import sqlite3
+        try:
+            conn = sqlite3.connect('instance/botfactory.db')
+            conn.close()
+            logging.info("SQLite file created manually, retrying database setup")
+            db.create_all()
+            logging.info("Database setup successful after manual file creation")
+        except Exception as manual_error:
+            logging.error(f"Manual database creation also failed: {manual_error}")
