@@ -4,6 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 from models import User
 from datetime import datetime, timedelta
+import logging
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -41,48 +42,58 @@ def register():
         return redirect(url_for('main.dashboard'))
     
     if request.method == 'POST':
-        username = request.form.get('username')
-        email = request.form.get('email')
-        password = request.form.get('password')
-        confirm_password = request.form.get('confirm_password')
-        
-        # Validation
-        if not all([username, email, password, confirm_password]):
-            flash('Barcha maydonlar to\'ldirilishi shart!', 'error')
+        try:
+            username = request.form.get('username')
+            email = request.form.get('email')
+            password = request.form.get('password')
+            confirm_password = request.form.get('confirm_password')
+            
+            logging.info(f"Registration attempt for username: {username}, email: {email}")
+            
+            # Validation
+            if not all([username, email, password, confirm_password]):
+                flash('Barcha maydonlar to\'ldirilishi shart!', 'error')
+                return render_template('register.html')
+            
+            if password != confirm_password:
+                flash('Parollar mos kelmaydi!', 'error')
+                return render_template('register.html')
+            
+            if password and len(password) < 6:
+                flash('Parol kamida 6 ta belgidan iborat bo\'lishi kerak!', 'error')
+                return render_template('register.html')
+            
+            # Check if user exists
+            if User.query.filter_by(username=username).first():
+                flash('Bu foydalanuvchi nomi band!', 'error')
+                return render_template('register.html')
+            
+            if User.query.filter_by(email=email).first():
+                flash('Bu email band!', 'error')
+                return render_template('register.html')
+            
+            # Create new user with test subscription (14 days)
+            user = User()
+            user.username = username
+            user.email = email
+            user.password_hash = generate_password_hash(password or '')
+            user.language = 'uz'
+            user.subscription_type = 'free'
+            user.subscription_end_date = datetime.utcnow() + timedelta(days=14)
+            user.is_active = True
+            
+            db.session.add(user)
+            db.session.commit()
+            
+            logging.info(f"User registration successful for: {username}")
+            flash('Ro\'yxatdan o\'tish muvaffaqiyatli! Endi tizimga kirishingiz mumkin.', 'success')
+            return redirect(url_for('auth.login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Registration error for {username}: {str(e)}", exc_info=True)
+            flash(f'Ro\'yxatdan o\'tishda xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.', 'error')
             return render_template('register.html')
-        
-        if password != confirm_password:
-            flash('Parollar mos kelmaydi!', 'error')
-            return render_template('register.html')
-        
-        if password and len(password) < 6:
-            flash('Parol kamida 6 ta belgidan iborat bo\'lishi kerak!', 'error')
-            return render_template('register.html')
-        
-        # Check if user exists
-        if User.query.filter_by(username=username).first():
-            flash('Bu foydalanuvchi nomi band!', 'error')
-            return render_template('register.html')
-        
-        if User.query.filter_by(email=email).first():
-            flash('Bu email band!', 'error')
-            return render_template('register.html')
-        
-        # Create new user with test subscription (14 days)
-        user = User()
-        user.username = username
-        user.email = email
-        user.password_hash = generate_password_hash(password or '')
-        user.language = 'uz'
-        user.subscription_type = 'free'
-        user.subscription_end_date = datetime.utcnow() + timedelta(days=14)
-        user.is_active = True
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        flash('Ro\'yxatdan o\'tish muvaffaqiyatli! Endi tizimga kirishingiz mumkin.', 'success')
-        return redirect(url_for('auth.login'))
     
     return render_template('register.html')
 
