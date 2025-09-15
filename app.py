@@ -49,29 +49,38 @@ def after_request(response):
     
     return response
 
-# Configure the database with UTF-8 support
-import os
-# Get absolute path for database
-base_dir = os.path.abspath(os.path.dirname(__file__))
-instance_dir = os.path.join(base_dir, 'instance')
-if not os.path.exists(instance_dir):
-    os.makedirs(instance_dir, exist_ok=True)
-
-# Use absolute path for SQLite database
-database_path = os.path.join(instance_dir, 'botfactory.db')
-database_url = f"sqlite:///{database_path}"
-
-app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-
-# SQLite configuration
-app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
-    "echo": False,
-    "connect_args": {
-        "check_same_thread": False,
+# Configure the database - PostgreSQL for production performance
+database_url = os.environ.get("DATABASE_URL")
+if database_url:
+    # PostgreSQL connection with optimized pooling for high load
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_size": 20,          # Increased from default 5
+        "max_overflow": 40,       # Allow extra connections under load
+        "pool_timeout": 30,       # Wait up to 30s for connection
+        "pool_recycle": 3600,     # Recycle connections every hour
+        "pool_pre_ping": True,    # Verify connections before use
+        "echo": False
     }
-}
+    logger.info("Using PostgreSQL with optimized connection pooling")
+else:
+    # Fallback to SQLite for development (not recommended for production)
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    instance_dir = os.path.join(base_dir, 'instance')
+    if not os.path.exists(instance_dir):
+        os.makedirs(instance_dir, exist_ok=True)
+    
+    database_path = os.path.join(instance_dir, 'botfactory.db')
+    database_url = f"sqlite:///{database_path}"
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+        "echo": False,
+        "connect_args": {"check_same_thread": False}
+    }
+    logger.warning("Using SQLite fallback - not suitable for high load!")
 
 # Initialize extensions
 db.init_app(app)
