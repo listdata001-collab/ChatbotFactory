@@ -464,25 +464,64 @@
                     <p class="mb-3">Narxi: <span id="selectedAmount"></span> so'm/oy</p>
                 </div>
                 
-                <div class="contact-info">
-                    <div class="mb-4">
-                        <i class="fab fa-telegram-plane fs-1 text-primary mb-3"></i>
-                        <h5>Telegram orqali bog'laning</h5>
-                        <p class="text-muted mb-3">
-                            Hozirda to'lov tizimi ishlab chiqilmoqda. Tarif almashish uchun quyidagi Telegram orqali bog'laning:
-                        </p>
-                        <a href="https://t.me/akramjon0011" target="_blank" class="btn btn-primary btn-lg">
-                            <i class="fab fa-telegram-plane me-2"></i>
-                            @akramjon0011
-                        </a>
+                <!-- Paynet Payment Section -->
+                <div class="payment-section mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card" style="background: #1a1a1a; border: 2px solid #00bcd4;">
+                                <div class="card-header bg-primary text-white">
+                                    <h5><i class="fas fa-credit-card me-2"></i>1-qadam: To'lov qiling</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <img src="/static/images/paynet_qr.png" alt="Paynet QR Code" 
+                                         class="img-fluid mb-3" style="max-width: 200px;">
+                                    <p class="text-info mb-2">
+                                        <strong>Karta raqami:</strong><br>
+                                        <code>7777 0120 2883 9786</code>
+                                    </p>
+                                    <p class="text-muted small">
+                                        QR kodni skanerlang yoki karta raqamiga to'lov qiling
+                                    </p>
+                                    <a href="https://play.google.com/store/search?q=paynet&c=apps&hl=ru" 
+                                       target="_blank" class="btn btn-success btn-sm">
+                                        <i class="fab fa-google-play me-1"></i>Paynet ilovasini yuklab olish
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card" style="background: #1a1a1a; border: 2px solid #28a745;">
+                                <div class="card-header bg-success text-white">
+                                    <h5><i class="fab fa-telegram-plane me-2"></i>2-qadam: Chekni yuboring</h5>
+                                </div>
+                                <div class="card-body text-center">
+                                    <i class="fab fa-telegram-plane" style="font-size: 4rem; color: #00bcd4; margin: 20px 0;"></i>
+                                    <p class="text-muted mb-3">
+                                        To'lov qilgandan keyin chek rasmini admin Telegramiga yuboring:
+                                    </p>
+                                    <a href="https://t.me/akramjon0011" target="_blank" class="btn btn-primary btn-lg">
+                                        <i class="fab fa-telegram-plane me-2"></i>
+                                        @akramjon0011
+                                    </a>
+                                    <p class="text-warning small mt-3">
+                                        <i class="fas fa-clock me-1"></i>
+                                        Admin 24 soat ichida dostup beradi
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="contact-instructions mt-4">
-                        <h6>Xabar yuborishda quyidagilarni ko'rsating:</h6>
+                </div>
+                
+                <div class="contact-instructions mt-4">
+                    <div class="alert alert-warning">
+                        <h6><i class="fas fa-info-circle me-2"></i>Xabar yuborishda quyidagilarni ko'rsating:</h6>
                         <ul class="list-unstyled text-start mt-3">
-                            <li><i class="fas fa-check text-success me-2"></i>Tanlagan tarif nomi</li>
-                            <li><i class="fas fa-check text-success me-2"></i>Hisob ma'lumotlaringiz (username)</li>
-                            <li><i class="fas fa-check text-success me-2"></i>To'lov usuli (naqd/karta)</li>
+                            <li><i class="fas fa-check text-success me-2"></i>Tanlagan tarif nomi: <strong><span id="selectedPlanName"></span></strong></li>
+                            <li><i class="fas fa-check text-success me-2"></i>Sizning username: <strong>{{ current_user.username }}</strong></li>
+                            <li><i class="fas fa-check text-success me-2"></i>To'lov miqdori: <strong><span id="selectedAmountDisplay"></span> so'm</strong></li>
+                            <li><i class="fas fa-check text-success me-2"></i>Paynet to'lov cheki rasmi</li>
                         </ul>
                     </div>
                 </div>
@@ -521,6 +560,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         document.getElementById('selectedPlan').textContent = planNames[subscription] || subscription;
         document.getElementById('selectedAmount').textContent = new Intl.NumberFormat('uz-UZ').format(amount);
+        
+        // Update new fields for payment instructions
+        document.getElementById('selectedPlanName').textContent = planNames[subscription] || subscription;
+        document.getElementById('selectedAmountDisplay').textContent = new Intl.NumberFormat('uz-UZ').format(amount);
     });
 });
 </script>

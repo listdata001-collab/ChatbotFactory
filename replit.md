@@ -58,6 +58,14 @@ Four-tier subscription system:
 - **Content Processing**: Text extraction from documents for AI training
 
 ## Recent Changes
+- **September 15, 2025**: 💳 **PAYNET PAYMENT INTEGRATION**: Implemented local payment system for Uzbekistan market
+  - **PAYNET QR CODE**: Added official Paynet QR code for easy mobile payments
+  - **MANUAL VERIFICATION**: Secure payment verification through Telegram admin (@akramjon0011)
+  - **PAYMENT FLOW**: Clear 2-step process - pay via Paynet, send receipt to admin
+  - **CARD SUPPORT**: Direct payment to card number 7777012028839786
+  - **USER GUIDANCE**: Comprehensive payment instructions with visual guides
+  - **ADMIN WORKFLOW**: 24-hour manual verification and access granting system
+  - **STATUS**: ✅ PAYMENT SYSTEM ACTIVE - Local Uzbekistan payment solution implemented
 - **September 05, 2025**: ⚡ **PERFORMANCE OPTIMIZATIONS**: Dramatically improved chatbot response speed and user experience
   - **TYPING INDICATORS ADDED**: Bot now shows "typing..." status immediately when user sends message for better UX
   - **AI RESPONSE OPTIMIZATION**: Reduced AI processing time with optimized Gemini configuration:
