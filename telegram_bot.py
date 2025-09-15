@@ -416,6 +416,47 @@ class TelegramBot:
             bot = Bot.query.get(self.bot_id)
             bot_name = bot.name if bot else "BotFactory AI"
             
+            # Track customer interaction
+            try:
+                from models import BotCustomer
+                customer = BotCustomer.query.filter_by(
+                    bot_id=self.bot_id,
+                    platform='telegram',
+                    platform_user_id=str(user.id)
+                ).first()
+                
+                if not customer:
+                    # Create new customer record
+                    customer = BotCustomer()
+                    customer.bot_id = self.bot_id
+                    customer.platform = 'telegram'
+                    customer.platform_user_id = str(user.id)
+                    customer.first_name = user.first_name or ''
+                    customer.last_name = user.last_name or ''
+                    customer.username = user.username or ''
+                    customer.language = db_user.language
+                    customer.is_active = True
+                    customer.message_count = 1
+                    db.session.add(customer)
+                else:
+                    # Update existing customer
+                    customer.first_name = user.first_name or customer.first_name
+                    customer.last_name = user.last_name or customer.last_name
+                    customer.username = user.username or customer.username
+                    customer.last_interaction = datetime.utcnow()
+                    customer.message_count += 1
+                    customer.is_active = True
+                
+                db.session.commit()
+                logging.info(f"Customer tracked: {customer.display_name} for bot {self.bot_id}")
+                
+            except Exception as customer_error:
+                logging.error(f"Failed to track customer: {str(customer_error)}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
+            
             welcome_message = f"🤖 Salom! Men {bot_name} chatbot!\n\n"
             welcome_message += "📝 Menga savolingizni yozing va men sizga yordam beraman.\n"
             welcome_message += "🌐 Tilni tanlash uchun /language buyrug'ini ishlating.\n"
@@ -728,6 +769,45 @@ class TelegramBot:
                 return
             
             logger.info("DEBUG: Bot found")
+            
+            # Track customer interaction
+            try:
+                from models import BotCustomer
+                customer = BotCustomer.query.filter_by(
+                    bot_id=self.bot_id,
+                    platform='telegram',
+                    platform_user_id=user_id
+                ).first()
+                
+                if not customer:
+                    # Create new customer record
+                    user = update.effective_user
+                    customer = BotCustomer()
+                    customer.bot_id = self.bot_id
+                    customer.platform = 'telegram'
+                    customer.platform_user_id = user_id
+                    customer.first_name = user.first_name or ''
+                    customer.last_name = user.last_name or ''
+                    customer.username = user.username or ''
+                    customer.language = db_user.language
+                    customer.is_active = True
+                    customer.message_count = 1
+                    db.session.add(customer)
+                    logger.info(f"New customer created: {customer.display_name} for bot {self.bot_id}")
+                else:
+                    # Update existing customer
+                    customer.last_interaction = datetime.utcnow()
+                    customer.message_count += 1
+                    customer.is_active = True
+                    logger.info(f"Customer interaction updated: {customer.display_name}")
+                
+                db.session.commit()
+            except Exception as customer_error:
+                logger.error(f"Failed to track customer interaction: {str(customer_error)}")
+                try:
+                    db.session.rollback()
+                except:
+                    pass
             
             # Check subscription
             if not db_user.subscription_active():

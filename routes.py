@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file
 from flask_login import login_required, current_user
 from app import db
-from models import User, Bot, KnowledgeBase, Payment, ChatHistory, BroadcastMessage
+from models import User, Bot, KnowledgeBase, Payment, ChatHistory, BroadcastMessage, BotCustomer, BotMessage
 from werkzeug.utils import secure_filename
 import os
 import logging
@@ -1389,4 +1389,143 @@ def set_telegram_webhook(bot_token, webhook_url):
             
     except Exception as e:
         logging.error(f"Webhook setup error: {str(e)}")
+        return False
+
+# === Bot Messaging Routes ===
+
+@main_bp.route('/bot/<int:bot_id>/messaging')
+@login_required
+def bot_messaging(bot_id):
+    """Bot mijozlari va xabar yuborish interfeysi"""
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu botning xabarlariga kirish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    # Bot mijozlarini olish
+    customers = BotCustomer.query.filter_by(bot_id=bot_id, is_active=True).order_by(BotCustomer.last_interaction.desc()).all()
+    
+    # Xabar tarixi
+    recent_messages = BotMessage.query.filter_by(bot_id=bot_id).order_by(BotMessage.created_at.desc()).limit(10).all()
+    
+    return render_template('bot_messaging.html', bot=bot, customers=customers, recent_messages=recent_messages)
+
+@main_bp.route('/bot/<int:bot_id>/send_message', methods=['POST'])
+@login_required
+def send_bot_message(bot_id):
+    """Bot orqali mijozlarga xabar yuborish"""
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu bot orqali xabar yuborish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+    
+    message_text = request.form.get('message_text', '').strip()
+    message_type = request.form.get('message_type', 'individual')  # individual/broadcast
+    selected_customers = request.form.getlist('selected_customers')
+    
+    if not message_text:
+        flash('Xabar matni kiritilishi shart!', 'error')
+        return redirect(url_for('main.bot_messaging', bot_id=bot_id))
+    
+    # Xabar ob'ektini yaratish
+    bot_message = BotMessage()
+    bot_message.bot_id = bot_id
+    bot_message.sender_id = current_user.id
+    bot_message.message_text = message_text
+    bot_message.message_type = message_type
+    
+    if message_type == 'broadcast':
+        # Barcha faol mijozlarga yuborish
+        target_customers = BotCustomer.query.filter_by(bot_id=bot_id, is_active=True).all()
+    else:
+        # Tanlangan mijozlarga yuborish
+        if not selected_customers:
+            flash('Kamida bitta mijoz tanlanishi kerak!', 'error')
+            return redirect(url_for('main.bot_messaging', bot_id=bot_id))
+        target_customers = BotCustomer.query.filter(
+            BotCustomer.id.in_(selected_customers),
+            BotCustomer.bot_id == bot_id
+        ).all()
+    
+    import json
+    bot_message.target_customers = json.dumps([str(c.id) for c in target_customers])
+    bot_message.status = 'sending'
+    
+    db.session.add(bot_message)
+    db.session.commit()
+    
+    # Xabarlarni yuborish (asinxron)
+    try:
+        success_count = 0
+        for customer in target_customers:
+            try:
+                if customer.platform == 'telegram' and bot.telegram_token:
+                    result = send_telegram_message_sync(bot.telegram_token, customer.platform_user_id, message_text)
+                    if result:
+                        success_count += 1
+                # Boshqa platformalar uchun qo'shimcha kod
+            except Exception as e:
+                logging.error(f"Error sending message to customer {customer.id}: {str(e)}")
+        
+        # Natijalarni yangilash
+        bot_message.sent_count = success_count
+        bot_message.status = 'completed' if success_count > 0 else 'failed'
+        bot_message.sent_at = datetime.utcnow()
+        db.session.commit()
+        
+        if success_count > 0:
+            flash(f'Xabar {success_count} ta mijozga muvaffaqiyatli yuborildi!', 'success')
+        else:
+            flash('Xabar yuborishda muammo yuz berdi!', 'error')
+            
+    except Exception as e:
+        logging.error(f"Message sending error: {str(e)}")
+        bot_message.status = 'failed'
+        db.session.commit()
+        flash('Xabar yuborishda xatolik yuz berdi!', 'error')
+    
+    return redirect(url_for('main.bot_messaging', bot_id=bot_id))
+
+@main_bp.route('/bot/<int:bot_id>/customers')
+@login_required
+def bot_customers(bot_id):
+    """Bot mijozlar ro'yxati (JSON format)"""
+    bot = Bot.query.get_or_404(bot_id)
+    
+    if bot.user_id != current_user.id and not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    customers = BotCustomer.query.filter_by(bot_id=bot_id, is_active=True).all()
+    
+    customer_data = []
+    for customer in customers:
+        customer_data.append({
+            'id': customer.id,
+            'display_name': customer.display_name,
+            'platform': customer.platform,
+            'language': customer.language,
+            'last_interaction': customer.last_interaction.strftime('%Y-%m-%d %H:%M'),
+            'message_count': customer.message_count
+        })
+    
+    return jsonify({'customers': customer_data})
+
+def send_telegram_message_sync(bot_token, chat_id, message_text):
+    """Telegram xabarini sinxron yuborish"""
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        data = {
+            'chat_id': chat_id,
+            'text': message_text,
+            'parse_mode': 'HTML'
+        }
+        
+        response = requests.post(url, json=data, timeout=30)
+        result = response.json()
+        
+        return result.get('ok', False)
+    except Exception as e:
+        logging.error(f"Error sending telegram message: {str(e)}")
         return False

@@ -205,6 +205,10 @@
                                            class="btn btn-outline-primary" title="Tahrirlash">
                                             <i class="fas fa-edit"></i>
                                         </a>
+                                        <a href="{{ url_for('main.bot_messaging', bot_id=bot.id) }}" 
+                                           class="btn btn-outline-info" title="Mijozlarga xabar yuborish">
+                                            <i class="fas fa-paper-plane"></i>
+                                        </a>
                                         <form method="POST" action="{{ url_for('main.delete_bot', bot_id=bot.id) }}" 
                                               class="d-inline" onsubmit="return confirm('Bu botni o\'chirishni xohlaysizmi?')">
                                             <button type="submit" class="btn btn-outline-danger" title="O'chirish">

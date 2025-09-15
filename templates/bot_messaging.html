@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}{{ bot.name }} - Mijozlarga xabar yuborish{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="fas fa-paper-plane text-primary"></i> {{ bot.name }} - Xabar yuborish</h2>
+                    <p class="text-muted mb-0">O'z mijozlaringizga individual yoki guruh xabarlari yuboring</p>
+                </div>
+                <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left"></i> Dashboard
+                </a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' if category == 'success' else 'warning' }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }}"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="row">
+                <!-- Xabar yuborish paneli -->
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0"><i class="fas fa-edit"></i> Yangi xabar yaratish</h5>
+                        </div>
+                        <div class="card-body">
+                            <form action="{{ url_for('main.send_bot_message', bot_id=bot.id) }}" method="POST">
+                                {{ csrf_token() }}
+                                <!-- Xabar turi tanlash -->
+                                <div class="mb-3">
+                                    <label class="form-label">Xabar turi</label>
+                                    <div class="btn-group w-100" role="group" aria-label="Message type">
+                                        <input type="radio" class="btn-check" name="message_type" id="individual" value="individual" checked>
+                                        <label class="btn btn-outline-primary" for="individual">
+                                            <i class="fas fa-user"></i> Individual xabar
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="message_type" id="broadcast" value="broadcast">
+                                        <label class="btn btn-outline-primary" for="broadcast">
+                                            <i class="fas fa-bullhorn"></i> Barcha mijozlarga
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Mijozlar tanlash (faqat individual uchun) -->
+                                <div id="customer-selection" class="mb-3">
+                                    <label class="form-label">Mijozlarni tanlang</label>
+                                    <div class="customer-list border rounded p-3" style="max-height: 200px; overflow-y: auto;">
+                                        {% if customers %}
+                                            {% for customer in customers %}
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" name="selected_customers" value="{{ customer.id }}" id="customer{{ customer.id }}">
+                                                    <label class="form-check-label d-flex justify-content-between align-items-center" for="customer{{ customer.id }}">
+                                                        <div>
+                                                            <strong>{{ customer.display_name }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                <i class="fab fa-{{ customer.platform }}"></i> 
+                                                                {{ customer.platform.title() }} • 
+                                                                {{ customer.last_interaction.strftime('%d.%m.%Y %H:%M') }}
+                                                            </small>
+                                                        </div>
+                                                        <span class="badge bg-secondary">{{ customer.message_count }} xabar</span>
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="text-center text-muted py-3">
+                                                <i class="fas fa-users fa-2x mb-2"></i>
+                                                <p>Hozircha mijozlar yo'q. Birinchi mijoz bot bilan suhbat boshlagandan keyin bu yerda paydo bo'ladi.</p>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    {% if customers %}
+                                        <div class="mt-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">
+                                                <i class="fas fa-check-square"></i> Barchasini tanlash
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="selectNone()">
+                                                <i class="fas fa-square"></i> Bekor qilish
+                                            </button>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Xabar matni -->
+                                <div class="mb-3">
+                                    <label for="message_text" class="form-label">Xabar matni</label>
+                                    <textarea class="form-control" id="message_text" name="message_text" rows="6" 
+                                              placeholder="Bu yerga xabaringizni yozing..." required></textarea>
+                                    <div class="form-text">
+                                        Emoji ishlatishingiz mumkin. HTML teglari qo'llab-quvvatlanadi.
+                                    </div>
+                                </div>
+
+                                <!-- Yuborish tugmasi -->
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg" {% if not customers %}disabled{% endif %}>
+                                        <i class="fas fa-paper-plane"></i> Xabar yuborish
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mijozlar va statistika -->
+                <div class="col-lg-4">
+                    <!-- Mijozlar statistikasi -->
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-chart-bar"></i> Statistika</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-6">
+                                    <h4 class="text-primary mb-0">{{ customers|length }}</h4>
+                                    <small class="text-muted">Jami mijozlar</small>
+                                </div>
+                                <div class="col-6">
+                                    <h4 class="text-success mb-0">{{ recent_messages|length }}</h4>
+                                    <small class="text-muted">Yuborilgan xabarlar</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- So'nggi yuborilgan xabarlar -->
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-history"></i> So'nggi xabarlar</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            {% if recent_messages %}
+                                <div class="list-group list-group-flush">
+                                    {% for message in recent_messages %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-1 small">{{ message.message_text[:50] }}{% if message.message_text|length > 50 %}...{% endif %}</p>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-{{ 'bullhorn' if message.message_type == 'broadcast' else 'user' }}"></i>
+                                                        {{ message.message_type.title() }} • {{ message.created_at.strftime('%d.%m %H:%M') }}
+                                                    </small>
+                                                </div>
+                                                <span class="badge bg-{{ 'success' if message.status == 'completed' else 'warning' if message.status == 'sending' else 'danger' }}">
+                                                    {{ message.sent_count }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="text-center text-muted py-3">
+                                    <i class="fas fa-envelope fa-2x mb-2"></i>
+                                    <p class="mb-0">Hozircha xabarlar yo'q</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Xabar turi o'zgarganda mijozlar panelini ko'rsatish/yashirish
+document.addEventListener('DOMContentLoaded', function() {
+    const individualRadio = document.getElementById('individual');
+    const broadcastRadio = document.getElementById('broadcast');
+    const customerSelection = document.getElementById('customer-selection');
+    
+    function toggleCustomerSelection() {
+        if (individualRadio.checked) {
+            customerSelection.style.display = 'block';
+        } else {
+            customerSelection.style.display = 'none';
+        }
+    }
+    
+    individualRadio.addEventListener('change', toggleCustomerSelection);
+    broadcastRadio.addEventListener('change', toggleCustomerSelection);
+    
+    // Dastlabki holat
+    toggleCustomerSelection();
+});
+
+// Barcha mijozlarni tanlash
+function selectAll() {
+    const checkboxes = document.querySelectorAll('input[name="selected_customers"]');
+    checkboxes.forEach(checkbox => checkbox.checked = true);
+}
+
+// Barcha tanlovni bekor qilish
+function selectNone() {
+    const checkboxes = document.querySelectorAll('input[name="selected_customers"]');
+    checkboxes.forEach(checkbox => checkbox.checked = false);
+}
+</script>
+{% endblock %}

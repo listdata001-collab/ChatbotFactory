@@ -160,3 +160,51 @@ class BroadcastMessage(db.Model):
     
     def __repr__(self):
         return f'<BroadcastMessage {self.id}>'
+
+class BotCustomer(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bot_id = db.Column(db.Integer, db.ForeignKey('bot.id'), nullable=False)
+    platform = db.Column(db.String(20), nullable=False)  # telegram/instagram/whatsapp
+    platform_user_id = db.Column(db.String(100), nullable=False)  # User ID on the platform
+    first_name = db.Column(db.String(100))
+    last_name = db.Column(db.String(100))
+    username = db.Column(db.String(100))
+    phone_number = db.Column(db.String(20))
+    language = db.Column(db.String(2), default='uz')
+    is_active = db.Column(db.Boolean, default=True)
+    last_interaction = db.Column(db.DateTime, default=datetime.utcnow)
+    message_count = db.Column(db.Integer, default=0)
+    first_interaction = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Constraints to ensure unique customer per bot per platform
+    __table_args__ = (db.UniqueConstraint('bot_id', 'platform', 'platform_user_id'),)
+    
+    def __repr__(self):
+        return f'<BotCustomer {self.first_name} {self.last_name} - {self.platform}>'
+    
+    @property
+    def display_name(self):
+        """Get display name for customer"""
+        if self.first_name and self.last_name:
+            return f"{self.first_name} {self.last_name}"
+        elif self.first_name:
+            return self.first_name
+        elif self.username:
+            return f"@{self.username}"
+        else:
+            return f"User {self.platform_user_id}"
+
+class BotMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    bot_id = db.Column(db.Integer, db.ForeignKey('bot.id'), nullable=False)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)  # Bot owner
+    message_text = db.Column(Text, nullable=False)
+    message_type = db.Column(db.String(20), default='individual')  # individual/broadcast
+    target_customers = db.Column(Text)  # JSON list of customer IDs for individual messages
+    sent_count = db.Column(db.Integer, default=0)
+    status = db.Column(db.String(20), default='pending')  # pending/sending/completed/failed
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    sent_at = db.Column(db.DateTime)
+    
+    def __repr__(self):
+        return f'<BotMessage {self.id} - {self.message_type}>'
