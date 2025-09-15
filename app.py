@@ -100,6 +100,7 @@ from payments import payment_bp
 from instagram_bot import instagram_bp
 from whatsapp_bot import whatsapp_bp
 from marketing import marketing_bp
+from bot_status import bot_status_bp
 
 app.register_blueprint(main_bp)
 app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -107,6 +108,7 @@ app.register_blueprint(payment_bp, url_prefix='/payment')
 app.register_blueprint(instagram_bp, url_prefix='/instagram')
 app.register_blueprint(whatsapp_bp, url_prefix='/whatsapp')
 app.register_blueprint(marketing_bp, url_prefix='/marketing')
+app.register_blueprint(bot_status_bp, url_prefix='/admin')
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -153,3 +155,18 @@ with app.app_context():
             logging.info("Database setup successful after manual file creation")
         except Exception as manual_error:
             logging.error(f"Manual database creation also failed: {manual_error}")
+    
+    # Initialize Bot Manager - Start all active bots polling in background
+    try:
+        logger.info("🤖 Initializing BotFactory AI Bot Manager...")
+        from bot_manager import initialize_bot_manager
+        global_bot_manager = initialize_bot_manager()
+        
+        if global_bot_manager:
+            logger.info("✅ Bot manager successfully initialized - all active bots will start polling!")
+        else:
+            logger.warning("⚠️ Bot manager initialization failed - bots will not auto-start")
+            
+    except Exception as bot_manager_error:
+        logger.error(f"❌ Critical error initializing bot manager: {bot_manager_error}")
+        logger.warning("⚠️ Application will continue without bot polling - bots will not respond to messages!")

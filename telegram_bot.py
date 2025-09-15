@@ -10,14 +10,47 @@ from audio_processor import download_and_process_audio, process_audio_message
 # Set telegram as available and use real bot implementation
 TELEGRAM_AVAILABLE = True
 
-# Import basic modules directly 
-from telegram._update import Update
-from telegram._inline.inlinekeyboardbutton import InlineKeyboardButton
-from telegram._inline.inlinekeyboardmarkup import InlineKeyboardMarkup
+# Local lightweight classes to replace private telegram imports
+class Update:
+    """Lightweight Update class to avoid private imports"""
+    def __init__(self, data=None):
+        self.data = data
+        self.message = None
+        self.callback_query = None
+        self.effective_user = None
+        self.effective_chat = None
+
+class InlineKeyboardButton:
+    """Lightweight InlineKeyboardButton replacement"""
+    def __init__(self, text, callback_data=None, url=None):
+        self.text = text
+        self.callback_data = callback_data
+        self.url = url
+    
+    def to_dict(self):
+        result = {"text": self.text}
+        if self.callback_data:
+            result["callback_data"] = self.callback_data
+        if self.url:
+            result["url"] = self.url
+        return result
+
+class InlineKeyboardMarkup:
+    """Lightweight InlineKeyboardMarkup replacement"""
+    def __init__(self, keyboard):
+        self.keyboard = keyboard
+    
+    def to_dict(self):
+        return {
+            "inline_keyboard": [
+                [button.to_dict() for button in row] 
+                for row in self.keyboard
+            ]
+        }
 
 # Real Telegram Bot implementation using HTTP API
 class ContextTypes:
-    DEFAULT_TYPE = None
+    DEFAULT_TYPE = "DefaultContext"
 
 class TelegramHTTPBot:
     def __init__(self, token):
@@ -60,6 +93,25 @@ class TelegramHTTPBot:
                 pass
             return None
     
+    async def send_chat_action(self, chat_id, action):
+        """Send typing or other chat actions to user"""
+        url = f"{self.base_url}/sendChatAction"
+        data = {
+            'chat_id': chat_id,
+            'action': action
+        }
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            response = await loop.run_in_executor(None, lambda: requests.post(url, json=data))
+            return response.json()
+        except Exception as e:
+            try:
+                logger.error("Error sending chat action occurred")
+            except:
+                pass
+            return None
+    
     def get_updates(self, offset=None):
         url = f"{self.base_url}/getUpdates"
         params = {'timeout': 10}
@@ -94,15 +146,44 @@ class TelegramHTTPBot:
                 elif 'callback_query' in data:
                     self.callback_query = SimpleCallbackQuery(data['callback_query'])
                     self.effective_user = SimpleUser(data['callback_query']['from'])
+                    self.effective_chat = SimpleChat(data['callback_query']['message']['chat'])
         
         class SimpleMessage:
             def __init__(self, data):
                 self.data = data
                 self.text = data.get('text', '')
+                self.voice = data.get('voice')
+                self.audio = data.get('audio') 
+                self.document = data.get('document')
                 self.chat = SimpleChat(data['chat'])
                 
             async def reply_text(self, text, reply_markup=None):
-                return bot_instance.send_message(self.chat.id, text, reply_markup)
+                loop = asyncio.get_event_loop()
+                result = await loop.run_in_executor(
+                    None, lambda: bot_instance.send_message(self.chat.id, text, reply_markup)
+                )
+                return result
+            
+            async def reply_photo(self, photo, caption=None):
+                """Reply with photo via sendPhoto API"""
+                url = f"{bot_instance.base_url}/sendPhoto"
+                try:
+                    data = {
+                        'chat_id': self.chat.id,
+                        'photo': photo
+                    }
+                    if caption:
+                        data['caption'] = caption
+                    
+                    response = await asyncio.get_event_loop().run_in_executor(
+                        None, lambda: requests.post(url, json=data)
+                    )
+                    return response.json()
+                except Exception as e:
+                    logger.error(f"Failed to send photo: {e}")
+                    # Graceful fallback - send text message instead
+                    fallback_text = f"🖼️ Rasm: {caption or 'Rasm yuborilmadi'}"
+                    return await self.reply_text(fallback_text)
         
         class SimpleUser:
             def __init__(self, data):
@@ -118,31 +199,65 @@ class TelegramHTTPBot:
                 
         class SimpleCallbackQuery:
             def __init__(self, data):
-                self.data = data
+                self.data = data.get('data', '')  # Extract callback_data properly
+                self.id = data.get('id', '')
                 self.from_user = SimpleUser(data['from'])
+                self.message = data.get('message', {})
                 
             async def answer(self):
-                pass  # Placeholder
+                """Answer callback query via answerCallbackQuery API"""
+                url = f"{bot_instance.base_url}/answerCallbackQuery"
+                try:
+                    loop = asyncio.get_event_loop()
+                    response = await loop.run_in_executor(
+                        None, lambda: requests.post(url, json={'callback_query_id': self.id})
+                    )
+                    return response.json()
+                except Exception as e:
+                    logger.error(f"Failed to answer callback query: {e}")
+                    return {'ok': False, 'error': str(e)}
                 
             async def edit_message_text(self, text):
-                pass  # Placeholder
+                """Edit message text via editMessageText API"""
+                url = f"{bot_instance.base_url}/editMessageText"
+                try:
+                    data = {
+                        'chat_id': self.message.get('chat', {}).get('id'),
+                        'message_id': self.message.get('message_id'),
+                        'text': text
+                    }
+                    loop = asyncio.get_event_loop()
+                    response = await loop.run_in_executor(
+                        None, lambda: requests.post(url, json=data)
+                    )
+                    return response.json()
+                except Exception as e:
+                    logger.error(f"Failed to edit message text: {e}")
+                    return {'ok': False, 'error': str(e)}
         
         # Process update
         update = SimpleUpdate(update_data)
         
         # Create context object
         class SimpleContext:
-            def __init__(self, text=None):
+            def __init__(self, text=None, bot=None):
                 self.args = []
+                self.bot = bot  # Add bot reference
                 if text and text.startswith('/'):
                     # Split command and arguments
                     parts = text.split()[1:]  # Remove command itself
                     self.args = parts
         
-        # Handle commands
-        if update.message and update.message.text:
+        # Handle voice messages first
+        if update.message and (update.message.voice or update.message.audio):
+            context = SimpleContext(None, self)
+            if 'voice' in self.handlers:
+                for handler in self.handlers['voice']:
+                    await handler(update, context)
+        # Handle text commands and messages
+        elif update.message and update.message.text:
             text = update.message.text
-            context = SimpleContext(text)
+            context = SimpleContext(text, self)
             
             if text.startswith('/'):
                 cmd = text.split()[0][1:]  # Remove '/'
@@ -226,6 +341,9 @@ def MessageHandler(filters_obj, func):
 def CallbackQueryHandler(func):
     return ('callback', func)
 
+def VoiceHandler(func):
+    return ('voice', func)
+
 class FilterType:
     def __init__(self, name):
         self.name = name
@@ -239,6 +357,8 @@ class FilterType:
 class filters:
     TEXT = FilterType('text')
     COMMAND = FilterType('command')
+    VOICE = FilterType('voice')
+    AUDIO = FilterType('audio')
 # Circular import muammosini oldini olish uchun lazy import
 def get_dependencies():
     from ai import get_ai_response, process_knowledge_base
@@ -266,6 +386,7 @@ class TelegramBot:
         self.application.add_handler(CommandHandler("help", self.help_command))
         self.application.add_handler(CommandHandler("language", self.language_command))
         self.application.add_handler(CallbackQueryHandler(self.language_callback))
+        self.application.add_handler(VoiceHandler(self.handle_voice_message))
         self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
     
     async def start_command(self, update: Update, context) -> None:
@@ -407,6 +528,165 @@ class TelegramBot:
                     await query.edit_message_text("❌ Bu tilni tanlash uchun obunangizni yangilang!")
     
     
+    async def handle_voice_message(self, update: Update, context) -> None:
+        """Handle voice and audio messages"""
+        if not update or not update.effective_user or not update.message:
+            return
+        
+        user_id = str(update.effective_user.id)
+        
+        # Check if it's a voice message or audio file
+        voice_data = None
+        if update.message.voice:
+            voice_data = update.message.voice
+        elif update.message.audio:
+            voice_data = update.message.audio
+        elif update.message.document and update.message.document.get('mime_type', '').startswith('audio/'):
+            voice_data = update.message.document
+        
+        if not voice_data:
+            return
+        
+        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+        
+        with app.app_context():
+            # Get user info
+            db_user = User.query.filter_by(telegram_id=user_id).first()
+            if not db_user:
+                if update.message:
+                    await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
+                return
+            
+            # Get bot info
+            bot = Bot.query.get(self.bot_id)
+            if not bot:
+                if update.message:
+                    await update.message.reply_text("❌ Bot topilmadi!")
+                return
+            
+            # Check subscription
+            if not db_user.subscription_active():
+                if update.message:
+                    await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+                return
+            
+            # Send typing indicator while processing
+            try:
+                if update.effective_chat:
+                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+            except Exception:
+                pass
+            
+            try:
+                # Get file info and download
+                file_id = voice_data.get('file_id')
+                if not file_id:
+                    if update.message:
+                        await update.message.reply_text("❌ Ovoz fayli topilmadi!")
+                    return
+                
+                # Get file info from Telegram API
+                file_info_url = f"{context.bot.base_url}/getFile"
+                file_info_response = requests.get(file_info_url, params={'file_id': file_id})
+                
+                if not file_info_response.json().get('ok'):
+                    if update.message:
+                        await update.message.reply_text("❌ Ovoz faylini olishda xatolik yuz berdi!")
+                    return
+                
+                file_path = file_info_response.json()['result']['file_path']
+                file_url = f"https://api.telegram.org/file/bot{context.bot.token}/{file_path}"
+                
+                # Process the voice message using existing audio processor
+                try:
+                    # Run the synchronous audio processing in executor to avoid blocking
+                    loop = asyncio.get_event_loop()
+                    transcribed_text = await loop.run_in_executor(
+                        None, lambda: download_and_process_audio(file_url, db_user.language)
+                    )
+                    
+                    if not transcribed_text or transcribed_text.strip() == "":
+                        if update.message:
+                            await update.message.reply_text("🎤 Ovoz xabari eshitilmadi yoki bo'sh. Iltimos, qaytadan urinib ko'ring.")
+                        return
+                    
+                    # Send transcription confirmation
+                    if update.message:
+                        await update.message.reply_text(f"🎤 Eshitildi: {transcribed_text}")
+                    
+                    # Process transcribed text as a regular message
+                    # Get knowledge base
+                    try:
+                        knowledge_base = process_knowledge_base(self.bot_id)
+                        
+                        # Get recent chat history
+                        recent_history = ""
+                        history_entries = ChatHistory.query.filter_by(
+                            bot_id=self.bot_id, 
+                            user_telegram_id=user_id
+                        ).order_by(ChatHistory.created_at.desc()).limit(3).all()
+                        
+                        if history_entries:
+                            history_parts = []
+                            for entry in reversed(history_entries):
+                                history_parts.append(f"Foydalanuvchi: {entry.message}")
+                                history_parts.append(f"Bot: {entry.response}")
+                            recent_history = "\n".join(history_parts)
+                        
+                        # Generate AI response for transcribed text
+                        ai_response = get_ai_response(
+                            message=transcribed_text,
+                            bot_name=bot.name,
+                            user_language=db_user.language,
+                            knowledge_base=knowledge_base,
+                            chat_history=recent_history
+                        )
+                        
+                        if ai_response:
+                            # Clean response
+                            from ai import validate_ai_response
+                            cleaned_response = validate_ai_response(ai_response)
+                            if not cleaned_response:
+                                cleaned_response = ai_response
+                            
+                            # Send AI response
+                            if update.message:
+                                await update.message.reply_text(cleaned_response)
+                            
+                            # Save chat history
+                            try:
+                                chat_history = ChatHistory()
+                                chat_history.bot_id = self.bot_id
+                                chat_history.user_telegram_id = str(user_id)
+                                chat_history.message = transcribed_text[:1000]
+                                chat_history.response = cleaned_response[:2000]
+                                chat_history.language = db_user.language or 'uz'
+                                
+                                db.session.add(chat_history)
+                                db.session.commit()
+                                
+                            except Exception as db_error:
+                                logger.error(f"Failed to save voice chat history: {str(db_error)[:100]}")
+                                try:
+                                    db.session.rollback()
+                                except:
+                                    pass
+                    
+                    except Exception as processing_error:
+                        logger.error(f"Voice message processing error: {str(processing_error)[:100]}")
+                        if update.message:
+                            await update.message.reply_text("❌ Ovoz xabarini qayta ishlashda xatolik yuz berdi.")
+                
+                except Exception as audio_error:
+                    logger.error(f"Audio processing error: {str(audio_error)[:100]}")
+                    if update.message:
+                        await update.message.reply_text("❌ Ovoz faylini qayta ishlashda xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.")
+            
+            except Exception as voice_error:
+                logger.error(f"Voice handler error: {str(voice_error)[:100]}")
+                if update.message:
+                    await update.message.reply_text("❌ Ovoz xabarini qayta ishlashda xatolik yuz berdi.")
+    
     async def handle_message(self, update: Update, context) -> None:
         """Handle regular text messages"""
         if not update or not update.effective_user or not update.message:
@@ -420,7 +700,8 @@ class TelegramBot:
         
         # Send typing indicator immediately
         try:
-            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+            if update.effective_chat:
+                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
         except Exception as e:
             logger.error(f"Failed to send typing action: {e}")
         
@@ -459,7 +740,8 @@ class TelegramBot:
             
             # Send typing indicator while processing
             try:
-                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+                if update.effective_chat:
+                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
             except Exception:
                 pass
             
@@ -490,7 +772,8 @@ class TelegramBot:
 
             # Send typing indicator again before AI call
             try:
-                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
+                if update.effective_chat:
+                    await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
             except Exception:
                 pass
 
@@ -663,91 +946,6 @@ class TelegramBot:
                 except:
                     print("[ERROR] Cannot send error message to user")
     
-    async def handle_voice_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle voice messages - convert to text and get AI response"""
-        user_id = str(update.effective_user.id)
-        
-        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
-        with app.app_context():
-            # Get user info
-            db_user = User.query.filter_by(telegram_id=user_id).first()
-            if not db_user:
-                await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
-                return
-            
-            # Get bot info
-            bot = Bot.query.get(self.bot_id)
-            if not bot:
-                await update.message.reply_text("❌ Bot topilmadi!")
-                return
-            
-            # Check subscription
-            if not db_user.subscription_active():
-                await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
-                return
-            
-            try:
-                # Send typing indicator first for immediate feedback
-                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
-                
-                # Send processing message
-                processing_msg = await update.message.reply_text("🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
-                
-                # Send typing indicator again
-                await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
-                
-                # Get voice file
-                voice = update.message.voice
-                if not voice:
-                    await processing_msg.edit_text("❌ Ovozli xabar topilmadi!")
-                    return
-                
-                # Get file URL from Telegram API
-                file_url = await self._get_telegram_file_url(voice.file_id)
-                if not file_url:
-                    await processing_msg.edit_text("❌ Audio faylni yuklab olishda xatolik yuz berdi!")
-                    return
-                
-                # Process audio
-                ai_response = download_and_process_audio(
-                    audio_url=file_url,
-                    user_id=user_id,
-                    language=db_user.language,
-                    file_extension='.ogg'
-                )
-                
-                # Extract the text part and AI response
-                if "🎤 Sizning xabaringiz:" in ai_response:
-                    parts = ai_response.split("\n\n", 1)
-                    if len(parts) == 2:
-                        user_text = parts[0].replace("🎤 Sizning xabaringiz: \"", "").replace("\"", "")
-                        ai_text = parts[1]
-                    else:
-                        user_text = "Audio xabar"
-                        ai_text = ai_response
-                else:
-                    user_text = "Audio xabar"
-                    ai_text = ai_response
-                
-                # Save chat history
-                chat_history = ChatHistory()
-                chat_history.bot_id = self.bot_id
-                chat_history.user_telegram_id = user_id
-                chat_history.message = f"[AUDIO] {user_text}"
-                chat_history.response = ai_text
-                chat_history.language = db_user.language
-                db.session.add(chat_history)
-                db.session.commit()
-                
-                # Send final response
-                await processing_msg.edit_text(ai_response)
-                
-            except Exception as e:
-                logger.error(f"Voice message handling error: {str(e)}")
-                try:
-                    await processing_msg.edit_text("❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
-                except:
-                    await update.message.reply_text("❌ Ovozli xabarni qayta ishlashda xatolik yuz berdi!")
     
     async def _get_telegram_file_url(self, file_id):
         """Get file URL from Telegram API"""
