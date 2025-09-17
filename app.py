@@ -51,13 +51,12 @@ def after_request(response):
 
 # Configure the database - PostgreSQL for production performance
 database_url = os.environ.get("DATABASE_URL")
-# Temporarily force SQLite for Replit environment  
-if False and database_url:
+if database_url and not database_url.startswith('sqlite'):
     # PostgreSQL connection with optimized pooling for high load
     app.config["SQLALCHEMY_DATABASE_URI"] = database_url
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_size": 20,          # Increased from default 5
-        "max_overflow": 40,       # Allow extra connections under load
+        "pool_size": 10,          # Reasonable pool size for Replit
+        "max_overflow": 20,       # Allow extra connections under load
         "pool_timeout": 30,       # Wait up to 30s for connection
         "pool_recycle": 3600,     # Recycle connections every hour
         "pool_pre_ping": True,    # Verify connections before use
@@ -65,7 +64,7 @@ if False and database_url:
     }
     logger.info("Using PostgreSQL with optimized connection pooling")
 else:
-    # Fallback to SQLite for development (not recommended for production)
+    # Fallback to SQLite for development
     base_dir = os.path.abspath(os.path.dirname(__file__))
     instance_dir = os.path.join(base_dir, 'instance')
     if not os.path.exists(instance_dir):
@@ -81,7 +80,7 @@ else:
         "echo": False,
         "connect_args": {"check_same_thread": False}
     }
-    logger.warning("Using SQLite fallback - not suitable for high load!")
+    logger.info("Using SQLite database for development")
 
 # Initialize extensions
 db.init_app(app)
