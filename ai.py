@@ -144,7 +144,8 @@ def process_knowledge_base(bot_id: int) -> str:
 
 def find_relevant_product_images(bot_id: int, user_message: str) -> list:
     """
-    Find product images relevant to user's message
+    Find the most relevant product image based on user's message
+    Returns only the best matching product, not all products
     """
     from models import KnowledgeBase
     
@@ -152,31 +153,72 @@ def find_relevant_product_images(bot_id: int, user_message: str) -> list:
         # Get products that match user's message
         products = KnowledgeBase.query.filter_by(bot_id=bot_id, content_type='product').all()
         
-        relevant_images = []
+        if not products:
+            return []
+        
         user_message_lower = user_message.lower()
+        user_words = [word.strip() for word in user_message_lower.split() if len(word.strip()) > 2]
+        
+        best_match = None
+        best_score = 0
         
         for product in products:
             product_content = product.content.lower()
             product_name = (product.source_name or "").lower()
             
-            # Check if user's message relates to this product
-            if any(keyword in user_message_lower for keyword in ['mahsulot', 'narx', 'paket', 'zip']) or \
-               any(word in product_content for word in user_message_lower.split() if len(word) > 2) or \
-               any(word in product_name for word in user_message_lower.split() if len(word) > 2):
-                
-                # Look for image URL in product content
-                lines = product.content.split('\n')
-                for line in lines:
-                    if line.startswith('Rasm:') and 'http' in line:
-                        image_url = line.replace('Rasm:', '').strip()
-                        relevant_images.append({
-                            'url': image_url,
-                            'product_name': product.source_name or 'Mahsulot',
-                            'caption': f"📦 {product.source_name or 'Mahsulot'}"
-                        })
-                        break
+            # Calculate relevance score
+            score = 0
+            
+            # Extract product name from content
+            lines = product.content.split('\n')
+            actual_product_name = ""
+            for line in lines:
+                if line.startswith('Mahsulot:'):
+                    actual_product_name = line.replace('Mahsulot:', '').strip().lower()
+                    break
+            
+            # High score for exact product name match
+            if actual_product_name:
+                for user_word in user_words:
+                    if user_word in actual_product_name:
+                        score += 10
+                        
+            # Medium score for source name match
+            if product_name:
+                for user_word in user_words:
+                    if user_word in product_name:
+                        score += 5
+                        
+            # Low score for content match (but avoid generic words)
+            generic_words = ['mahsulot', 'narx', 'som', 'dollar', 'paket', 'zip', 'rasm', 'tavsif', 'haqida']
+            for user_word in user_words:
+                if user_word not in generic_words and user_word in product_content:
+                    score += 1
+            
+            # Only consider products with images
+            has_image = False
+            image_url = ""
+            for line in lines:
+                if line.startswith('Rasm:') and 'http' in line:
+                    image_url = line.replace('Rasm:', '').strip()
+                    has_image = True
+                    break
+            
+            # Update best match if this product scores higher and has an image
+            if has_image and score > best_score:
+                best_score = score
+                best_match = {
+                    'url': image_url,
+                    'product_name': product.source_name or actual_product_name or 'Mahsulot',
+                    'caption': f"📦 {product.source_name or actual_product_name or 'Mahsulot'}"
+                }
         
-        return relevant_images
+        # Return only the best match, or empty list if no good match found
+        if best_match and best_score >= 3:  # Minimum score threshold
+            return [best_match]
+        else:
+            return []
+            
     except Exception as e:
         logging.error(f"Error finding product images: {str(e)}")
         return []
