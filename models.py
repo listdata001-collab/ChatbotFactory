@@ -68,7 +68,10 @@ class User(UserMixin, db.Model):
         if self.subscription_type in ['admin']:
             return True
         if self.subscription_type == 'free':
-            return True
+            # Free subscription (test period) should check end date
+            if self.subscription_end_date and self.subscription_end_date > datetime.utcnow():
+                return True
+            return False
         if self.subscription_type in ['starter', 'basic', 'premium'] and self.subscription_end_date and self.subscription_end_date > datetime.utcnow():
             return True
         return False
