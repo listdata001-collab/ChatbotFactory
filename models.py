@@ -69,9 +69,24 @@ class User(UserMixin, db.Model):
             return True
         if self.subscription_type == 'free':
             # Free subscription (test period) should check end date
-            if self.subscription_end_date and self.subscription_end_date > datetime.utcnow():
-                return True
-            return False
+            if self.subscription_end_date:
+                return self.subscription_end_date > datetime.utcnow()
+            else:
+                # If no end date is set for free users (legacy users), 
+                # give them 15 days from account creation or now if creation date is missing
+                if not self.subscription_start_date:
+                    # Update subscription dates for legacy users
+                    from app import db
+                    try:
+                        base_date = self.created_at if self.created_at else datetime.utcnow()
+                        self.subscription_start_date = base_date
+                        self.subscription_end_date = base_date + timedelta(days=15)
+                        db.session.commit()
+                        return True
+                    except:
+                        # If we can't update the database, just allow access for now
+                        return True
+                return self.subscription_end_date > datetime.utcnow()
         if self.subscription_type in ['starter', 'basic', 'premium'] and self.subscription_end_date and self.subscription_end_date > datetime.utcnow():
             return True
         return False

@@ -103,7 +103,8 @@ def register():
             
         except Exception as e:
             db.session.rollback()
-            logging.error(f"Registration error for {username}: {str(e)}", exc_info=True)
+            username_for_log = request.form.get('username', 'unknown')
+            logging.error(f"Registration error for {username_for_log}: {str(e)}", exc_info=True)
             flash(f'Ro\'yxatdan o\'tishda xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.', 'error')
             return render_template('register.html')
     
