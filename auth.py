@@ -84,14 +84,14 @@ def register():
                 flash('Ma\'lumotlar bazasi bilan bog\'lanishda muammo. Iltimos keyinroq urinib ko\'ring.', 'error')
                 return render_template('register.html')
             
-            # Create new user with test subscription (14 days)
+            # Create new user with test subscription (15 days)
             user = User()
             user.username = username
             user.email = email
             user.password_hash = generate_password_hash(password or '')
             user.language = 'uz'
             user.subscription_type = 'free'
-            user.subscription_end_date = datetime.utcnow() + timedelta(days=14)
+            user.subscription_end_date = datetime.utcnow() + timedelta(days=15)
             user.is_active = True
             
             db.session.add(user)
