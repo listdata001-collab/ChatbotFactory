@@ -18,15 +18,15 @@ author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "workflow.run"
-args = "Chatbot Factory"
+args = "Flask Dev Server"
 
 [[workflows.workflow]]
-name = "Chatbot Factory"
+name = "Flask Dev Server"
 author = "agent"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app"
+args = "python main.py"
 waitForPort = 5000
 
 [workflows.workflow.metadata]
@@ -35,10 +35,6 @@ outputType = "webview"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 39215
-externalPort = 3000
 
 [agent]
 expertMode = true
