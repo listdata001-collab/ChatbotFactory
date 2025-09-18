@@ -197,24 +197,55 @@ with app.app_context():
             logging.info("No admin credentials provided via ADMIN_EMAIL/ADMIN_PASSWORD - skipping admin user creation")
             
     except Exception as e:
+        # Always try SQLite fallback if PostgreSQL fails, even in production
+        logger.error(f"Primary database connection error: {e}")
+        
         if is_production:
-            # Production: Fail fast with clear error message
-            logger.error(f"PRODUCTION DATABASE ERROR: {e}")
+            logger.error("PRODUCTION: PostgreSQL connection failed - attempting SQLite fallback")
             logger.error("Check Render.com dashboard: Database service, Environment variables, Logs")
-            raise  # Re-raise in production to prevent silent failures
         else:
-            # Development: Try fallback to SQLite
-            logger.error(f"Database initialization error: {e}")
-            logger.info("Attempting SQLite fallback for development...")
-            import sqlite3
-            try:
-                conn = sqlite3.connect('instance/botfactory.db')
-                conn.close()
-                logger.info("SQLite file created manually, retrying database setup")
-                db.create_all()
-                logger.info("Database setup successful after manual file creation")
-            except Exception as manual_error:
-                logger.error(f"Manual database creation also failed: {manual_error}")
+            logger.info("DEVELOPMENT: PostgreSQL connection failed - attempting SQLite fallback")
+        
+        # Try SQLite fallback for both production and development
+        try:
+            logger.info("🔄 Switching to SQLite database...")
+            
+            # Reconfigure database to use SQLite
+            base_dir = os.path.abspath(os.path.dirname(__file__))
+            instance_dir = os.path.join(base_dir, 'instance')
+            if not os.path.exists(instance_dir):
+                os.makedirs(instance_dir, exist_ok=True)
+            
+            database_path = os.path.join(instance_dir, 'botfactory.db')
+            sqlite_url = f"sqlite:///{database_path}"
+            
+            # Update the SQLAlchemy configuration
+            app.config["SQLALCHEMY_DATABASE_URI"] = sqlite_url
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+                "pool_recycle": 300,
+                "pool_pre_ping": True,
+                "echo": False,
+                "connect_args": {"check_same_thread": False}
+            }
+            
+            # Reinitialize the database connection
+            db.init_app(app)
+            
+            # Create tables with SQLite
+            db.create_all()
+            logger.info("✅ SQLite database initialized successfully as fallback")
+            
+            if is_production:
+                logger.warning("⚠️ PRODUCTION NOTICE: Using SQLite database. PostgreSQL is unavailable.")
+                logger.warning("⚠️ For production scalability, fix PostgreSQL connection on Render.com")
+            
+        except Exception as sqlite_error:
+            logger.error(f"❌ SQLite fallback also failed: {sqlite_error}")
+            if is_production:
+                logger.error("❌ CRITICAL: Both PostgreSQL and SQLite failed in production")
+                raise  # Still fail in production if even SQLite doesn't work
+            else:
+                logger.error("❌ CRITICAL: Both PostgreSQL and SQLite failed in development")
     
     # Initialize Bot Manager - Start all active bots polling in background
     try:
