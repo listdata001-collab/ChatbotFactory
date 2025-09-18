@@ -5,6 +5,7 @@ from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy import create_engine, text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Professional logging tizimini ishga tushirish
@@ -36,6 +37,50 @@ if not app.secret_key:
     raise ValueError("SESSION_SECRET environment variable must be set for security")
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
+def test_database_connection(database_url, timeout=10):
+    """Test database connectivity before Flask-SQLAlchemy initialization"""
+    try:
+        # Normalize postgres:// to postgresql:// for SQLAlchemy compatibility
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+        
+        # Create a temporary engine for testing
+        test_engine = create_engine(
+            database_url,
+            pool_pre_ping=True,
+            connect_args={"connect_timeout": timeout} if "postgresql" in database_url else {}
+        )
+        
+        # Test the connection
+        with test_engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        
+        test_engine.dispose()
+        return True, database_url
+        
+    except Exception as e:
+        logger.warning(f"Database connection test failed: {e}")
+        return False, str(e)
+
+def get_fallback_sqlite_config():
+    """Get SQLite database configuration for fallback"""
+    base_dir = os.path.abspath(os.path.dirname(__file__))
+    instance_dir = os.path.join(base_dir, 'instance')
+    if not os.path.exists(instance_dir):
+        os.makedirs(instance_dir, exist_ok=True)
+    
+    database_path = os.path.join(instance_dir, 'botfactory.db')
+    sqlite_url = f"sqlite:///{database_path}"
+    
+    sqlite_config = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+        "echo": False,
+        "connect_args": {"check_same_thread": False}
+    }
+    
+    return sqlite_url, sqlite_config
+
 # Cache control for different environments
 @app.after_request
 def after_request(response):
@@ -61,64 +106,75 @@ def after_request(response):
     
     return response
 
-# Configure the database - PostgreSQL for production performance
-database_url = os.environ.get("DATABASE_URL")
+# Preflight Database Configuration - Test connection before initialization
+logger.info("🔍 Starting preflight database selection...")
 
 # Detect production environment (Render.com)
 is_production = os.environ.get('RENDER') or os.environ.get('DATABASE_URL', '').startswith('postgres')
+database_url = os.environ.get("DATABASE_URL")
 
+# Test PostgreSQL connection if available
 if database_url and not database_url.startswith('sqlite'):
-    # Normalize postgres:// to postgresql:// for SQLAlchemy compatibility
-    if database_url.startswith('postgres://'):
-        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    logger.info(f"🔌 Testing PostgreSQL connection...")
+    connection_success, result = test_database_connection(database_url, timeout=10)
     
-    # PostgreSQL connection with production-optimized pooling
-    if is_production:
-        # Production settings for Render.com - aggressive timeouts to prevent 500 errors
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-            "pool_size": 5,           # Smaller pool for production stability
-            "max_overflow": 10,       # Limited overflow to prevent resource exhaustion
-            "pool_timeout": 10,       # Shorter timeout - fail fast instead of hanging
-            "pool_recycle": 1800,     # Recycle connections every 30 minutes
-            "pool_pre_ping": True,    # Always verify connections
-            "echo": False,
-            "connect_args": {
-                "connect_timeout": 10,    # Connection timeout: 10 seconds
-                "application_name": "chatbot_factory_production",
+    if connection_success:
+        # PostgreSQL connection successful - configure for PostgreSQL
+        logger.info("✅ PostgreSQL connection test successful")
+        
+        if is_production:
+            # Production settings for Render.com - optimized for stability
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+                "pool_size": 5,           # Smaller pool for production stability
+                "max_overflow": 10,       # Limited overflow to prevent resource exhaustion
+                "pool_timeout": 10,       # Shorter timeout - fail fast instead of hanging
+                "pool_recycle": 1800,     # Recycle connections every 30 minutes
+                "pool_pre_ping": True,    # Always verify connections
+                "echo": False,
+                "connect_args": {
+                    "connect_timeout": 10,    # Connection timeout: 10 seconds
+                    "application_name": "chatbot_factory_production",
+                }
             }
-        }
-        logger.info("Using PostgreSQL with production-optimized connection pooling (Render.com)")
+            logger.info("🐘 Using PostgreSQL with production-optimized connection pooling (Render.com)")
+        else:
+            # Development settings for Replit
+            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+                "pool_size": 10,          # Reasonable pool size for Replit
+                "max_overflow": 20,       # Allow extra connections under load
+                "pool_timeout": 30,       # Wait up to 30s for connection
+                "pool_recycle": 3600,     # Recycle connections every hour
+                "pool_pre_ping": True,    # Verify connections before use
+                "echo": False
+            }
+            logger.info("🐘 Using PostgreSQL with development connection pooling (Replit)")
+        
+        app.config["SQLALCHEMY_DATABASE_URI"] = result
+        
     else:
-        # Development settings for Replit
-        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-            "pool_size": 10,          # Reasonable pool size for Replit
-            "max_overflow": 20,       # Allow extra connections under load
-            "pool_timeout": 30,       # Wait up to 30s for connection
-            "pool_recycle": 3600,     # Recycle connections every hour
-            "pool_pre_ping": True,    # Verify connections before use
-            "echo": False
-        }
-        logger.info("Using PostgreSQL with development connection pooling (Replit)")
-    
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+        # PostgreSQL connection failed - fall back to SQLite
+        logger.warning(f"❌ PostgreSQL connection failed: {result}")
+        if is_production:
+            logger.error("🚨 PRODUCTION: PostgreSQL unavailable - using SQLite fallback")
+            logger.error("⚠️ WARNING: SQLite in production may cause data loss on ephemeral storage")
+        else:
+            logger.info("🔄 Development: PostgreSQL unavailable - using SQLite fallback")
+        
+        sqlite_url, sqlite_config = get_fallback_sqlite_config()
+        app.config["SQLALCHEMY_DATABASE_URI"] = sqlite_url
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = sqlite_config
+        logger.info("💾 SQLite database configured successfully")
+        
 else:
-    # Fallback to SQLite for development
-    base_dir = os.path.abspath(os.path.dirname(__file__))
-    instance_dir = os.path.join(base_dir, 'instance')
-    if not os.path.exists(instance_dir):
-        os.makedirs(instance_dir, exist_ok=True)
-    
-    database_path = os.path.join(instance_dir, 'botfactory.db')
-    database_url = f"sqlite:///{database_path}"
-    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
-    
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_recycle": 300,
-        "pool_pre_ping": True,
-        "echo": False,
-        "connect_args": {"check_same_thread": False}
-    }
-    logger.info("Using SQLite database for development")
+    # No PostgreSQL URL provided - use SQLite directly
+    logger.info("🔧 No PostgreSQL URL provided - using SQLite database")
+    sqlite_url, sqlite_config = get_fallback_sqlite_config()
+    app.config["SQLALCHEMY_DATABASE_URI"] = sqlite_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = sqlite_config
+    logger.info("💾 SQLite database configured for development")
+
+# Add required Flask-SQLAlchemy configuration
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 # Initialize extensions
 db.init_app(app)
@@ -197,55 +253,23 @@ with app.app_context():
             logging.info("No admin credentials provided via ADMIN_EMAIL/ADMIN_PASSWORD - skipping admin user creation")
             
     except Exception as e:
-        # Always try SQLite fallback if PostgreSQL fails, even in production
-        logger.error(f"Primary database connection error: {e}")
+        # Database operations failed after successful preflight test - this should be rare
+        logger.error(f"💥 Database operations failed after successful connection test: {e}")
         
         if is_production:
-            logger.error("PRODUCTION: PostgreSQL connection failed - attempting SQLite fallback")
-            logger.error("Check Render.com dashboard: Database service, Environment variables, Logs")
+            logger.error("🚨 PRODUCTION CRITICAL: Database operations failed after preflight success")
+            logger.error("💡 Check: Table creation permissions, Storage space, Connection limits")
+            # In production, fail fast - don't attempt runtime fallback after preflight success
+            raise
         else:
-            logger.info("DEVELOPMENT: PostgreSQL connection failed - attempting SQLite fallback")
-        
-        # Try SQLite fallback for both production and development
-        try:
-            logger.info("🔄 Switching to SQLite database...")
-            
-            # Reconfigure database to use SQLite
-            base_dir = os.path.abspath(os.path.dirname(__file__))
-            instance_dir = os.path.join(base_dir, 'instance')
-            if not os.path.exists(instance_dir):
-                os.makedirs(instance_dir, exist_ok=True)
-            
-            database_path = os.path.join(instance_dir, 'botfactory.db')
-            sqlite_url = f"sqlite:///{database_path}"
-            
-            # Update the SQLAlchemy configuration
-            app.config["SQLALCHEMY_DATABASE_URI"] = sqlite_url
-            app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-                "pool_recycle": 300,
-                "pool_pre_ping": True,
-                "echo": False,
-                "connect_args": {"check_same_thread": False}
-            }
-            
-            # Reinitialize the database connection
-            db.init_app(app)
-            
-            # Create tables with SQLite
-            db.create_all()
-            logger.info("✅ SQLite database initialized successfully as fallback")
-            
-            if is_production:
-                logger.warning("⚠️ PRODUCTION NOTICE: Using SQLite database. PostgreSQL is unavailable.")
-                logger.warning("⚠️ For production scalability, fix PostgreSQL connection on Render.com")
-            
-        except Exception as sqlite_error:
-            logger.error(f"❌ SQLite fallback also failed: {sqlite_error}")
-            if is_production:
-                logger.error("❌ CRITICAL: Both PostgreSQL and SQLite failed in production")
-                raise  # Still fail in production if even SQLite doesn't work
-            else:
-                logger.error("❌ CRITICAL: Both PostgreSQL and SQLite failed in development")
+            logger.warning("⚠️ DEVELOPMENT: Database operations failed - attempting emergency fallback")
+            # In development only, try a simple retry
+            try:
+                db.create_all()
+                logger.info("✅ Database operations retry successful")
+            except Exception as retry_error:
+                logger.error(f"❌ Emergency fallback also failed: {retry_error}")
+                raise
     
     # Initialize Bot Manager - Start all active bots polling in background
     try:

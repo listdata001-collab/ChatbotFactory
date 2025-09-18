@@ -58,6 +58,15 @@ Four-tier subscription system:
 - **Content Processing**: Text extraction from documents for AI training
 
 ## Recent Changes
+- **September 18, 2025**: 🔧 **FLASK-SQLALCHEMY DEPLOYMENT FIX**: Resolved critical Flask-SQLAlchemy double-registration error causing Render.com deployment failures
+  - **ROOT CAUSE FIXED**: Application was attempting to re-initialize Flask-SQLAlchemy during runtime database fallback
+  - **PREFLIGHT DATABASE SELECTION**: Implemented database connectivity testing before Flask-SQLAlchemy initialization
+  - **PRODUCTION OPTIMIZATION**: Added PostgreSQL connection testing with 10-second timeout for Render.com stability
+  - **INTELLIGENT FALLBACK**: Automatic SQLite fallback in development with clear production warnings  
+  - **ENGINE MANAGEMENT**: Proper temporary engine disposal during preflight testing to prevent memory leaks
+  - **DEPLOYMENT STABILITY**: Production deployments now fail fast instead of attempting problematic runtime fallbacks
+  - **LOGGING ENHANCEMENT**: Added comprehensive database selection logging with emoji indicators for easy debugging
+  - **STATUS**: ✅ DEPLOYMENT READY - Fixed "A 'SQLAlchemy' instance has already been registered" error permanently
 - **September 15, 2025**: 🔧 **REPLIT IMPORT DATABASE FIX**: Fixed PostgreSQL connection issue for Replit environment
   - **DATABASE ISSUE RESOLVED**: Application was trying to connect to external PostgreSQL database from Render.com
   - **FORCED SQLITE USAGE**: Modified app.py to use SQLite database for development in Replit environment
