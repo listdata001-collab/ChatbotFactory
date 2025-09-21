@@ -7,27 +7,31 @@
     --warning-color: #ffc107;
     --danger-color: #dc3545;
     --info-color: #0dcaf0;
-    --dark-color: #212529;
-    --light-color: #f8f9fa;
+    --dark-color: #ffffff;
+    --light-color: #1a1a1a;
+    --bs-body-bg: #1a1a1a;
+    --bs-body-color: #ffffff;
     --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
     --gradient-warning: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
     --border-radius: 0.5rem;
-    --box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    --box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+    --box-shadow: 0 0.125rem 0.25rem rgba(255, 255, 255, 0.075);
+    --box-shadow-lg: 0 1rem 3rem rgba(255, 255, 255, 0.175);
 }
 
-/* Global Styles */
+/* Global Styles - Dark Mode Only */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
-    background-color: #f8f9fa;
+    background-color: #1a1a1a;
+    color: #ffffff;
 }
 
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     margin-bottom: 1rem;
+    color: #ffffff;
 }
 
 .display-1, .display-2, .display-3, .display-4 {
@@ -63,7 +67,9 @@ h1, h2, h3, h4, h5, h6 {
 .card {
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    border: 1px solid rgba(0, 0, 0, 0.125);
+    border: 1px solid #505050;
+    background-color: #2d2d2d;
+    color: #ffffff;
     transition: all 0.3s ease;
 }
 
@@ -428,273 +434,259 @@ footer {
     }
 }
 
-/* Dark mode support - Improved contrast */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bs-body-bg: #1a1a1a;
-        --bs-body-color: #ffffff;
-        --dark-color: #ffffff;
-        --secondary-color: #e9ecef;
-    }
-    
-    body {
-        background-color: #1a1a1a;
-        color: #ffffff;
-    }
-    
-    .card {
-        background-color: #2d2d2d;
-        border-color: #505050;
-        color: #ffffff;
-    }
-    
-    .table {
-        --bs-table-bg: #2d2d2d;
-        color: #ffffff;
-    }
-    
-    .table th {
-        color: #ffffff;
-        border-bottom-color: #505050;
-    }
-    
-    .table td {
-        color: #ffffff;
-        border-top-color: #505050;
-    }
-    
-    .form-control, .form-select {
-        background-color: #2d2d2d;
-        border-color: #505050;
-        color: #ffffff;
-    }
-    
-    .form-control::placeholder {
-        color: #adb5bd;
-    }
-    
-    .form-label {
-        color: #ffffff !important;
-        font-weight: 600;
-    }
-    
-    .text-body {
-        color: #ffffff !important;
-    }
-    
-    .text-muted {
-        color: #d1d1d1 !important;
-    }
-    
-    .text-secondary {
-        color: #e9ecef !important;
-    }
-    
-    small, .small {
-        color: #d1d1d1 !important;
-    }
-    
-    p, span, div, label {
-        color: #ffffff;
-    }
-    
-    h1, h2, h3, h4, h5, h6 {
-        color: #ffffff;
-    }
-    
-    .alert-info {
-        background-color: rgba(13, 202, 240, 0.15);
-        border-color: rgba(13, 202, 240, 0.3);
-        color: #ffffff;
-    }
-    
-    .alert-success {
-        background-color: rgba(25, 135, 84, 0.15);
-        border-color: rgba(25, 135, 84, 0.3);
-        color: #ffffff;
-    }
-    
-    .alert-warning {
-        background-color: rgba(255, 193, 7, 0.15);
-        border-color: rgba(255, 193, 7, 0.3);
-        color: #ffffff;
-    }
-    
-    .alert-danger {
-        background-color: rgba(220, 53, 69, 0.15);
-        border-color: rgba(220, 53, 69, 0.3);
-        color: #ffffff;
-    }
-    
-    .modal-content {
-        background-color: #2d2d2d;
-        border-color: #505050;
-        color: #ffffff;
-    }
-    
-    .modal-header, .modal-footer {
-        border-color: #505050;
-    }
-    
-    .modal-title {
-        color: #ffffff;
-    }
-    
-    .nav-link {
-        color: #ffffff !important;
-    }
-    
-    .navbar-brand {
-        color: #ffffff !important;
-    }
-    
-    .btn-outline-secondary {
-        color: #ffffff;
-        border-color: #6c757d;
-    }
-    
-    .btn-outline-secondary:hover {
-        color: #000000;
-        background-color: #6c757d;
-    }
-    
-    .card-header {
-        background-color: #383838;
-        color: #ffffff;
-        border-bottom-color: #505050;
-    }
-    
-    .card-body {
-        color: #ffffff;
-    }
-    
-    .card-title {
-        color: #ffffff;
-    }
-    
-    .card-text {
-        color: #ffffff;
-    }
-    
-    .list-group-item {
-        background-color: #2d2d2d;
-        border-color: #505050;
-        color: #ffffff;
-    }
-    
-    .list-group-item:hover {
-        background-color: #383838;
-        color: #ffffff;
-    }
-    
-    .dropdown-menu {
-        background-color: #2d2d2d;
-        border-color: #505050;
-    }
-    
-    .dropdown-item {
-        color: #ffffff;
-    }
-    
-    .dropdown-item:hover {
-        background-color: #383838;
-        color: #ffffff;
-    }
-    
-    /* Badge colors for better contrast */
-    .badge-success {
-        background-color: #28a745;
-        color: #ffffff;
-    }
-    
-    .badge-info {
-        background-color: #17a2b8;
-        color: #ffffff;
-    }
-    
-    .badge-warning {
-        background-color: #ffc107;
-        color: #000000;
-    }
-    
-    .badge-danger {
-        background-color: #dc3545;
-        color: #ffffff;
-    }
-    
-    /* Ensure all text elements have proper contrast */
-    .form-text {
-        color: #d1d1d1 !important;
-    }
-    
-    .input-group-text {
-        background-color: #383838;
-        border-color: #505050;
-        color: #ffffff;
-    }
-    
-    /* Status and notification text */
-    .status-text {
-        color: #ffffff !important;
-    }
-    
-    /* Chat and messaging interface */
-    .chat-message {
-        color: #ffffff !important;
-    }
-    
-    .bot-name {
-        color: #ffffff !important;
-    }
-    
-    .platform-info {
-        color: #d1d1d1 !important;
-    }
-    
-    /* Knowledge base list items visibility fix */
-    .knowledge-item, .knowledge-file {
-        background-color: #2d2d2d !important;
-        color: #ffffff !important;
-        border: 1px solid #505050 !important;
-        margin-bottom: 0.5rem !important;
-        border-radius: 0.375rem !important;
-    }
-    
-    .knowledge-item:hover, .knowledge-file:hover {
-        background-color: #383838 !important;
-    }
-    
-    .knowledge-item .badge {
-        background-color: #0d6efd !important;
-        color: #ffffff !important;
-    }
-    
-    .knowledge-item small, .knowledge-file small {
-        color: #d1d1d1 !important;
-    }
-    
-    .knowledge-item .text-muted {
-        color: #d1d1d1 !important;
-    }
-    
-    .knowledge-item span, .knowledge-file span {
-        color: #ffffff !important;
-    }
+/* Dark mode styles applied as default - Always active */
+
+/* Override body background to force dark theme */
+body {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
 }
 
-/* Light mode knowledge base styling */
-.knowledge-item {
-    background-color: #f8f9fa !important;
-    color: #212529 !important;
-    border: 1px solid #dee2e6 !important;
+/* Card dark styles */
+.card {
+    background-color: #2d2d2d !important;
+    border-color: #505050 !important;
+    color: #ffffff !important;
 }
 
-.knowledge-item span {
-    color: #212529 !important;
+/* Table dark styles */
+.table {
+    --bs-table-bg: #2d2d2d !important;
+    color: #ffffff !important;
+}
+
+.table th {
+    color: #ffffff !important;
+    border-bottom-color: #505050 !important;
+}
+
+.table td {
+    color: #ffffff !important;
+    border-top-color: #505050 !important;
+}
+
+/* Form dark styles */
+.form-control, .form-select {
+    background-color: #2d2d2d !important;
+    border-color: #505050 !important;
+    color: #ffffff !important;
+}
+
+.form-control::placeholder {
+    color: #adb5bd !important;
+}
+
+.form-label {
+    color: #ffffff !important;
+    font-weight: 600;
+}
+
+/* Text dark styles */
+.text-body {
+    color: #ffffff !important;
+}
+
+.text-muted {
+    color: #d1d1d1 !important;
+}
+
+.text-secondary {
+    color: #e9ecef !important;
+}
+
+small, .small {
+    color: #d1d1d1 !important;
+}
+
+p, span, div, label {
+    color: #ffffff !important;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+}
+
+/* Alert dark styles */
+.alert-info {
+    background-color: rgba(13, 202, 240, 0.15) !important;
+    border-color: rgba(13, 202, 240, 0.3) !important;
+    color: #ffffff !important;
+}
+
+.alert-success {
+    background-color: rgba(25, 135, 84, 0.15) !important;
+    border-color: rgba(25, 135, 84, 0.3) !important;
+    color: #ffffff !important;
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+    border-color: rgba(255, 193, 7, 0.3) !important;
+    color: #ffffff !important;
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+    border-color: rgba(220, 53, 69, 0.3) !important;
+    color: #ffffff !important;
+}
+
+/* Modal dark styles */
+.modal-content {
+    background-color: #2d2d2d !important;
+    border-color: #505050 !important;
+    color: #ffffff !important;
+}
+
+.modal-header, .modal-footer {
+    border-color: #505050 !important;
+}
+
+.modal-title {
+    color: #ffffff !important;
+}
+
+/* Navigation dark styles */
+.nav-link {
+    color: #ffffff !important;
+}
+
+.navbar-brand {
+    color: #ffffff !important;
+}
+
+/* Button dark styles */
+.btn-outline-secondary {
+    color: #ffffff !important;
+    border-color: #6c757d !important;
+}
+
+.btn-outline-secondary:hover {
+    color: #000000 !important;
+    background-color: #6c757d !important;
+}
+
+/* Additional card dark styles */
+.card-header {
+    background-color: #383838 !important;
+    color: #ffffff !important;
+    border-bottom-color: #505050 !important;
+}
+
+.card-body {
+    color: #ffffff !important;
+}
+
+.card-title {
+    color: #ffffff !important;
+}
+
+.card-text {
+    color: #ffffff !important;
+}
+
+/* List and dropdown dark styles */
+.list-group-item {
+    background-color: #2d2d2d !important;
+    border-color: #505050 !important;
+    color: #ffffff !important;
+}
+
+.list-group-item:hover {
+    background-color: #383838 !important;
+    color: #ffffff !important;
+}
+
+.dropdown-menu {
+    background-color: #2d2d2d !important;
+    border-color: #505050 !important;
+}
+
+.dropdown-item {
+    color: #ffffff !important;
+}
+
+.dropdown-item:hover {
+    background-color: #383838 !important;
+    color: #ffffff !important;
+}
+
+/* Badge dark styles */
+.badge-success {
+    background-color: #28a745 !important;
+    color: #ffffff !important;
+}
+
+.badge-info {
+    background-color: #17a2b8 !important;
+    color: #ffffff !important;
+}
+
+.badge-warning {
+    background-color: #ffc107 !important;
+    color: #000000 !important;
+}
+
+.badge-danger {
+    background-color: #dc3545 !important;
+    color: #ffffff !important;
+}
+
+/* Additional form and interface dark styles */
+.form-text {
+    color: #d1d1d1 !important;
+}
+
+.input-group-text {
+    background-color: #383838 !important;
+    border-color: #505050 !important;
+    color: #ffffff !important;
+}
+
+.status-text {
+    color: #ffffff !important;
+}
+
+.chat-message {
+    color: #ffffff !important;
+}
+
+.bot-name {
+    color: #ffffff !important;
+}
+
+.platform-info {
+    color: #d1d1d1 !important;
+}
+
+/* Knowledge base dark styles */
+.knowledge-item, .knowledge-file {
+    background-color: #2d2d2d !important;
+    color: #ffffff !important;
+    border: 1px solid #505050 !important;
+    margin-bottom: 0.5rem !important;
+    border-radius: 0.375rem !important;
+}
+
+.knowledge-item:hover, .knowledge-file:hover {
+    background-color: #383838 !important;
+}
+
+.knowledge-item .badge {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+}
+
+.knowledge-item small, .knowledge-file small {
+    color: #d1d1d1 !important;
 }
 
 .knowledge-item .text-muted {
-    color: #6c757d !important;
+    color: #d1d1d1 !important;
+}
+
+.knowledge-item span, .knowledge-file span {
+    color: #ffffff !important;
 }
 
 /* Loading states */
