@@ -1,15 +1,61 @@
 import os
 import logging
+import re
 from typing import Optional
 
 try:
     import google.generativeai as genai
     # Initialize Gemini client
-    genai.configure(api_key=os.environ.get("GOOGLE_API_KEY", "default_key"))
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if api_key:
+        genai.configure(api_key=api_key)
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
     logging.warning("Google Generative AI library not available. Install with: pip install google-generativeai")
+
+def extract_price_information(knowledge_base: str) -> str:
+    """
+    Extract price-related lines from knowledge base to prioritize pricing information
+    """
+    if not knowledge_base:
+        return ""
+    
+    # Patterns to match price information
+    price_patterns = [
+        r'.*[Nn]arx\s*:\s*.+',  # Narx: pattern
+        r'.*[Pp]rice\s*:\s*.+',  # Price: pattern
+        r'.*Цена\s*:\s*.+',      # Russian price pattern
+        r'.*\d+[\s,]*UZS\b.*',   # UZS currency
+        r'.*\d+[\s,]*so\'m\b.*', # so'm currency
+        r'.*\d+[\s,]*som\b.*',   # som currency
+        r'.*\$\s*\d+.*',         # Dollar prices
+        r'.*\d+[\s,]*USD\b.*'    # USD currency
+    ]
+    
+    price_lines = []
+    lines = knowledge_base.split('\n')
+    
+    for i, line in enumerate(lines):
+        # Check if line matches any price pattern
+        for pattern in price_patterns:
+            if re.search(pattern, line, re.IGNORECASE):
+                # Include context: previous line + price line + next line for better understanding
+                context_start = max(0, i-1)
+                context_end = min(len(lines), i+2)
+                context_lines = lines[context_start:context_end]
+                price_lines.extend(context_lines)
+                break
+    
+    # Remove duplicates while preserving order
+    seen = set()
+    unique_price_lines = []
+    for line in price_lines:
+        if line not in seen:
+            unique_price_lines.append(line)
+            seen.add(line)
+    
+    return '\n'.join(unique_price_lines)
 
 def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_language: str = "uz", knowledge_base: str = "", chat_history: str = "") -> Optional[str]:
     """
@@ -18,18 +64,29 @@ def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_lan
     try:
         # Language-specific system prompts
         language_prompts = {
-            'uz': f"Sen {bot_name} nomli chatbot san. Har doim o'zbek tilida javob ber. Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating. HECH QACHON ** yoki * yoki ` kabi markdown belgilarini ishlatma! Faqat oddiy matn, emoji va qator ajratish. Mahsulot ro'yxatini chiroyli formatda yoz: • yoki - bilan boshlash, har bir mahsulotni alohida qatorda yoz. Foydalanuvchi bilan oldingi suhbatlarni eslab qoling. MUHIM: Agar foydalanuvchi 'narx', 'narxi', 'qancha', 'qancha turadi', 'pul' yoki shunga o'xshash narx haqida so'rasa, ALBATTA bilim bazasidan aniq narx ma'lumotlarini toping va ko'rsating! 'Narx:' qatorini izlab, aniq raqamlarni ayting. Agar narx ma'lum bo'lsa, uni aniq va to'liq ko'rsating.",
-            'ru': f"Ты чатбот по имени {bot_name}. Всегда отвечай на русском языке. Будь дружелюбным, полезным и эмоциональным. Используй эмодзи. НИКОГДА не используй ** или * или ` и другие markdown символы! Только простой текст, эмодзи и переносы строк. Список товаров пиши в красивом формате: начинай с • или -, каждый товар на отдельной строке. Помни предыдущие разговоры с пользователем. ВАЖНО: Если пользователь спрашивает о цене ('цена', 'стоимость', 'сколько стоит', 'деньги'), ОБЯЗАТЕЛЬНО найди точную информацию о цене из базы знаний! Ищи строки 'Narx:' и предоставь точные цифры. Если цена известна, покажи её точно и полностью.",
-            'en': f"You are a chatbot named {bot_name}. Always respond in English. Be friendly, helpful and emotional. Use emojis. NEVER use ** or * or ` or any markdown symbols! Only plain text, emojis and line breaks. Format product lists nicely: start with • or -, each product on separate line. Remember previous conversations with the user. IMPORTANT: If user asks about price ('price', 'cost', 'how much', 'money'), ALWAYS find exact pricing information from knowledge base! Look for 'Narx:' lines and provide exact numbers. If price is available, show it accurately and completely."
+            'uz': f"Sen {bot_name} nomli chatbot san. Har doim o'zbek tilida javob ber. Dostona, foydali va emotsiyalik bo'ling. Emoji ishlating. HECH QACHON ** yoki * yoki ` kabi markdown belgilarini ishlatma! Faqat oddiy matn, emoji va qator ajratish. Mahsulot ro'yxatini chiroyli formatda yoz: • yoki - bilan boshlash, har bir mahsulotni alohida qatorda yoz. Foydalanuvchi bilan oldingi suhbatlarni eslab qoling. MUHIM: Agar foydalanuvchi 'narx', 'narxi', 'qancha', 'qancha turadi', 'pul' yoki shunga o'xshash narx haqida so'rasa, ALBATTA bilim bazasidan aniq narx ma'lumotlarini toping va ko'rsating! 'Narx:', 'Price:', 'Цена:' qatorlarini izlab, UZS, so'm, som, $, USD belgilarini qidiring. Agar narx ma'lum bo'lsa, uni aniq va to'liq ko'rsating.",
+            'ru': f"Ты чатбот по имени {bot_name}. Всегда отвечай на русском языке. Будь дружелюбным, полезным и эмоциональным. Используй эмодзи. НИКОГДА не используй ** или * или ` и другие markdown символы! Только простой текст, эмодзи и переносы строк. Список товаров пиши в красивом формате: начинай с • или -, каждый товар на отдельной строке. Помни предыдущие разговоры с пользователем. ВАЖНО: Если пользователь спрашивает о цене ('цена', 'стоимость', 'сколько стоит', 'деньги'), ОБЯЗАТЕЛЬНО найди точную информацию о цене из базы знаний! Ищи строки 'Narx:', 'Price:', 'Цена:', а также символы UZS, сом, so'm, $, USD. Если цена известна, покажи её точно и полностью.",
+            'en': f"You are a chatbot named {bot_name}. Always respond in English. Be friendly, helpful and emotional. Use emojis. NEVER use ** or * or ` or any markdown symbols! Only plain text, emojis and line breaks. Format product lists nicely: start with • or -, each product on separate line. Remember previous conversations with the user. IMPORTANT: If user asks about price ('price', 'cost', 'how much', 'money'), ALWAYS find exact pricing information from knowledge base! Look for 'Narx:', 'Price:', 'Цена:' lines and currency symbols like UZS, so'm, som, $, USD. If price is available, show it accurately and completely."
         }
         
         system_prompt = language_prompts.get(user_language, language_prompts['uz'])
         
-        # Add knowledge base context if available (optimized for speed)
+        # Add knowledge base context if available with price-aware processing
         if knowledge_base:
-            # Reduced knowledge base limit for faster processing
-            kb_limit = 2000  # Reduced from 5000 for faster processing
-            limited_kb = knowledge_base[:kb_limit]
+            # Extract price information first to ensure it's always included
+            price_lines = extract_price_information(knowledge_base)
+            
+            # Increased knowledge base limit for complete information
+            kb_limit = 8000  # Increased to ensure pricing data isn't cut off
+            
+            # Prioritize price information by putting it first
+            if price_lines:
+                limited_kb = f"=== NARX MA'LUMOTLARI ===\n{price_lines}\n\n=== TO'LIQ BILIM BAZASI ===\n{knowledge_base[:kb_limit-len(price_lines)-100]}"
+                logging.info(f"DEBUG: Price information prioritized - {len(price_lines.split(chr(10)))} price lines found")
+            else:
+                limited_kb = knowledge_base[:kb_limit]
+                logging.info(f"DEBUG: No specific price lines found, using full KB")
+                
             system_prompt += f"\n\nSizda quyidagi bilim bazasi mavjud:\n{limited_kb}\n\nAgar foydalanuvchi yuqoridagi ma'lumotlar haqida so'rasa, aniq va to'liq javob bering."
             
             # Debug: log knowledge base uzunligi
@@ -39,9 +96,9 @@ def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_lan
         if chat_history:
             system_prompt += f"\n\nOldingi suhbatlar:\n{chat_history}\n\nYuqoridagi suhbatlarni eslab qoling va kontekst asosida javob bering."
         
-        # Create the prompt (optimize for shorter context)
-        if len(system_prompt) > 3000:  # Limit system prompt length for speed
-            system_prompt = system_prompt[:3000] + "..."
+        # Create the prompt (increased limit to preserve pricing info)
+        if len(system_prompt) > 12000:  # Increased limit to preserve price information
+            system_prompt = system_prompt[:12000] + "..."
         
         full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"
         
@@ -50,18 +107,15 @@ def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_lan
             return get_fallback_response(user_language)
             
         # Use faster model configuration for quicker responses
-        generation_config = genai.types.GenerationConfig(
-            temperature=0.7,  # Slightly lower for faster generation
-            max_output_tokens=500,  # Limit output for speed
-            top_p=0.9,
-            top_k=40
-        )
+        generation_config = {
+            'temperature': 0.7,  # Slightly lower for faster generation
+            'max_output_tokens': 500,  # Limit output for speed
+            'top_p': 0.9,
+            'top_k': 40
+        }
         
-        model = genai.GenerativeModel(
-            'gemini-1.5-flash',
-            generation_config=generation_config
-        )
-        response = model.generate_content(full_prompt)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(full_prompt, generation_config=generation_config)
         
         if response.text:
             # Return response as-is, let Telegram handler deal with encoding
