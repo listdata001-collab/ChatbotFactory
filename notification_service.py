@@ -170,6 +170,68 @@ Chatbot Factory AI - Obuna boshqaruvi"""
         
         return self._send_message(admin_chat_id, notification_text)
     
+    def send_trial_reminder_to_user(self, telegram_id: str, username: str, days_left: int) -> bool:
+        """Foydalanuvchiga sinov muddati tugashi haqida Telegram orqali eslatma yuborish"""
+        if not self.bot_token or not telegram_id:
+            return False
+            
+        # Shoshilinchlik darajasini aniqlash
+        if days_left <= 1:
+            urgency_icon = "🚨"
+            urgency_text = "SHOSHILINCH ESLATMA!"
+        elif days_left <= 3:
+            urgency_icon = "⚠️"
+            urgency_text = "MUHIM ESLATMA"
+        else:
+            urgency_icon = "⏰"
+            urgency_text = "Eslatma"
+        
+        # Foydalanuvchi uchun xabar matni
+        if days_left <= 1:
+            deadline_text = "🔴 Sizning 14 kunlik bepul sinov muddatingiz bugun tugaydi!"
+        else:
+            deadline_text = f"📢 Sizning bepul sinov muddatingiz {days_left} kundan keyin tugaydi!"
+        
+        notification_text = f"""{urgency_icon} {urgency_text}
+
+🤖 Chatbot Factory AI
+
+Hurmatli {username},
+
+{deadline_text}
+
+💎 Barcha imkoniyatlardan uzluksiz foydalanish uchun to'lov ta'rifini tanlang:
+
+🚀 Starter - 165,000 so'm/oy
+• 1 ta bot yaratish
+• Faqat Telegram
+• 3 tilda AI (O'zbek/Rus/Ingliz)
+• Bilim bazasi
+
+💰 Basic - 290,000 so'm/oy
+• 1 ta bot yaratish  
+• Barcha platformalar (Telegram/Instagram/WhatsApp)
+• 3 tilda AI
+• Bilim bazasi
+
+💎 Premium - 590,000 so'm/oy
+• 5 ta bot yaratish
+• Barcha platformalar
+• 3 tilda AI
+• Prioritet yordam
+• Tahlil va statistika
+
+🔗 Hozir yangilash: https://botfactory.uz/subscription
+
+📞 Savollar bo'lsa:
+• Telefon: +998 99 644-84-44
+• Telegram: @akramjon0011
+
+━━━━━━━━━━━━━━━━━━━
+Chatbot Factory AI - O'zbekistondagi birinchi AI chatbot platformasi"""
+        
+        return self._send_message(telegram_id, notification_text)
+    
     def send_payment_success_notification(self, admin_chat_id: str, payment_info: dict) -> bool:
         """To'lov muvaffaqiyatli amalga oshirilgani haqida bildirishnoma"""
         if not self.bot_token:

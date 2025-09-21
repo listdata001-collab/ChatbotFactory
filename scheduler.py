@@ -357,12 +357,26 @@ class TaskScheduler:
                 trial_count = 0
                 for user in trial_ending:
                     try:
-                        # Email va SMS yuborish
-                        email_success = self.campaigns.send_subscription_reminder(user, 1)
-                        sms_success = self.campaigns.send_trial_ending_sms(user, 1)
+                        # Telegram bot orqali eslatma yuborish
+                        telegram_success = False
+                        if user.telegram_id:
+                            from notification_service import TelegramNotificationService
+                            telegram_service = TelegramNotificationService()
+                            
+                            days_left = (user.subscription_end_date - datetime.utcnow()).days
+                            telegram_success = telegram_service.send_trial_reminder_to_user(
+                                user.telegram_id, user.username, days_left
+                            )
                         
-                        if email_success or sms_success:
+                        # Fallback: Agar Telegram ID yo'q bo'lsa, email yuboramiz
+                        if not telegram_success and not user.telegram_id:
+                            logger.warning(f"User {user.id} ({user.username}) has no Telegram ID, sending email instead")
+                            email_success = self.campaigns.send_subscription_reminder(user, 1)
+                            if email_success:
+                                trial_count += 1
+                        elif telegram_success:
                             trial_count += 1
+                            logger.info(f"Trial reminder sent to {user.username} via Telegram")
                             
                     except Exception as e:
                         logger.error(f"Trial reminder error for user {user.id}: {str(e)}")
