@@ -229,17 +229,20 @@ class SupportChatBot {
             }
             
             .chat-window {
-                position: absolute;
-                bottom: 80px;
-                right: 0;
+                position: fixed;
+                bottom: 90px;
+                right: 20px;
                 width: 350px;
+                max-width: calc(100vw - 40px);
                 height: 500px;
+                max-height: calc(100vh - 120px);
                 background: white;
                 border-radius: 12px;
                 box-shadow: 0 8px 32px rgba(0,0,0,0.12);
                 display: none;
                 flex-direction: column;
                 border: 1px solid #e1e5e9;
+                z-index: 9998;
             }
             
             .chat-window.open {
@@ -315,7 +318,10 @@ class SupportChatBot {
                 flex: 1;
                 padding: 16px;
                 overflow-y: auto;
+                overflow-x: hidden;
                 background: #f8f9fa;
+                word-wrap: break-word;
+                max-width: 100%;
             }
             
             .chat-message {
@@ -383,6 +389,10 @@ class SupportChatBot {
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                word-wrap: break-word;
+                white-space: normal;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             
             .quick-action-btn:hover {
@@ -456,13 +466,21 @@ class SupportChatBot {
             
             @media (max-width: 768px) {
                 .chat-window {
-                    width: 300px;
-                    height: 450px;
+                    width: calc(100vw - 30px);
+                    height: calc(100vh - 100px);
+                    max-width: 350px;
+                    right: 15px;
+                    bottom: 80px;
                 }
                 
                 .support-chat-widget {
                     bottom: 15px;
                     right: 15px;
+                }
+                
+                .quick-action-btn {
+                    font-size: 13px;
+                    padding: 10px 12px;
                 }
             }
         `;
