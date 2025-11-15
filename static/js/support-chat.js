@@ -1,22 +1,43 @@
 /**
- * Jivo ga o'xshash mijozlar qo'llab-quvvatlash chat bot sistemi
- * Chatbot Factory AI uchun
+ * Multi-language Support Chat Bot System
+ * Chatbot Factory AI
  */
 
 class SupportChatBot {
     constructor() {
         this.isOpen = false;
         this.currentStep = 'greeting';
+        this.currentLanguage = 'uz'; // Default language
         this.userName = '';
         this.userEmail = '';
         this.userQuestion = '';
         
-        // Knowledge base
-        this.knowledgeBase = {
-            pricing: {
-                title: "💰 Narxlar va Ta'riflar",
-                content: `
-<div class="kb-section">
+        // Detect browser language
+        const browserLang = navigator.language || navigator.userLanguage;
+        if (browserLang.startsWith('ru')) {
+            this.currentLanguage = 'ru';
+        } else if (browserLang.startsWith('en')) {
+            this.currentLanguage = 'en';
+        }
+        
+        // Translations
+        this.translations = {
+            uz: {
+                header: 'Yordam markazi',
+                greeting: `Assalomu alaykum! 👋\n\n<strong>Chatbot Factory AI</strong> yordam markaziga xush kelibsiz!\n\nMen sizga qanday yordam bera olaman?`,
+                inputPlaceholder: 'Xabar yozing...',
+                buttons: {
+                    pricing: "Narxlar va ta'riflar",
+                    features: "Funksiyalar",
+                    setup: "Bot sozlash",
+                    trial: "Bepul sinov",
+                    contact: "Kontakt",
+                    custom: "Boshqa savol"
+                },
+                knowledge: {
+                    pricing: {
+                        title: "💰 Narxlar va Ta'riflar",
+                        content: `<div class="kb-section">
     <h6>🚀 Starter - 165,000 so'm/oy</h6>
     <ul>
         <li>1 ta bot yaratish</li>
@@ -45,11 +66,10 @@ class SupportChatBot {
         <li>Maxsus funksiyalar</li>
     </ul>
 </div>`
-            },
-            features: {
-                title: "🤖 Funksiyalar",
-                content: `
-<div class="kb-section">
+                    },
+                    features: {
+                        title: "🤖 Funksiyalar",
+                        content: `<div class="kb-section">
     <h6>Asosiy imkoniyatlar:</h6>
     <ul>
         <li><strong>AI Chatbot:</strong> Google Gemini AI bilan ishlaydigan aqlli botlar</li>
@@ -61,11 +81,10 @@ class SupportChatBot {
         <li><strong>Statistika:</strong> Bot faoliyatini kuzatish</li>
     </ul>
 </div>`
-            },
-            setup: {
-                title: "🛠 Bot Sozlash",
-                content: `
-<div class="kb-section">
+                    },
+                    setup: {
+                        title: "🛠 Bot Sozlash",
+                        content: `<div class="kb-section">
     <h6>Bot yaratish bosqichlari:</h6>
     <ol>
         <li><strong>Ro'yxatdan o'tish:</strong> Platformaga registratsiya qiling</li>
@@ -77,11 +96,10 @@ class SupportChatBot {
         <li><strong>Aktivlashtirish:</strong> Botni real foydalanuvchilar uchun ishga tushiring</li>
     </ol>
 </div>`
-            },
-            contact: {
-                title: "📞 Kontakt Ma'lumotlari",
-                content: `
-<div class="kb-section">
+                    },
+                    contact: {
+                        title: "📞 Kontakt Ma'lumotlari",
+                        content: `<div class="kb-section">
     <h6>Biz bilan bog'laning:</h6>
     <ul>
         <li><strong>📱 Telefon:</strong> +998 99 644-84-44</li>
@@ -95,11 +113,10 @@ class SupportChatBot {
     <h6>Qo'llab-quvvatlash:</h6>
     <p>Savollaringiz bo'lsa, biz bilan bog'lanishingiz mumkin. 24 soat ichida javob beramiz!</p>
 </div>`
-            },
-            trial: {
-                title: "🆓 Bepul Sinov",
-                content: `
-<div class="kb-section">
+                    },
+                    trial: {
+                        title: "🆓 Bepul Sinov",
+                        content: `<div class="kb-section">
     <h6>14 kunlik bepul sinov:</h6>
     <ul>
         <li>Registratsiyadan so'ng avtomatik boshlanadi</li>
@@ -112,10 +129,252 @@ class SupportChatBot {
     <h6>Sinov tugagach:</h6>
     <p>To'lov ta'rifini tanlash kerak. Aks holda bot deaktivatsiya qilinadi.</p>
 </div>`
+                    }
+                },
+                customQuestion: `Savolingizni yozing, men sizga javob berishga harakat qilaman! 📝\n\nYoki to'g'ridan-to'g'ri bizning qo'llab-quvvatlash xizmatimiz bilan bog'laning:\n📞 +998 99 644-84-44\n💬 @akramjon0011`,
+                thankYou: `Savolingiz uchun rahmat! 🙏\n\nSizning so'rovingiz qabul qilindi. Bizning mutaxassislarimiz tez orada sizga javob berishadi.\n\nTo'g'ridan-to'g'ri bog'lanish uchun:\n📞 +998 99 644-84-44\n💬 @akramjon0011\n📧 info@botfactory.uz\n\nYana biror narsa kerakmi?`,
+                moreQuestions: 'Boshqa savollaringiz bormi?'
+            },
+            ru: {
+                header: 'Центр помощи',
+                greeting: `Здравствуйте! 👋\n\n<strong>Chatbot Factory AI</strong> - добро пожаловать в наш центр поддержки!\n\nКак я могу вам помочь?`,
+                inputPlaceholder: 'Напишите сообщение...',
+                buttons: {
+                    pricing: "Цены и тарифы",
+                    features: "Функции",
+                    setup: "Настройка бота",
+                    trial: "Бесплатная пробная версия",
+                    contact: "Контакты",
+                    custom: "Другой вопрос"
+                },
+                knowledge: {
+                    pricing: {
+                        title: "💰 Цены и Тарифы",
+                        content: `<div class="kb-section">
+    <h6>🚀 Starter - 165,000 сум/мес</h6>
+    <ul>
+        <li>Создание 1 бота</li>
+        <li>Только Telegram платформа</li>
+        <li>AI на 3 языках (Узбекский/Русский/Английский)</li>
+        <li>Загрузка базы знаний</li>
+        <li>Базовая поддержка</li>
+    </ul>
+    
+    <h6>💰 Basic - 290,000 сум/мес</h6>
+    <ul>
+        <li>Создание 1 бота</li>
+        <li>Все платформы (Telegram/Instagram/WhatsApp)</li>
+        <li>AI на 3 языках</li>
+        <li>Загрузка базы знаний</li>
+        <li>Базовая поддержка</li>
+    </ul>
+    
+    <h6>💎 Premium - 590,000 сум/мес</h6>
+    <ul>
+        <li>Создание 5 ботов</li>
+        <li>Все платформы</li>
+        <li>AI на 3 языках</li>
+        <li>Приоритетная поддержка</li>
+        <li>Аналитика и статистика</li>
+        <li>Специальные функции</li>
+    </ul>
+</div>`
+                    },
+                    features: {
+                        title: "🤖 Функции",
+                        content: `<div class="kb-section">
+    <h6>Основные возможности:</h6>
+    <ul>
+        <li><strong>AI Chatbot:</strong> Умные боты на базе Google Gemini AI</li>
+        <li><strong>Мультиязычность:</strong> Узбекский, Русский и Английский языки</li>
+        <li><strong>Мультиплатформа:</strong> Telegram, Instagram, WhatsApp</li>
+        <li><strong>База знаний:</strong> Загрузка файлов PDF, DOCX</li>
+        <li><strong>Система подписок:</strong> Автоматическая оплата и уведомления</li>
+        <li><strong>Админ панель:</strong> Полная система управления</li>
+        <li><strong>Статистика:</strong> Отслеживание активности ботов</li>
+    </ul>
+</div>`
+                    },
+                    setup: {
+                        title: "🛠 Настройка Бота",
+                        content: `<div class="kb-section">
+    <h6>Этапы создания бота:</h6>
+    <ol>
+        <li><strong>Регистрация:</strong> Зарегистрируйтесь на платформе</li>
+        <li><strong>Создание бота:</strong> Нажмите кнопку "Новый бот"</li>
+        <li><strong>Данные:</strong> Введите имя и описание бота</li>
+        <li><strong>Выбор платформы:</strong> Telegram, Instagram или WhatsApp</li>
+        <li><strong>База знаний:</strong> Загрузите файлы PDF/DOCX</li>
+        <li><strong>Тестирование:</strong> Протестируйте бота</li>
+        <li><strong>Активация:</strong> Запустите бота для реальных пользователей</li>
+    </ol>
+</div>`
+                    },
+                    contact: {
+                        title: "📞 Контактная Информация",
+                        content: `<div class="kb-section">
+    <h6>Свяжитесь с нами:</h6>
+    <ul>
+        <li><strong>📱 Телефон:</strong> +998 99 644-84-44</li>
+        <li><strong>📧 Email:</strong> info@botfactory.uz</li>
+        <li><strong>💬 Telegram:</strong> @akramjon0011</li>
+        <li><strong>🌐 Сайт:</strong> https://botfactory.uz</li>
+        <li><strong>🏢 Адрес:</strong> Ташкент, Узбекистан</li>
+        <li><strong>⏰ Время работы:</strong> Пн-Пт 9:00-18:00</li>
+    </ul>
+    
+    <h6>Поддержка:</h6>
+    <p>Если у вас есть вопросы, свяжитесь с нами. Мы ответим в течение 24 часов!</p>
+</div>`
+                    },
+                    trial: {
+                        title: "🆓 Бесплатная Пробная Версия",
+                        content: `<div class="kb-section">
+    <h6>14-дневная бесплатная пробная версия:</h6>
+    <ul>
+        <li>Автоматически начинается после регистрации</li>
+        <li>Полный доступ ко всем функциям</li>
+        <li>Возможность создать 1 бота</li>
+        <li>Только платформа Telegram</li>
+        <li>Оплата не требуется</li>
+    </ul>
+    
+    <h6>После окончания пробного периода:</h6>
+    <p>Необходимо выбрать платный тариф. В противном случае бот будет деактивирован.</p>
+</div>`
+                    }
+                },
+                customQuestion: `Напишите ваш вопрос, я постараюсь вам помочь! 📝\n\nИли свяжитесь напрямую с нашей службой поддержки:\n📞 +998 99 644-84-44\n💬 @akramjon0011`,
+                thankYou: `Спасибо за ваш вопрос! 🙏\n\nВаш запрос принят. Наши специалисты скоро свяжутся с вами.\n\nДля прямой связи:\n📞 +998 99 644-84-44\n💬 @akramjon0011\n📧 info@botfactory.uz\n\nЕще что-нибудь нужно?`,
+                moreQuestions: 'Есть другие вопросы?'
+            },
+            en: {
+                header: 'Help Center',
+                greeting: `Hello! 👋\n\n<strong>Chatbot Factory AI</strong> - welcome to our support center!\n\nHow can I help you?`,
+                inputPlaceholder: 'Write a message...',
+                buttons: {
+                    pricing: "Pricing & Plans",
+                    features: "Features",
+                    setup: "Bot Setup",
+                    trial: "Free Trial",
+                    contact: "Contact",
+                    custom: "Other Question"
+                },
+                knowledge: {
+                    pricing: {
+                        title: "💰 Pricing & Plans",
+                        content: `<div class="kb-section">
+    <h6>🚀 Starter - 165,000 UZS/month</h6>
+    <ul>
+        <li>Create 1 bot</li>
+        <li>Telegram platform only</li>
+        <li>AI in 3 languages (Uzbek/Russian/English)</li>
+        <li>Knowledge base upload</li>
+        <li>Basic support</li>
+    </ul>
+    
+    <h6>💰 Basic - 290,000 UZS/month</h6>
+    <ul>
+        <li>Create 1 bot</li>
+        <li>All platforms (Telegram/Instagram/WhatsApp)</li>
+        <li>AI in 3 languages</li>
+        <li>Knowledge base upload</li>
+        <li>Basic support</li>
+    </ul>
+    
+    <h6>💎 Premium - 590,000 UZS/month</h6>
+    <ul>
+        <li>Create 5 bots</li>
+        <li>All platforms</li>
+        <li>AI in 3 languages</li>
+        <li>Priority support</li>
+        <li>Analytics and statistics</li>
+        <li>Special features</li>
+    </ul>
+</div>`
+                    },
+                    features: {
+                        title: "🤖 Features",
+                        content: `<div class="kb-section">
+    <h6>Main capabilities:</h6>
+    <ul>
+        <li><strong>AI Chatbot:</strong> Smart bots powered by Google Gemini AI</li>
+        <li><strong>Multi-language:</strong> Uzbek, Russian and English languages</li>
+        <li><strong>Multi-platform:</strong> Telegram, Instagram, WhatsApp</li>
+        <li><strong>Knowledge base:</strong> Upload PDF, DOCX files</li>
+        <li><strong>Subscription system:</strong> Automatic payments and notifications</li>
+        <li><strong>Admin panel:</strong> Complete management system</li>
+        <li><strong>Statistics:</strong> Track bot activity</li>
+    </ul>
+</div>`
+                    },
+                    setup: {
+                        title: "🛠 Bot Setup",
+                        content: `<div class="kb-section">
+    <h6>Bot creation steps:</h6>
+    <ol>
+        <li><strong>Registration:</strong> Sign up on the platform</li>
+        <li><strong>Create bot:</strong> Click "New bot" button</li>
+        <li><strong>Details:</strong> Enter bot name and description</li>
+        <li><strong>Choose platform:</strong> Telegram, Instagram or WhatsApp</li>
+        <li><strong>Knowledge base:</strong> Upload PDF/DOCX files</li>
+        <li><strong>Testing:</strong> Test your bot</li>
+        <li><strong>Activation:</strong> Launch bot for real users</li>
+    </ol>
+</div>`
+                    },
+                    contact: {
+                        title: "📞 Contact Information",
+                        content: `<div class="kb-section">
+    <h6>Get in touch:</h6>
+    <ul>
+        <li><strong>📱 Phone:</strong> +998 99 644-84-44</li>
+        <li><strong>📧 Email:</strong> info@botfactory.uz</li>
+        <li><strong>💬 Telegram:</strong> @akramjon0011</li>
+        <li><strong>🌐 Website:</strong> https://botfactory.uz</li>
+        <li><strong>🏢 Address:</strong> Tashkent, Uzbekistan</li>
+        <li><strong>⏰ Working hours:</strong> Mon-Fri 9:00-18:00</li>
+    </ul>
+    
+    <h6>Support:</h6>
+    <p>If you have questions, contact us. We will respond within 24 hours!</p>
+</div>`
+                    },
+                    trial: {
+                        title: "🆓 Free Trial",
+                        content: `<div class="kb-section">
+    <h6>14-day free trial:</h6>
+    <ul>
+        <li>Automatically starts after registration</li>
+        <li>Full access to all features</li>
+        <li>Ability to create 1 bot</li>
+        <li>Telegram platform only</li>
+        <li>No payment required</li>
+    </ul>
+    
+    <h6>After trial ends:</h6>
+    <p>You need to choose a paid plan. Otherwise, the bot will be deactivated.</p>
+</div>`
+                    }
+                },
+                customQuestion: `Write your question, I'll try to help you! 📝\n\nOr contact our support service directly:\n📞 +998 99 644-84-44\n💬 @akramjon0011`,
+                thankYou: `Thank you for your question! 🙏\n\nYour request has been received. Our specialists will contact you soon.\n\nFor direct contact:\n📞 +998 99 644-84-44\n💬 @akramjon0011\n📧 info@botfactory.uz\n\nAnything else you need?`,
+                moreQuestions: 'Any other questions?'
             }
         };
         
         this.init();
+    }
+    
+    t(key) {
+        // Get translation by key
+        const keys = key.split('.');
+        let value = this.translations[this.currentLanguage];
+        for (const k of keys) {
+            value = value[k];
+            if (!value) return key;
+        }
+        return value;
     }
     
     init() {
@@ -142,12 +401,19 @@ class SupportChatBot {
                             </div>
                             <div>
                                 <h6>Chatbot Factory AI</h6>
-                                <small>Yordam markazi</small>
+                                <small id="chat-header-subtitle">${this.t('header')}</small>
                             </div>
                         </div>
-                        <button id="chat-close" class="chat-close">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <div class="header-buttons">
+                            <div class="language-selector">
+                                <button class="lang-btn ${this.currentLanguage === 'uz' ? 'active' : ''}" data-lang="uz">UZ</button>
+                                <button class="lang-btn ${this.currentLanguage === 'ru' ? 'active' : ''}" data-lang="ru">RU</button>
+                                <button class="lang-btn ${this.currentLanguage === 'en' ? 'active' : ''}" data-lang="en">EN</button>
+                            </div>
+                            <button id="chat-close" class="chat-close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
                     </div>
                     
                     <div class="chat-body" id="chat-body">
@@ -159,7 +425,7 @@ class SupportChatBot {
                             <!-- Quick action buttons will be added here -->
                         </div>
                         <div class="chat-input-container" id="chat-input-container" style="display: none;">
-                            <input type="text" id="chat-input" placeholder="Xabar yozing..." />
+                            <input type="text" id="chat-input" placeholder="${this.t('inputPlaceholder')}" />
                             <button id="chat-send"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
@@ -275,6 +541,43 @@ class SupportChatBot {
                 display: flex;
                 align-items: center;
                 gap: 12px;
+                flex: 1;
+            }
+            
+            .header-buttons {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .language-selector {
+                display: flex;
+                gap: 4px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 6px;
+                padding: 2px;
+            }
+            
+            .lang-btn {
+                background: transparent;
+                border: none;
+                color: rgba(255,255,255,0.7);
+                cursor: pointer;
+                padding: 4px 8px;
+                border-radius: 4px;
+                font-size: 11px;
+                font-weight: 600;
+                transition: all 0.2s;
+            }
+            
+            .lang-btn:hover {
+                background: rgba(255,255,255,0.1);
+                color: white;
+            }
+            
+            .lang-btn.active {
+                background: rgba(255,255,255,0.2);
+                color: white;
             }
             
             .chat-avatar {
@@ -294,10 +597,12 @@ class SupportChatBot {
             .chat-header h6 {
                 margin: 0;
                 font-weight: 600;
+                font-size: 14px;
             }
             
             .chat-header small {
                 opacity: 0.9;
+                font-size: 11px;
             }
             
             .chat-close {
@@ -308,6 +613,11 @@ class SupportChatBot {
                 padding: 4px;
                 border-radius: 4px;
                 transition: background 0.2s;
+                width: 24px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
             }
             
             .chat-close:hover {
@@ -497,6 +807,14 @@ class SupportChatBot {
             this.closeChat();
         });
         
+        // Language switcher
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const lang = e.target.dataset.lang;
+                this.changeLanguage(lang);
+            });
+        });
+        
         // Send message
         document.getElementById('chat-send').addEventListener('click', () => {
             this.sendMessage();
@@ -508,6 +826,28 @@ class SupportChatBot {
                 this.sendMessage();
             }
         });
+    }
+    
+    changeLanguage(lang) {
+        if (lang === this.currentLanguage) return;
+        
+        this.currentLanguage = lang;
+        
+        // Update language buttons
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lang === lang);
+        });
+        
+        // Update header
+        document.getElementById('chat-header-subtitle').textContent = this.t('header');
+        
+        // Update input placeholder
+        document.getElementById('chat-input').placeholder = this.t('inputPlaceholder');
+        
+        // Clear and restart conversation
+        document.getElementById('chat-body').innerHTML = '';
+        this.currentStep = 'greeting';
+        this.showGreeting();
     }
     
     toggleChat() {
@@ -536,21 +876,15 @@ class SupportChatBot {
     }
     
     showGreeting() {
-        this.addBotMessage(`
-            Assalomu alaykum! 👋
-            
-            <strong>Chatbot Factory AI</strong> yordam markaziga xush kelibsiz!
-            
-            Men sizga qanday yordam bera olaman?
-        `);
+        this.addBotMessage(this.t('greeting'));
         
         this.showQuickActions([
-            { id: 'pricing', icon: 'fas fa-tags', text: 'Narxlar va ta\'riflar' },
-            { id: 'features', icon: 'fas fa-star', text: 'Funksiyalar' },
-            { id: 'setup', icon: 'fas fa-cog', text: 'Bot sozlash' },
-            { id: 'trial', icon: 'fas fa-gift', text: 'Bepul sinov' },
-            { id: 'contact', icon: 'fas fa-phone', text: 'Kontakt' },
-            { id: 'custom', icon: 'fas fa-comment', text: 'Boshqa savol' }
+            { id: 'pricing', icon: 'fas fa-tags', text: this.t('buttons.pricing') },
+            { id: 'features', icon: 'fas fa-star', text: this.t('buttons.features') },
+            { id: 'setup', icon: 'fas fa-cog', text: this.t('buttons.setup') },
+            { id: 'trial', icon: 'fas fa-gift', text: this.t('buttons.trial') },
+            { id: 'contact', icon: 'fas fa-phone', text: this.t('buttons.contact') },
+            { id: 'custom', icon: 'fas fa-comment', text: this.t('buttons.custom') }
         ]);
     }
     
@@ -571,44 +905,25 @@ class SupportChatBot {
     
     handleQuickAction(actionId) {
         // Add user message
-        const actionTexts = {
-            pricing: 'Narxlar va ta\'riflar',
-            features: 'Funksiyalar',
-            setup: 'Bot sozlash',
-            trial: 'Bepul sinov',
-            contact: 'Kontakt ma\'lumotlari',
-            custom: 'Boshqa savol'
-        };
-        
-        this.addUserMessage(actionTexts[actionId]);
+        const actionText = this.t(`buttons.${actionId}`);
+        this.addUserMessage(actionText);
         
         if (actionId === 'custom') {
             this.currentStep = 'custom_question';
-            this.addBotMessage(`
-                Savolingizni yozing, men sizga javob berishga harakat qilaman! 📝
-                
-                Yoki to'g'ridan-to'g'ri bizning qo'llab-quvvatlash xizmatimiz bilan bog'laning:
-                📞 +998 99 644-84-44
-                💬 @akramjon0011
-            `);
+            this.addBotMessage(this.t('customQuestion'));
             this.showChatInput();
         } else {
             // Show knowledge base content
-            const kb = this.knowledgeBase[actionId];
-            if (kb) {
-                this.addBotMessage(`
-                    <strong>${kb.title}</strong>
-                    ${kb.content}
-                    
-                    Boshqa savollaringiz bormi?
-                `);
+            const kb = this.t(`knowledge.${actionId}`);
+            if (kb && typeof kb === 'object') {
+                this.addBotMessage(`<strong>${kb.title}</strong>${kb.content}\n\n${this.t('moreQuestions')}`);
                 
                 this.showQuickActions([
-                    { id: 'pricing', icon: 'fas fa-tags', text: 'Narxlar' },
-                    { id: 'features', icon: 'fas fa-star', text: 'Funksiyalar' },
-                    { id: 'setup', icon: 'fas fa-cog', text: 'Sozlash' },
-                    { id: 'contact', icon: 'fas fa-phone', text: 'Kontakt' },
-                    { id: 'custom', icon: 'fas fa-comment', text: 'Boshqa savol' }
+                    { id: 'pricing', icon: 'fas fa-tags', text: this.t('buttons.pricing') },
+                    { id: 'features', icon: 'fas fa-star', text: this.t('buttons.features') },
+                    { id: 'setup', icon: 'fas fa-cog', text: this.t('buttons.setup') },
+                    { id: 'contact', icon: 'fas fa-phone', text: this.t('buttons.contact') },
+                    { id: 'custom', icon: 'fas fa-comment', text: this.t('buttons.custom') }
                 ]);
             }
         }
@@ -630,23 +945,12 @@ class SupportChatBot {
             
             // Simple response logic
             setTimeout(() => {
-                this.addBotMessage(`
-                    Savolingiz uchun rahmat! 🙏
-                    
-                    Sizning so'rovingiz qabul qilindi. Bizning mutaxassislarimiz tez orada sizga javob berishadi.
-                    
-                    To'g'ridan-to'g'ri bog'lanish uchun:
-                    📞 +998 99 644-84-44
-                    💬 @akramjon0011
-                    📧 info@botfactory.uz
-                    
-                    Yana biror narsa kerakmi?
-                `);
+                this.addBotMessage(this.t('thankYou'));
                 
                 this.showQuickActions([
-                    { id: 'pricing', icon: 'fas fa-tags', text: 'Narxlar' },
-                    { id: 'features', icon: 'fas fa-star', text: 'Funksiyalar' },
-                    { id: 'contact', icon: 'fas fa-phone', text: 'Kontakt' }
+                    { id: 'pricing', icon: 'fas fa-tags', text: this.t('buttons.pricing') },
+                    { id: 'features', icon: 'fas fa-star', text: this.t('buttons.features') },
+                    { id: 'contact', icon: 'fas fa-phone', text: this.t('buttons.contact') }
                 ]);
             }, 1000);
         }
@@ -681,7 +985,7 @@ class SupportChatBot {
     }
     
     getCurrentTime() {
-        return new Date().toLocaleTimeString('uz-UZ', { 
+        return new Date().toLocaleTimeString(this.currentLanguage === 'uz' ? 'uz-UZ' : this.currentLanguage === 'ru' ? 'ru-RU' : 'en-US', { 
             hour: '2-digit', 
             minute: '2-digit' 
         });
