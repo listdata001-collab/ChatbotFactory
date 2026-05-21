@@ -13,6 +13,7 @@
             </div>
             <div class="card-body">
                 <form method="POST">
+                    {% include '_csrf.html' %}
                     <div class="mb-3">
                         <label for="name" class="form-label">
                             <i class="fas fa-robot me-1"></i>Bot nomi *
@@ -106,6 +107,7 @@
                     {% if bot.platform == 'Telegram' and bot.telegram_token %}
                     <div class="btn-group ms-2" role="group">
                         <form method="POST" action="{{ url_for('main.setup_webhook', bot_id=bot.id) }}" style="display: inline;">
+                            {% include '_csrf.html' %}
                             <button type="submit" class="btn btn-success" onclick="return confirm('Webhook ni o\'rnatishni xohlaysizmi? Bu production muhitida bot ishlashi uchun kerak.')">
                                 <i class="fas fa-link me-2"></i>Webhook o'rnatish
                             </button>
@@ -196,10 +198,11 @@
                 <div class="tab-content" id="knowledgeTabContent">
                     <!-- File Upload Tab -->
                     <div class="tab-pane fade show active" id="file-content" role="tabpanel">
-                        <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}" 
+                        <form method="POST" action="{{ url_for('main.upload_knowledge', bot_id=bot.id) }}"
                               enctype="multipart/form-data">
+                            {% include '_csrf.html' %}
                             <div class="mb-3">
-                                <input type="file" class="form-control form-control-sm" name="file" 
+                                <input type="file" class="form-control form-control-sm" name="file"
                                        accept=".txt,.docx,.csv,.xlsx,.xls,.jpg,.jpeg,.png,.gif,.webp,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv,application/csv,application/vnd.ms-excel,text/comma-separated-values" required>
                                 <div class="form-text text-light">
                                     <i class="fas fa-info-circle me-1"></i>
@@ -236,6 +239,7 @@
                     <!-- Text Input Tab -->
                     <div class="tab-pane fade" id="text-content" role="tabpanel">
                         <form method="POST" action="{{ url_for('main.add_text_knowledge', bot_id=bot.id) }}">
+                            {% include '_csrf.html' %}
                             <div class="mb-3">
                                 <label for="source_name" class="form-label small text-white">Nom (ixtiyoriy):</label>
                                 <input type="text" class="form-control form-control-sm" id="source_name" name="source_name" 
@@ -263,6 +267,7 @@
                             </div>
                             <div class="card-body p-3">
                                 <form method="POST" action="{{ url_for('main.upload_bulk_products', bot_id=bot.id) }}" enctype="multipart/form-data">
+                                    {% include '_csrf.html' %}
                                     <div class="mb-3">
                                         <label for="bulk_file" class="form-label small text-white">Excel yoki CSV fayl yuklash:</label>
                                         <input type="file" class="form-control form-control-sm" id="bulk_file" name="bulk_file" 
@@ -298,6 +303,7 @@
                             </div>
                             <div class="card-body p-3">
                                 <form method="POST" action="{{ url_for('main.add_product_knowledge', bot_id=bot.id) }}">
+                                    {% include '_csrf.html' %}
                                     <div class="mb-3">
                                         <label for="product_name" class="form-label small text-white">Mahsulot nomi *:</label>
                                         <input type="text" class="form-control form-control-sm" id="product_name" name="product_name" 

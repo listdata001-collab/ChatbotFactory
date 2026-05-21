@@ -26,6 +26,7 @@
                         {% if current_user.telegram_id %}
                         <p><strong>Sizning Telegram ID:</strong> <span class="badge bg-success">{{ current_user.telegram_id }}</span></p>
                         <form method="POST" action="{{ url_for('main.test_message') }}" style="display: inline;">
+                            {% include '_csrf.html' %}
                             <button type="submit" class="btn btn-success me-2">
                                 <i class="fas fa-paper-plane me-1"></i>📧 Test xabar yuborish
                             </button>
@@ -36,6 +37,7 @@
                             Test xabar yuborish uchun Telegram ID ni kiriting:
                         </div>
                         <form method="POST" action="{{ url_for('main.set_telegram_id') }}" class="mb-3">
+                            {% include '_csrf.html' %}
                             <div class="input-group">
                                 <input type="text" name="telegram_id" class="form-control" placeholder="Telegram ID raqamingizni kiriting" required>
                                 <button type="submit" class="btn btn-primary">
@@ -479,6 +481,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST" action="{{ url_for('main.send_broadcast') }}">
+                            {% include '_csrf.html' %}
                             <div class="mb-3">
                                 <label for="target_type" class="form-label">Kimga yuborish</label>
                                 <select class="form-select" id="target_type" name="target_type" required>
@@ -582,6 +585,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
                 <form method="POST" action="{{ url_for('main.cleanup_chat_history') }}" style="display: inline;">
+                    {% include '_csrf.html' %}
                     <button type="submit" class="btn btn-warning">
                         <i class="fas fa-broom me-2"></i>Tozalash
                     </button>
@@ -602,6 +606,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{{ url_for('main.change_user_subscription') }}">
+                {% include '_csrf.html' %}
                 <div class="modal-body">
                     <input type="hidden" name="user_id" id="modal_user_id">
                     

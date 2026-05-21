@@ -45,10 +45,43 @@ def validate_telegram_token(token: str) -> bool:
     """Validate Telegram bot token format"""
     if not token:
         return False
-    
+
     # Telegram bot token format: number:alphanumeric_string
     pattern = r'^\d+:[A-Za-z0-9_-]+$'
     return bool(re.match(pattern, token))
+
+
+_USERNAME_RE = re.compile(r'^[A-Za-z0-9_.-]{3,32}$')
+_EMAIL_RE = re.compile(r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$')
+
+
+def validate_username(username: str) -> bool:
+    """Username must be 3-32 chars: letters, digits, _ . -"""
+    return bool(username) and bool(_USERNAME_RE.match(username))
+
+
+def validate_email_address(email: str) -> bool:
+    """Lightweight email format check (full RFC validation lives in email-validator)."""
+    return bool(email) and len(email) <= 254 and bool(_EMAIL_RE.match(email))
+
+
+def safe_log(text, max_length: int = 200) -> str:
+    """Make user-supplied input safe to write to log files.
+
+    Strips control characters and newlines (so an attacker cannot inject
+    forged log lines), drops HTML/script noise, and truncates to a sane
+    length. Used in place of raw string interpolation in logger calls.
+    """
+    if text is None:
+        return ''
+    s = str(text)
+    # Remove control chars including newlines/tabs
+    s = re.sub(r'[\x00-\x1f\x7f]', ' ', s)
+    # Strip < and > so reflected XSS payloads don't sit in plaintext logs
+    s = s.replace('<', '_').replace('>', '_')
+    if len(s) > max_length:
+        s = s[:max_length] + '...'
+    return s
 
 def send_notification_email(user_email: str, subject: str, message: str) -> bool:
     """Send notification email (placeholder for email service)"""

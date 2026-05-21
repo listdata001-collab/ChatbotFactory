@@ -38,7 +38,7 @@
                         </div>
                         <div class="card-body">
                             <form action="{{ url_for('main.send_bot_message', bot_id=bot.id) }}" method="POST">
-                                {{ csrf_token() }}
+                                {% include '_csrf.html' %}
                                 <!-- Xabar turi tanlash -->
                                 <div class="mb-3">
                                     <label class="form-label">Xabar turi</label>

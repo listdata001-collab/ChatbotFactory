@@ -344,20 +344,33 @@ def create_payment():
         return redirect(url_for('main.subscription'))
 
 @payment_bp.route('/success/<int:payment_id>')
+@login_required
 def payment_success(payment_id):
-    """To'lov muvaffaqiyatli yakunlanganda"""
-    try:
-        result = processor.confirm_payment(payment_id)
-        
-        if result['success']:
-            flash('To\'lov muvaffaqiyatli amalga oshirildi!', 'success')
-        else:
-            flash('To\'lovni tasdiqlashda xato!', 'error')
-            
-    except Exception as e:
-        logger.error(f"Payment success error: {str(e)}")
-        flash('To\'lov jarayonida xato!', 'error')
-    
+    """Return-URL endpoint after the user finishes the payment flow.
+
+    This is a *display-only* page. It must NEVER confirm a payment —
+    only the verified webhook (e.g. payme_webhook / click_webhook) is
+    allowed to mark a payment as completed and grant a subscription.
+    Otherwise an attacker could simply visit /payment/success/<id> to
+    activate any pending payment for free.
+    """
+    payment = Payment.query.get_or_404(payment_id)
+
+    if payment.user_id != current_user.id and not current_user.is_admin:
+        flash('Sizda bu to\'lovni ko\'rish huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    if payment.status == 'completed':
+        flash('To\'lov muvaffaqiyatli amalga oshirildi!', 'success')
+    elif payment.status == 'pending':
+        flash(
+            'To\'lov tizimida tasdiqlash kutilmoqda. '
+            'Bir necha daqiqadan so\'ng obunangiz yangilanadi.',
+            'info'
+        )
+    else:
+        flash('To\'lov bekor qilindi yoki muvaffaqiyatsiz tugadi.', 'error')
+
     return redirect(url_for('main.dashboard'))
 
 @payment_bp.route('/webhook/payme', methods=['POST'])

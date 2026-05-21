@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import create_engine, text
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -28,6 +29,7 @@ class Base(DeclarativeBase):
 
 db = SQLAlchemy(model_class=Base)
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 # Create the app
 app = Flask(__name__)
@@ -183,6 +185,11 @@ login_manager.login_view = 'auth.login'  # type: ignore
 login_manager.login_message = 'Iltimos, tizimga kiring.'
 login_manager.login_message_category = 'info'
 
+# CSRF protection. External callbacks (payment-gateway webhooks, Telegram
+# webhook) are server-to-server POSTs without a browser session, so they
+# are exempted individually below.
+csrf.init_app(app)
+
 # Make datetime available in templates
 app.jinja_env.globals['datetime'] = datetime
 
@@ -202,6 +209,14 @@ app.register_blueprint(instagram_bp, url_prefix='/instagram')
 app.register_blueprint(whatsapp_bp, url_prefix='/whatsapp')
 app.register_blueprint(marketing_bp, url_prefix='/marketing')
 app.register_blueprint(bot_status_bp, url_prefix='/admin')
+
+# External-callback endpoints must be CSRF-exempt: they have their own
+# signature-based authentication and cannot present a Flask session
+# token (no browser, no cookies).
+csrf.exempt(app.view_functions['main.telegram_webhook'])
+csrf.exempt(app.view_functions['payment.payme_webhook'])
+csrf.exempt(app.view_functions['payment.click_webhook'])
+csrf.exempt(app.view_functions['payment.uzum_callback'])
 
 @login_manager.user_loader
 def load_user(user_id):

@@ -571,6 +571,10 @@ def create_bot():
         bot.instagram_token = instagram_token
         bot.whatsapp_token = whatsapp_token
         bot.whatsapp_phone_id = whatsapp_phone_id
+        # A bot is *not* active until its credentials pass validation below.
+        # The previous default of True allowed bots with bad tokens to show
+        # as "ishga tushirilgan" in the dashboard.
+        bot.is_active = False
         
         # Suhbat kuzatuvi sozlamalarini saqlash
         admin_chat_id = request.form.get('admin_chat_id')
@@ -586,7 +590,8 @@ def create_bot():
         db.session.add(bot)
         db.session.commit()
         
-        # Platform uchun avtomatik ishga tushirish
+        # Platform uchun avtomatik ishga tushirish. is_active faqat haqiqiy
+        # token tasdiqlangan holdagina True ga o'tkaziladi.
         if platform == 'Telegram' and telegram_token:
             try:
                 from telegram_bot import start_bot_automatically
@@ -596,8 +601,12 @@ def create_bot():
                     db.session.commit()
                     flash('Telegram bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
                 else:
-                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
+                    bot.is_active = False
+                    db.session.commit()
+                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo! Bot faollashtirilmadi.', 'warning')
             except Exception as e:
+                bot.is_active = False
+                db.session.commit()
                 flash(f'Bot yaratildi, lekin aktivlashtirish xatoligi: {str(e)}', 'warning')
         elif platform == 'Instagram' and instagram_token:
             try:
@@ -608,8 +617,12 @@ def create_bot():
                     db.session.commit()
                     flash('Instagram bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
                 else:
-                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
+                    bot.is_active = False
+                    db.session.commit()
+                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo! Bot faollashtirilmadi.', 'warning')
             except Exception as e:
+                bot.is_active = False
+                db.session.commit()
                 flash(f'Bot yaratildi, lekin aktivlashtirish xatoligi: {str(e)}', 'warning')
         elif platform == 'WhatsApp' and whatsapp_token and whatsapp_phone_id:
             try:
@@ -620,11 +633,16 @@ def create_bot():
                     db.session.commit()
                     flash('WhatsApp bot muvaffaqiyatli yaratildi va ishga tushirildi!', 'success')
                 else:
-                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo!', 'warning')
+                    bot.is_active = False
+                    db.session.commit()
+                    flash('Bot yaratildi, lekin token noto\'g\'ri yoki ishga tushirishda muammo! Bot faollashtirilmadi.', 'warning')
             except Exception as e:
+                bot.is_active = False
+                db.session.commit()
                 flash(f'Bot yaratildi, lekin aktivlashtirish xatoligi: {str(e)}', 'warning')
         else:
-            flash('Bot muvaffaqiyatli yaratildi!', 'success')
+            # No credentials supplied — keep is_active=False (default)
+            flash('Bot yaratildi, lekin token kiritilmagani uchun faollashtirilmadi.', 'info')
         
         return redirect(url_for('main.dashboard'))
     
@@ -1012,45 +1030,43 @@ def subscription():
 @login_required
 def process_payment(subscription_type):
     method = request.form.get('method')
-    
+
     amounts = {
         'starter': 165000,
         'basic': 290000,
         'premium': 590000
     }
-    
+
     if subscription_type not in amounts:
         flash('Noto\'g\'ri tarif turi!', 'error')
         return redirect(url_for('main.subscription'))
-    
+
+    allowed_methods = {'Payme', 'Click', 'Uzum', 'Paynet'}
+    if method not in allowed_methods:
+        flash('Noto\'g\'ri to\'lov usuli!', 'error')
+        return redirect(url_for('main.subscription'))
+
     payment = Payment()
     payment.user_id = current_user.id
     payment.amount = amounts[subscription_type]
     payment.method = method
     payment.subscription_type = subscription_type
     payment.status = 'pending'
-    
+    payment.transaction_id = f'PND_{current_user.id}_{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
+
     db.session.add(payment)
     db.session.commit()
-    
-    # Here you would integrate with actual payment providers
-    # For now, we'll simulate successful payment
-    payment.status = 'completed'
-    payment.transaction_id = f'TXN_{payment.id}_{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
-    
-    # Update user subscription
-    current_user.subscription_type = subscription_type
-    if subscription_type == 'starter':
-        current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
-    elif subscription_type == 'basic':
-        current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
-    elif subscription_type == 'premium':
-        current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
-    
-    db.session.commit()
-    
-    flash('To\'lov muvaffaqiyatli amalga oshirildi!', 'success')
-    return redirect(url_for('main.dashboard'))
+
+    # IMPORTANT: Do NOT grant the subscription here.
+    # The subscription is only activated after the payment gateway webhook
+    # (payments.PaymentProcessor.confirm_payment) verifies the transaction,
+    # or by an admin via /admin/change-subscription.
+    flash(
+        'To\'lov so\'rovi qabul qilindi va tasdiqlash kutilmoqda. '
+        'To\'lov tizimi tasdiqlagandan so\'ng obuna avtomatik faollashtiriladi.',
+        'info'
+    )
+    return redirect(url_for('main.subscription'))
 
 @main_bp.route('/api/dashboard/refresh')
 @login_required

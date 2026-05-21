@@ -25,6 +25,7 @@
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ url_for('main.update_notification_settings') }}">
+                        {% include '_csrf.html' %}
                         <!-- Enable Notifications -->
                         <div class="mb-4">
                             <div class="form-check form-switch">

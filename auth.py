@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db
 from models import User
+from utils import validate_username, validate_email_address, safe_log
 from datetime import datetime, timedelta
 import logging
 
@@ -48,24 +49,39 @@ def register():
     
     if request.method == 'POST':
         try:
-            username = request.form.get('username')
-            email = request.form.get('email')
-            password = request.form.get('password')
-            confirm_password = request.form.get('confirm_password')
-            
-            logging.info(f"Registration attempt for username: {username}, email: {email}")
-            
+            username = (request.form.get('username') or '').strip()
+            email = (request.form.get('email') or '').strip().lower()
+            password = request.form.get('password') or ''
+            confirm_password = request.form.get('confirm_password') or ''
+
+            logging.info(
+                f"Registration attempt for username: {safe_log(username, 64)}, "
+                f"email: {safe_log(email, 120)}"
+            )
+
             # Validation
             if not all([username, email, password, confirm_password]):
                 flash('Barcha maydonlar to\'ldirilishi shart!', 'error')
                 return render_template('register.html')
-            
+
+            if not validate_username(username):
+                flash(
+                    'Foydalanuvchi nomi 3-32 ta belgidan iborat bo\'lishi va faqat '
+                    'lotin harflari, raqamlar, _ . - belgilarini o\'z ichiga olishi kerak!',
+                    'error'
+                )
+                return render_template('register.html')
+
+            if not validate_email_address(email):
+                flash('Email manzili noto\'g\'ri formatda!', 'error')
+                return render_template('register.html')
+
             if password != confirm_password:
                 flash('Parollar mos kelmaydi!', 'error')
                 return render_template('register.html')
-            
-            if password and len(password) < 6:
-                flash('Parol kamida 6 ta belgidan iborat bo\'lishi kerak!', 'error')
+
+            if len(password) < 8:
+                flash('Parol kamida 8 ta belgidan iborat bo\'lishi kerak!', 'error')
                 return render_template('register.html')
             
             # Check if user exists with database error handling
@@ -97,15 +113,15 @@ def register():
             db.session.add(user)
             db.session.commit()
             
-            logging.info(f"User registration successful for: {username}")
+            logging.info(f"User registration successful for: {safe_log(username, 64)}")
             flash('Ro\'yxatdan o\'tish muvaffaqiyatli! Endi tizimga kirishingiz mumkin.', 'success')
             return redirect(url_for('auth.login'))
-            
+
         except Exception as e:
             db.session.rollback()
-            username_for_log = request.form.get('username', 'unknown')
+            username_for_log = safe_log(request.form.get('username', 'unknown'), 64)
             logging.error(f"Registration error for {username_for_log}: {str(e)}", exc_info=True)
-            flash(f'Ro\'yxatdan o\'tishda xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.', 'error')
+            flash('Ro\'yxatdan o\'tishda xatolik yuz berdi. Iltimos qaytadan urinib ko\'ring.', 'error')
             return render_template('register.html')
     
     return render_template('register.html')
