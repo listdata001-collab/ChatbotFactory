@@ -6,7 +6,59 @@ import logging
 from app import app, db
 from sqlalchemy import text, Index
 
+from crypto_utils import encrypt_token
+
 logger = logging.getLogger(__name__)
+
+
+# Fernet ciphertexts always begin with the version byte 0x80, which encodes
+# to "gAAAAA" in urlsafe base64. Use this prefix to distinguish encrypted
+# values from legacy plaintext rows.
+_FERNET_PREFIX = "gAAAAA"
+
+
+def encrypt_legacy_bot_tokens():
+    """One-shot migration: encrypt any plaintext token columns on the bot table.
+
+    After Bot.telegram_token/instagram_token/whatsapp_token were switched to
+    EncryptedString, existing rows still hold plaintext. This function reads
+    the raw column values via SQL, detects unencrypted ones by the missing
+    Fernet prefix, and rewrites them as ciphertext. Safe to run repeatedly —
+    rows already encrypted are skipped.
+    """
+    with app.app_context():
+        try:
+            result = db.session.execute(text(
+                "SELECT id, telegram_token, instagram_token, whatsapp_token FROM bot"
+            ))
+            rows = result.mappings().all()
+
+            updated = 0
+            for row in rows:
+                payload = {}
+                for col in ("telegram_token", "instagram_token", "whatsapp_token"):
+                    val = row[col]
+                    if val and not val.startswith(_FERNET_PREFIX):
+                        payload[col] = encrypt_token(val)
+
+                if payload:
+                    assignments = ", ".join(f"{c} = :{c}" for c in payload)
+                    db.session.execute(
+                        text(f"UPDATE bot SET {assignments} WHERE id = :id"),
+                        {**payload, "id": row["id"]},
+                    )
+                    updated += 1
+
+            db.session.commit()
+            logger.info(
+                f"Token encryption migration complete: {updated} bot row(s) re-encrypted"
+            )
+            return updated
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Token encryption migration failed: {e}")
+            raise
 
 def add_performance_indices():
     """

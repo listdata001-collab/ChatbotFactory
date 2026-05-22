@@ -257,7 +257,15 @@ with app.app_context():
         
         db.create_all()
         logger.info("Database schema up to date")
-        
+
+        # Encrypt any legacy plaintext token rows now that EncryptedString is
+        # in place. Idempotent — skips rows already encrypted.
+        try:
+            from migrations import encrypt_legacy_bot_tokens
+            encrypt_legacy_bot_tokens()
+        except Exception as enc_err:
+            logger.warning(f"Token encryption migration skipped: {enc_err}")
+
         # Create admin user only if environment variables are provided (for initial setup)
         admin_email = os.environ.get("ADMIN_EMAIL")
         admin_password = os.environ.get("ADMIN_PASSWORD")

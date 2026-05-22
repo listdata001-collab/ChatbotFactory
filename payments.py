@@ -289,9 +289,17 @@ class PaymentProcessor:
             return {'success': False, 'error': str(e)}
     
     def confirm_payment(self, payment_id, transaction_data=None):
-        """To'lovni tasdiqlash"""
+        """To'lovni tasdiqlash.
+
+        Acquires a row-level lock (SELECT ... FOR UPDATE) on the payment so
+        that concurrent webhook callbacks for the same payment_id are
+        serialized — without this, two simultaneous gateway retries can both
+        observe status='pending' and double-grant the subscription.
+        Note: with_for_update() is a no-op on SQLite (dev); production runs
+        on PostgreSQL where it acquires a real row lock.
+        """
         try:
-            payment = Payment.query.get(payment_id)
+            payment = Payment.query.filter_by(id=payment_id).with_for_update().first()
             if not payment:
                 return {'success': False, 'error': 'To\'lov topilmadi'}
 
@@ -321,11 +329,20 @@ class PaymentProcessor:
                     or payment.transaction_id
                 )
             
-            # Foydalanuvchi obunasini yangilash
+            # Foydalanuvchi obunasini yangilash. Erta yangilash holatida
+            # qolgan kunlar yo'qolmasligi uchun mavjud `subscription_end_date`
+            # ga 30 kun qo'shiladi; obuna tugagan yoki yo'q bo'lsa hozirgi
+            # vaqtdan boshlanadi.
             user = User.query.get(payment.user_id)
             if user:
+                now = datetime.utcnow()
+                base = (
+                    user.subscription_end_date
+                    if user.subscription_end_date and user.subscription_end_date > now
+                    else now
+                )
                 user.subscription_type = payment.subscription_type
-                user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
+                user.subscription_end_date = base + timedelta(days=30)
             
             db.session.commit()
             

@@ -4,6 +4,7 @@ from flask_login import UserMixin
 from datetime import datetime, timedelta
 from sqlalchemy import Text, String
 from sqlalchemy.dialects import sqlite, mysql, postgresql
+from crypto_utils import EncryptedString
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -47,6 +48,10 @@ class User(UserMixin, db.Model):
     def can_create_bot(self) -> bool:
         if self.subscription_type == 'admin':
             return True
+        # Gate: an expired paid subscription should not be able to create
+        # new bots beyond the free tier's limit until renewed.
+        if not self.subscription_active():
+            return False
         # Query orqali botlar sonini olish (relationship emas)
         bot_count = Bot.query.filter_by(user_id=self.id).count()
         if self.subscription_type == 'free' and bot_count >= 1:
@@ -91,10 +96,10 @@ class Bot(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     name = db.Column(db.String(100), nullable=False)
     platform = db.Column(db.String(20), default='Telegram')  # Telegram/Instagram/WhatsApp
-    telegram_token = db.Column(db.String(500))
+    telegram_token = db.Column(EncryptedString(500))
     telegram_username = db.Column(db.String(100))
-    instagram_token = db.Column(db.String(500))
-    whatsapp_token = db.Column(db.String(500))
+    instagram_token = db.Column(EncryptedString(500))
+    whatsapp_token = db.Column(EncryptedString(500))
     whatsapp_phone_id = db.Column(db.String(100))
     daily_messages = db.Column(db.Integer, default=0)
     weekly_messages = db.Column(db.Integer, default=0)

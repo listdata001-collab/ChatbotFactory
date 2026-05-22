@@ -282,14 +282,42 @@ class TaskScheduler:
                         old_subscription_type = user.subscription_type
                         user.subscription_type = 'free'
                         user.subscription_end_date = None
-                        
-                        # Botlarni deaktivatsiya qilish
+
+                        # Free tier kvotasi: 1 ta Telegram bot. Boshqa
+                        # platformalar (Instagram/WhatsApp) yopiq + Telegram
+                        # botlarining birinchisidan tashqari hammasi
+                        # deaktivatsiya qilinadi va polling to'xtatiladi.
+                        telegram_bots = sorted(
+                            [b for b in user.bots if b.platform == 'Telegram'],
+                            key=lambda b: b.created_at or datetime.min,
+                        )
+                        keep_id = telegram_bots[0].id if telegram_bots else None
+
+                        bots_to_stop = []
                         for bot in user.bots:
-                            if bot.platform != 'Telegram':  # Faqat Telegram bepul uchun
+                            if bot.platform != 'Telegram':
+                                if bot.is_active:
+                                    bots_to_stop.append((bot.id, bot.platform.lower()))
                                 bot.is_active = False
-                        
+                            elif bot.id != keep_id:
+                                if bot.is_active:
+                                    bots_to_stop.append((bot.id, 'telegram'))
+                                bot.is_active = False
+
                         db.session.commit()
                         expired_count += 1
+
+                        # Stop polling for the bots we just deactivated so
+                        # background threads do not keep running.
+                        if bots_to_stop:
+                            try:
+                                from bot_manager import bot_manager
+                                for bid, platform in bots_to_stop:
+                                    bot_manager.stop_bot_polling(bid, platform=platform)
+                            except Exception as stop_err:
+                                logger.warning(
+                                    f"Failed to stop polling for downgraded bots of user {user.id}: {stop_err}"
+                                )
                         
                         # Telegram orqali tugash xabari yuborish
                         if user.admin_chat_id:

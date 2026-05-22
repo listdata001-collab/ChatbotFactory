@@ -21,7 +21,10 @@ class BotManager:
         self.polling_threads: Dict[str, threading.Thread] = {}
         self.shutdown_event = threading.Event()
         self.startup_complete = False
-        
+        # Protects active_bots and polling_threads — accessed from Flask
+        # request threads, polling worker threads, and the startup thread.
+        self._lock = threading.RLock()
+
         # Setup graceful shutdown
         signal.signal(signal.SIGTERM, self._shutdown_handler)
         signal.signal(signal.SIGINT, self._shutdown_handler)
@@ -66,11 +69,12 @@ class BotManager:
     def start_bot_polling(self, bot_model):
         """Start polling for a specific bot based on its platform"""
         bot_key = f"{bot_model.platform}_{bot_model.id}"
-        
-        if bot_key in self.active_bots:
-            logger.warning(f"⚠️ Bot {bot_model.name} already active, skipping...")
-            return
-        
+
+        with self._lock:
+            if bot_key in self.active_bots:
+                logger.warning(f"⚠️ Bot {bot_model.name} already active, skipping...")
+                return
+
         try:
             if bot_model.platform.lower() == 'telegram':
                 self._start_telegram_bot(bot_model, bot_key)
@@ -101,25 +105,27 @@ class BotManager:
                 telegram_bot = TelegramBot(bot_model.telegram_token, bot_model.id)
                 
                 # Store bot info
-                self.active_bots[bot_key] = {
-                    'model': bot_model,
-                    'instance': telegram_bot,
-                    'platform': 'telegram',
-                    'status': 'running',
-                    'started_at': datetime.now()
-                }
-                
+                with self._lock:
+                    self.active_bots[bot_key] = {
+                        'model': bot_model,
+                        'instance': telegram_bot,
+                        'platform': 'telegram',
+                        'status': 'running',
+                        'started_at': datetime.now()
+                    }
+
                 logger.info(f"✅ Telegram bot {bot_model.name} polling started successfully!")
-                
+
                 # Start the blocking polling loop
                 telegram_bot.application.run_polling()
-                
+
             except Exception as e:
                 logger.error(f"❌ Telegram polling error for bot {bot_model.name}: {e}")
                 # Clean up failed bot
-                if bot_key in self.active_bots:
-                    self.active_bots[bot_key]['status'] = 'error'
-        
+                with self._lock:
+                    if bot_key in self.active_bots:
+                        self.active_bots[bot_key]['status'] = 'error'
+
         # Start polling in background thread
         thread = threading.Thread(
             target=telegram_polling_worker,
@@ -127,9 +133,10 @@ class BotManager:
             daemon=True
         )
         thread.start()
-        
+
         # Track thread
-        self.polling_threads[bot_key] = thread
+        with self._lock:
+            self.polling_threads[bot_key] = thread
         logger.info(f"🧵 Telegram polling thread started for bot: {bot_model.name}")
     
     def _start_instagram_bot(self, bot_model, bot_key):
@@ -145,16 +152,16 @@ class BotManager:
     def stop_bot_polling(self, bot_id, platform='telegram'):
         """Stop polling for a specific bot"""
         bot_key = f"{platform}_{bot_id}"
-        
-        if bot_key not in self.active_bots:
-            logger.warning(f"⚠️ Bot {bot_key} not found in active bots")
-            return
-        
+
+        with self._lock:
+            bot_info = self.active_bots.get(bot_key)
+            if not bot_info:
+                logger.warning(f"⚠️ Bot {bot_key} not found in active bots")
+                return
+            bot_info['status'] = 'stopping'
+            bot_instance = bot_info.get('instance')
+
         try:
-            # Update status
-            self.active_bots[bot_key]['status'] = 'stopping'
-            
-            bot_instance = self.active_bots[bot_key].get('instance')
             if bot_instance and hasattr(bot_instance, 'application'):
                 try:
                     bot_instance.application.bot.running = False
@@ -162,47 +169,53 @@ class BotManager:
                     logger.warning(f"Could not signal bot {bot_key} to stop: {stop_error}")
 
             logger.info(f"🛑 Marked bot {bot_key} for shutdown")
-            
-            # Remove from active bots
-            del self.active_bots[bot_key]
-            
-            # Remove thread reference
-            if bot_key in self.polling_threads:
-                del self.polling_threads[bot_key]
-            
+
+            with self._lock:
+                self.active_bots.pop(bot_key, None)
+                self.polling_threads.pop(bot_key, None)
+
             logger.info(f"✅ Bot {bot_key} polling stopped")
-            
+
         except Exception as e:
             logger.error(f"❌ Error stopping bot {bot_key}: {e}")
-    
+
     def shutdown_all_bots(self):
         """Shutdown all bot polling operations"""
         logger.info("🛑 Shutting down all bot polling operations...")
-        
+
         self.shutdown_event.set()
-        
-        # Stop all active bots
-        for bot_key in list(self.active_bots.keys()):
+
+        with self._lock:
+            # Snapshot keys + instances under lock, then signal stop outside.
+            snapshot = [
+                (key, info.get('instance'))
+                for key, info in self.active_bots.items()
+            ]
+            for key, _ in snapshot:
+                self.active_bots[key]['status'] = 'shutting_down'
+
+        for bot_key, bot_instance in snapshot:
             try:
-                self.active_bots[bot_key]['status'] = 'shutting_down'
-                bot_instance = self.active_bots[bot_key].get('instance')
                 if bot_instance and hasattr(bot_instance, 'application'):
                     bot_instance.application.bot.running = False
                 logger.info(f"🛑 Stopping bot: {bot_key}")
             except Exception as e:
                 logger.error(f"❌ Error during bot shutdown {bot_key}: {e}")
-        
+
         logger.info("✅ All bots marked for shutdown")
-    
+
     def get_bot_status(self):
         """Get status of all active bots"""
+        with self._lock:
+            snapshot = list(self.active_bots.items())
+
         status = {
             'startup_complete': self.startup_complete,
-            'total_active_bots': len(self.active_bots),
+            'total_active_bots': len(snapshot),
             'bots': {}
         }
-        
-        for bot_key, bot_info in self.active_bots.items():
+
+        for bot_key, bot_info in snapshot:
             status['bots'][bot_key] = {
                 'name': bot_info['model'].name,
                 'platform': bot_info['platform'],
@@ -210,7 +223,7 @@ class BotManager:
                 'started_at': bot_info['started_at'].strftime('%Y-%m-%d %H:%M:%S'),
                 'uptime_seconds': (datetime.now() - bot_info['started_at']).total_seconds()
             }
-        
+
         return status
     
     def restart_bot(self, bot_id, platform='telegram'):
