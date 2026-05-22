@@ -120,10 +120,13 @@ class ClickAPI:
         return "&".join([f"{k}={v}" for k, v in params.items()])
     
     def verify_signature(self, params):
-        """Imzoni tasdiqlash"""
+        """Imzoni tasdiqlash. Caller'ning dict'iga ta'sir qilmaydi — nusxa
+        ustida ishlaymiz, shunda imzo tekshirilmasa ham qayta urinish
+        mumkin va replay-himoyasi buzilmaydi."""
         try:
-            received_sign = params.pop('sign', '')
-            calculated_sign = self._create_signature(params)
+            params_copy = dict(params)
+            received_sign = params_copy.pop('sign', '')
+            calculated_sign = self._create_signature(params_copy)
             return hmac.compare_digest(received_sign, calculated_sign)
         except Exception as e:
             logger.error(f"Click imzo tasdiqlashda xato: {str(e)}")

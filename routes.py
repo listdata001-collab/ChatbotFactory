@@ -45,10 +45,22 @@ def admin():
         flash('Sizda admin huquqi yo\'q!', 'error')
         return redirect(url_for('main.dashboard'))
     
-    users = User.query.all()
+    # Cap large queries so the page does not load minglab rows at once.
+    # Use ?users_page=N, ?bots_page=N for paginated navigation.
+    PER_PAGE = 50
+    users_page = max(1, request.args.get('users_page', 1, type=int))
+    bots_page = max(1, request.args.get('bots_page', 1, type=int))
+
+    users_pagination = User.query.order_by(User.created_at.desc()).paginate(
+        page=users_page, per_page=PER_PAGE, error_out=False
+    )
+    bots_pagination = Bot.query.order_by(Bot.created_at.desc()).paginate(
+        page=bots_page, per_page=PER_PAGE, error_out=False
+    )
+    users = users_pagination.items
+    bots = bots_pagination.items
     payments = Payment.query.order_by(Payment.created_at.desc()).limit(50).all()
-    bots = Bot.query.all()
-    
+
     # Statistics
     stats = {
         'total_users': User.query.count(),
@@ -60,15 +72,19 @@ def admin():
             Payment.created_at >= datetime.utcnow() - timedelta(days=30)
         ).count()
     }
-    
+
     # Get broadcast messages
     broadcasts = BroadcastMessage.query.order_by(BroadcastMessage.created_at.desc()).limit(10).all()
-    
+
     # Get recent chat history
     chat_history = ChatHistory.query.order_by(ChatHistory.created_at.desc()).limit(50).all()
-    
-    return render_template('admin.html', users=users, payments=payments, 
-                         bots=bots, stats=stats, broadcasts=broadcasts, chat_history=chat_history)
+
+    return render_template(
+        'admin.html',
+        users=users, payments=payments, bots=bots,
+        stats=stats, broadcasts=broadcasts, chat_history=chat_history,
+        users_pagination=users_pagination, bots_pagination=bots_pagination,
+    )
 
 @main_bp.route('/admin/test_message', methods=['POST'])
 @login_required
@@ -154,20 +170,25 @@ def export_chat_history():
         return redirect(url_for('main.dashboard'))
     
     try:
-        # Get all chat history
-        chat_data = ChatHistory.query.order_by(ChatHistory.created_at.desc()).all()
-        
-        # Prepare data for Excel
+        # Preload bot name/platform with a single LEFT OUTER JOIN to avoid
+        # N+1 queries (previously: 1 query per chat row to fetch the bot).
+        rows = (
+            db.session.query(
+                ChatHistory,
+                Bot.name.label('bot_name'),
+                Bot.platform.label('bot_platform'),
+            )
+            .outerjoin(Bot, Bot.id == ChatHistory.bot_id)
+            .order_by(ChatHistory.created_at.desc())
+            .all()
+        )
+
         export_data = []
-        for chat in chat_data:
-            # Get bot name
-            bot = Bot.query.get(chat.bot_id)
-            bot_name = bot.name if bot else 'Noma\'lum bot'
-            
+        for chat, bot_name, bot_platform in rows:
             export_data.append({
                 'Vaqt': chat.created_at.strftime('%d.%m.%Y %H:%M:%S'),
-                'Bot nomi': bot_name,
-                'Platform': bot.platform if bot else 'Noma\'lum',
+                'Bot nomi': bot_name or 'Noma\'lum bot',
+                'Platform': bot_platform or 'Noma\'lum',
                 'Telegram ID': chat.user_telegram_id or '',
                 'Instagram ID': chat.user_instagram_id or '',
                 'WhatsApp raqami': chat.user_whatsapp_number or '',
@@ -1193,14 +1214,21 @@ def api_delete_bot(bot_id):
 @login_required
 def delete_bot(bot_id):
     bot = Bot.query.get_or_404(bot_id)
-    
+
     if bot.user_id != current_user.id and not current_user.is_admin:
         flash('Sizda bu botni o\'chirish huquqi yo\'q!', 'error')
         return redirect(url_for('main.dashboard'))
-    
+
+    # Stop the polling thread before deletion so it does not keep running
+    # against a row that no longer exists.
+    try:
+        _stop_platform_bot(bot)
+    except Exception as stop_err:
+        logging.warning(f"Failed to stop polling for bot {bot_id} before delete: {stop_err}")
+
     db.session.delete(bot)
     db.session.commit()
-    
+
     flash('Bot muvaffaqiyatli o\'chirildi!', 'success')
     return redirect(url_for('main.dashboard'))
 @main_bp.route('/bot/<int:bot_id>/knowledge/product', methods=['POST'])

@@ -63,9 +63,16 @@ class User(UserMixin, db.Model):
         return True
     
     def can_use_language(self, lang: str) -> bool:
-        if self.subscription_type in ['free']:
+        # Admins bypass tier locks entirely.
+        if self.subscription_type == 'admin' or self.is_admin:
+            return lang in ['uz', 'ru', 'en']
+        # An expired paid subscription falls back to the free language set
+        # immediately, even if the scheduler has not yet downgraded the
+        # subscription_type column.
+        effective_tier = self.subscription_type if self.subscription_active() else 'free'
+        if effective_tier == 'free':
             return lang == 'uz'
-        elif self.subscription_type in ['starter', 'basic', 'premium', 'admin']:
+        if effective_tier in ['starter', 'basic', 'premium']:
             return lang in ['uz', 'ru', 'en']
         return False
     
