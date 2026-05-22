@@ -9,9 +9,37 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, url_for
 from flask_login import login_required, current_user
 from app import db, app
-from models import User, Bot, ChatHistory
+from models import User, Bot, ChatHistory, BotCustomer
 from ai import get_ai_response, process_knowledge_base
 from audio_processor import download_and_process_audio
+
+
+def _ig_get_or_create_customer(bot_id, sender_id, default_language='uz'):
+    """Upsert a BotCustomer for an Instagram end-user. End-user state lives
+    on BotCustomer; the User table is reserved for platform users."""
+    customer = BotCustomer.query.filter_by(
+        bot_id=bot_id,
+        platform='instagram',
+        platform_user_id=str(sender_id),
+    ).first()
+    if customer is None:
+        customer = BotCustomer(
+            bot_id=bot_id,
+            platform='instagram',
+            platform_user_id=str(sender_id),
+            language=default_language,
+            is_active=True,
+            message_count=0,
+        )
+        db.session.add(customer)
+    return customer
+
+
+def _ig_bot_owner_subscription_active(bot):
+    owner = getattr(bot, 'owner', None)
+    if owner is None and bot and bot.user_id:
+        owner = User.query.get(bot.user_id)
+    return bool(owner and owner.subscription_active())
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -196,62 +224,53 @@ class InstagramBot:
         """Instagram xabarini qayta ishlash"""
         try:
             with app.app_context():
-                # Foydalanuvchini topish yoki yaratish
-                user = User.query.filter_by(instagram_id=sender_id).first()
-                if not user:
-                    # Yangi Instagram foydalanuvchisi
-                    user = User()
-                    user.username = f"ig_{sender_id}"
-                    user.email = f"ig_{sender_id}@instagram.bot"
-                    user.password_hash = "instagram_user"
-                    user.instagram_id = sender_id
-                    user.language = 'uz'
-                    user.subscription_type = 'free'
-                    db.session.add(user)
-                    db.session.commit()
-                
-                # Bot ma'lumotlarini olish
                 bot = Bot.query.get(self.bot_id)
                 if not bot:
                     return False
-                
-                # Obunani tekshirish
-                if not user.subscription_active():
-                    welcome_message = """🔒 Obunangiz tugagan!
-                    
-🌐 BotFactory.uz saytiga kirib, obunangizni yangilang.
-💰 Tariflar: Basic (290,000 so'm) yoki Premium (590,000 so'm)"""
-                    
-                    self.send_message(sender_id, welcome_message)
+
+                # End-user gate: only the bot OWNER needs an active subscription.
+                if not _ig_bot_owner_subscription_active(bot):
+                    self.send_message(
+                        sender_id,
+                        "Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).",
+                    )
                     return True
-                
+
+                customer = _ig_get_or_create_customer(self.bot_id, sender_id)
+                customer.last_interaction = datetime.utcnow()
+                customer.message_count = (customer.message_count or 0) + 1
+                customer.is_active = True
+                db.session.commit()
+                customer_language = customer.language or 'uz'
+
                 # AI javobini olish
                 knowledge_base = process_knowledge_base(self.bot_id)
-                
+
                 ai_response = get_ai_response(
                     message=message_text,
                     bot_name=bot.name,
-                    user_language=user.language,
+                    user_language=customer_language,
                     knowledge_base=knowledge_base
                 )
-                
+
                 # Chat tarixini saqlash
                 chat_history = ChatHistory()
                 chat_history.bot_id = self.bot_id
                 chat_history.user_instagram_id = sender_id
                 chat_history.message = message_text
                 chat_history.response = ai_response
-                chat_history.language = user.language
+                chat_history.language = customer_language
                 chat_history.created_at = datetime.utcnow()
                 db.session.add(chat_history)
                 db.session.commit()
-                
+
                 # Javobni yuborish
                 if ai_response:
                     self.send_message(sender_id, ai_response)
-                    
-                    # Agar bepul foydalanuvchi bo'lsa, marketing xabar
-                    if user.subscription_type == 'free':
+
+                    # Marketing: only nudge if bot owner is still on free tier.
+                    owner = bot.owner if getattr(bot, 'owner', None) else User.query.get(bot.user_id)
+                    if owner and owner.subscription_type == 'free':
                         marketing_message = """✨ Premium imkoniyatlar:
                         
 🌍 3 tilda AI (O'zbek/Rus/Ingliz)
@@ -291,28 +310,28 @@ class InstagramBot:
             self.send_message(sender_id, "🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
             
             with app.app_context():
-                # Get user info
-                db_user = User.query.filter_by(instagram_id=sender_id).first()
-                if not db_user:
-                    self.send_message(sender_id, "❌ Foydalanuvchi topilmadi! Bot bilan birinchi marta gaplashing.")
-                    return False
-                
-                # Get bot info
                 bot = Bot.query.get(self.bot_id)
                 if not bot:
                     self.send_message(sender_id, "❌ Bot topilmadi!")
                     return False
-                
-                # Check subscription
-                if not db_user.subscription_active():
-                    self.send_message(sender_id, "❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+
+                # End-user gate: bot OWNER must be subscribed.
+                if not _ig_bot_owner_subscription_active(bot):
+                    self.send_message(
+                        sender_id,
+                        "Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).",
+                    )
                     return False
-                
+
+                customer = _ig_get_or_create_customer(self.bot_id, sender_id)
+                db.session.commit()
+                customer_language = customer.language or 'uz'
+
                 # Process audio
                 ai_response = download_and_process_audio(
                     audio_url=audio_url,
                     user_id=sender_id,
-                    language=db_user.language,
+                    language=customer_language,
                     file_extension='.m4a'  # Instagram audio format
                 )
                 
@@ -335,14 +354,14 @@ class InstagramBot:
                 chat_history.user_instagram_id = sender_id
                 chat_history.message = f"[AUDIO] {user_text}"
                 chat_history.response = ai_text
-                chat_history.language = db_user.language
+                chat_history.language = customer_language
                 chat_history.created_at = datetime.utcnow()
                 db.session.add(chat_history)
                 db.session.commit()
-                
+
                 # Send response
                 self.send_message(sender_id, ai_response)
-                
+
                 logger.info(f"Instagram audio message processed for user {sender_id}")
                 return True
                 

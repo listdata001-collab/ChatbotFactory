@@ -266,6 +266,14 @@ with app.app_context():
         except Exception as enc_err:
             logger.warning(f"Token encryption migration skipped: {enc_err}")
 
+        # Remove legacy synthetic User rows (one per end-user) now that
+        # bot handlers use BotCustomer for end-user state. Idempotent.
+        try:
+            from migrations import cleanup_synthetic_end_user_records
+            cleanup_synthetic_end_user_records()
+        except Exception as cleanup_err:
+            logger.warning(f"Synthetic end-user cleanup skipped: {cleanup_err}")
+
         # Create admin user only if environment variables are provided (for initial setup)
         admin_email = os.environ.get("ADMIN_EMAIL")
         admin_password = os.environ.get("ADMIN_PASSWORD")

@@ -9,9 +9,37 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify, url_for
 from flask_login import login_required, current_user
 from app import db, app
-from models import User, Bot, ChatHistory
+from models import User, Bot, ChatHistory, BotCustomer
 from ai import get_ai_response, process_knowledge_base
 from audio_processor import download_and_process_audio
+
+
+def _wa_get_or_create_customer(bot_id, from_number, default_language='uz'):
+    """Upsert a BotCustomer for a WhatsApp end-user."""
+    customer = BotCustomer.query.filter_by(
+        bot_id=bot_id,
+        platform='whatsapp',
+        platform_user_id=str(from_number),
+    ).first()
+    if customer is None:
+        customer = BotCustomer(
+            bot_id=bot_id,
+            platform='whatsapp',
+            platform_user_id=str(from_number),
+            phone_number=str(from_number),
+            language=default_language,
+            is_active=True,
+            message_count=0,
+        )
+        db.session.add(customer)
+    return customer
+
+
+def _wa_bot_owner_subscription_active(bot):
+    owner = getattr(bot, 'owner', None)
+    if owner is None and bot and bot.user_id:
+        owner = User.query.get(bot.user_id)
+    return bool(owner and owner.subscription_active())
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -250,75 +278,53 @@ class WhatsAppBot:
         """WhatsApp xabarini qayta ishlash"""
         try:
             with app.app_context():
-                # Foydalanuvchini topish yoki yaratish
-                user = User.query.filter_by(whatsapp_number=from_number).first()
-                if not user:
-                    # Yangi WhatsApp foydalanuvchisi
-                    user = User()
-                    user.username = f"wa_{from_number.replace('+', '')}"
-                    user.email = f"wa_{from_number.replace('+', '')}@whatsapp.bot"
-                    user.password_hash = "whatsapp_user"
-                    user.whatsapp_number = from_number
-                    user.language = 'uz'
-                    user.subscription_type = 'free'
-                    db.session.add(user)
-                    db.session.commit()
-                
-                # Bot ma'lumotlarini olish
                 bot = Bot.query.get(self.bot_id)
                 if not bot:
                     return False
-                
-                # Obunani tekshirish
-                if not user.subscription_active():
-                    expired_message = """🔒 Obunangiz tugagan!
-                    
-Yangi obunani BotFactory.uz saytidan sotib oling.
-                    
-📋 Tariflar:
-• Basic: 290,000 so'm/oy
-• Premium: 590,000 so'm/oy
-                    
-🌐 Sayt: BotFactory.uz"""
-                    
-                    self.send_interactive_message(
+
+                # End-user gate: only the bot OWNER needs an active subscription.
+                if not _wa_bot_owner_subscription_active(bot):
+                    self.send_message(
                         from_number,
-                        expired_message,
-                        [
-                            {'title': '💰 Basic'},
-                            {'title': '💎 Premium'},
-                            {'title': '📞 Aloqa'}
-                        ]
+                        "Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).",
                     )
                     return True
-                
+
+                customer = _wa_get_or_create_customer(self.bot_id, from_number)
+                customer.last_interaction = datetime.utcnow()
+                customer.message_count = (customer.message_count or 0) + 1
+                customer.is_active = True
+                db.session.commit()
+                customer_language = customer.language or 'uz'
+
                 # AI javobini olish
                 knowledge_base = process_knowledge_base(self.bot_id)
-                
+
                 ai_response = get_ai_response(
                     message=message_text,
                     bot_name=bot.name,
-                    user_language=user.language,
+                    user_language=customer_language,
                     knowledge_base=knowledge_base
                 )
-                
+
                 # Chat tarixini saqlash
                 chat_history = ChatHistory()
                 chat_history.bot_id = self.bot_id
                 chat_history.user_whatsapp_number = from_number
                 chat_history.message = message_text
                 chat_history.response = ai_response
-                chat_history.language = user.language
+                chat_history.language = customer_language
                 chat_history.created_at = datetime.utcnow()
                 db.session.add(chat_history)
                 db.session.commit()
-                
+
                 # Javobni yuborish
                 if ai_response:
                     self.send_message(from_number, ai_response)
-                    
-                    # Bepul foydalanuvchi uchun marketing
-                    if user.subscription_type == 'free':
+
+                    # Marketing: nudge only if the bot owner is still free.
+                    owner = bot.owner if getattr(bot, 'owner', None) else User.query.get(bot.user_id)
+                    if owner and owner.subscription_type == 'free':
                         marketing_message = """✨ Ko'proq imkoniyatlar istaysizmi?
                         
 🌍 AI 3 tilda (O'zbek/Rus/Ingliz)
@@ -367,23 +373,23 @@ Yangi obunani BotFactory.uz saytidan sotib oling.
             self.send_message(from_number, "🎤 Ovozli xabaringizni qayta ishlamoqdaman...")
             
             with app.app_context():
-                # Get user info
-                db_user = User.query.filter_by(whatsapp_id=from_number).first()
-                if not db_user:
-                    self.send_message(from_number, "❌ Foydalanuvchi topilmadi! Bot bilan birinchi marta gaplashing.")
-                    return False
-                
-                # Get bot info
                 bot = Bot.query.get(self.bot_id)
                 if not bot:
                     self.send_message(from_number, "❌ Bot topilmadi!")
                     return False
-                
-                # Check subscription
-                if not db_user.subscription_active():
-                    self.send_message(from_number, "❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+
+                # End-user gate: bot OWNER must be subscribed.
+                if not _wa_bot_owner_subscription_active(bot):
+                    self.send_message(
+                        from_number,
+                        "Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).",
+                    )
                     return False
-                
+
+                customer = _wa_get_or_create_customer(self.bot_id, from_number)
+                db.session.commit()
+                customer_language = customer.language or 'uz'
+
                 # Determine file extension from mime type
                 file_ext = '.ogg'
                 if 'mp4' in mime_type:
@@ -392,12 +398,12 @@ Yangi obunani BotFactory.uz saytidan sotib oling.
                     file_ext = '.mp3'
                 elif 'wav' in mime_type:
                     file_ext = '.wav'
-                
+
                 # Process audio
                 ai_response = download_and_process_audio(
                     audio_url=audio_url,
                     user_id=from_number,
-                    language=db_user.language,
+                    language=customer_language,
                     file_extension=file_ext
                 )
                 
@@ -420,7 +426,7 @@ Yangi obunani BotFactory.uz saytidan sotib oling.
                 chat_history.user_whatsapp_id = from_number
                 chat_history.message = f"[AUDIO] {user_text}"
                 chat_history.response = ai_text
-                chat_history.language = db_user.language
+                chat_history.language = customer_language
                 chat_history.created_at = datetime.utcnow()
                 db.session.add(chat_history)
                 db.session.commit()

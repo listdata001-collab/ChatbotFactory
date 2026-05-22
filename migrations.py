@@ -17,6 +17,74 @@ logger = logging.getLogger(__name__)
 _FERNET_PREFIX = "gAAAAA"
 
 
+def cleanup_synthetic_end_user_records():
+    """Remove legacy synthetic User rows that were auto-created for bot
+    end-users before the refactor that moved end-user state to BotCustomer.
+
+    Synthetic rows are identified by the email suffixes the old bot handlers
+    used: @telegram.bot, @instagram.bot, @whatsapp.bot, and the historical
+    @botfactory.ai variant from the Telegram webhook path. Before deleting,
+    we propagate the per-user language preference to any matching
+    BotCustomer rows so the end-user does not see their language reset.
+
+    Safe to run repeatedly: rows already cleaned up simply don't match.
+    """
+    from models import User, BotCustomer
+
+    with app.app_context():
+        try:
+            synthetic = User.query.filter(
+                db.or_(
+                    User.email.like('%@telegram.bot'),
+                    User.email.like('%@instagram.bot'),
+                    User.email.like('%@whatsapp.bot'),
+                    User.email.like('telegram_%@botfactory.ai'),
+                )
+            ).all()
+
+            if not synthetic:
+                logger.info("Synthetic end-user cleanup: nothing to migrate")
+                return 0
+
+            deleted = 0
+            for u in synthetic:
+                # Map this synthetic user to whichever platform records exist
+                # so we can sync the language preference onto BotCustomer.
+                lang = u.language or 'uz'
+                matchers = []
+                if u.telegram_id:
+                    matchers.append(('telegram', u.telegram_id))
+                if u.instagram_id:
+                    matchers.append(('instagram', u.instagram_id))
+                if u.whatsapp_number:
+                    matchers.append(('whatsapp', u.whatsapp_number))
+
+                for platform, pid in matchers:
+                    customers = BotCustomer.query.filter_by(
+                        platform=platform, platform_user_id=str(pid)
+                    ).all()
+                    for c in customers:
+                        # Only adopt the synthetic language if BotCustomer
+                        # still has the default; never overwrite an explicit
+                        # end-user choice.
+                        if (c.language or 'uz') == 'uz' and lang != 'uz':
+                            c.language = lang
+
+                db.session.delete(u)
+                deleted += 1
+
+            db.session.commit()
+            logger.info(
+                f"Synthetic end-user cleanup: removed {deleted} legacy User row(s)"
+            )
+            return deleted
+
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Synthetic end-user cleanup failed: {e}")
+            raise
+
+
 def encrypt_legacy_bot_tokens():
     """One-shot migration: encrypt any plaintext token columns on the bot table.
 

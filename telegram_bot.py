@@ -367,6 +367,58 @@ def get_dependencies():
     from app import db, app
     return get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app
 
+
+def _get_or_create_customer(bot_id, telegram_user, default_language='uz'):
+    """Look up the BotCustomer for a (bot, telegram user) pair, creating one
+    on first contact. End-user state (display name, language, message count,
+    last interaction) lives on BotCustomer — NOT on the User table. The User
+    table is reserved for platform users (admins, paid bot owners)."""
+    from models import BotCustomer
+    from app import db
+
+    platform_user_id = str(telegram_user.id)
+    customer = BotCustomer.query.filter_by(
+        bot_id=bot_id,
+        platform='telegram',
+        platform_user_id=platform_user_id,
+    ).first()
+
+    if customer is None:
+        customer = BotCustomer(
+            bot_id=bot_id,
+            platform='telegram',
+            platform_user_id=platform_user_id,
+            first_name=telegram_user.first_name or '',
+            last_name=telegram_user.last_name or '',
+            username=telegram_user.username or '',
+            language=default_language,
+            is_active=True,
+            message_count=0,
+        )
+        db.session.add(customer)
+
+    return customer
+
+
+def _bot_owner_subscription_active(bot):
+    """Return True if the bot's *owner* has an active subscription. End-users
+    do not need their own subscription — the gate is whether the operator of
+    this bot is paid up."""
+    owner = getattr(bot, 'owner', None)
+    if owner is None:
+        from models import User
+        owner = User.query.get(bot.user_id) if bot.user_id else None
+    return bool(owner and owner.subscription_active())
+
+
+def _bot_owner_can_use_language(bot, lang):
+    """Language locking is keyed on the bot owner's tier, not the end-user."""
+    owner = getattr(bot, 'owner', None)
+    if owner is None:
+        from models import User
+        owner = User.query.get(bot.user_id) if bot.user_id else None
+    return bool(owner and owner.can_use_language(lang))
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -394,68 +446,31 @@ class TelegramBot:
         """Handle /start command"""
         if not update or not update.effective_user or not update.message:
             return
-        
+
         user = update.effective_user
-        
+
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
-            # Get or create user
-            db_user = User.query.filter_by(telegram_id=str(user.id)).first()
-            if not db_user:
-                # Register new telegram user
-                db_user = User()
-                db_user.username = f"tg_{user.id}"
-                db_user.email = f"tg_{user.id}@telegram.bot"
-                db_user.password_hash = "telegram_user"
-                db_user.telegram_id = str(user.id)
-                db_user.language = 'uz'
-                db_user.subscription_type = 'free'
-                db.session.add(db_user)
-                db.session.commit()
-            
-            # Get bot info
             bot = Bot.query.get(self.bot_id)
             bot_name = bot.name if bot else "BotFactory AI"
-            
-            # Track customer interaction
+
+            # Upsert the BotCustomer row. End-users no longer get a synthetic
+            # User account — their state lives entirely on BotCustomer.
             try:
-                from models import BotCustomer
-                customer = BotCustomer.query.filter_by(
-                    bot_id=self.bot_id,
-                    platform='telegram',
-                    platform_user_id=str(user.id)
-                ).first()
-                
-                if not customer:
-                    # Create new customer record
-                    customer = BotCustomer()
-                    customer.bot_id = self.bot_id
-                    customer.platform = 'telegram'
-                    customer.platform_user_id = str(user.id)
-                    customer.first_name = user.first_name or ''
-                    customer.last_name = user.last_name or ''
-                    customer.username = user.username or ''
-                    customer.language = db_user.language
-                    customer.is_active = True
-                    customer.message_count = 1
-                    db.session.add(customer)
-                else:
-                    # Update existing customer
-                    customer.first_name = user.first_name or customer.first_name
-                    customer.last_name = user.last_name or customer.last_name
-                    customer.username = user.username or customer.username
-                    customer.last_interaction = datetime.utcnow()
-                    customer.message_count += 1
-                    customer.is_active = True
-                
+                customer = _get_or_create_customer(self.bot_id, user)
+                customer.first_name = user.first_name or customer.first_name
+                customer.last_name = user.last_name or customer.last_name
+                customer.username = user.username or customer.username
+                customer.last_interaction = datetime.utcnow()
+                customer.message_count = (customer.message_count or 0) + 1
+                customer.is_active = True
                 db.session.commit()
                 logging.info(f"Customer tracked: {customer.display_name} for bot {self.bot_id}")
-                
             except Exception as customer_error:
                 logging.error(f"Failed to track customer: {str(customer_error)}")
                 try:
                     db.session.rollback()
-                except:
+                except Exception:
                     pass
             
             welcome_message = f"🤖 Salom! Men {bot_name} chatbot!\n\n"
@@ -490,84 +505,85 @@ class TelegramBot:
         """Handle /language command"""
         if not update or not update.effective_user or not update.message:
             return
-        
-        user_id = str(update.effective_user.id)
-        
+
+        user = update.effective_user
+
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
-            db_user = User.query.filter_by(telegram_id=user_id).first()
-            if not db_user:
+            bot = Bot.query.get(self.bot_id)
+            if not bot:
                 if update.message:
-                    await update.message.reply_text("❌ Foydalanuvchi topilmadi!")
+                    await update.message.reply_text("❌ Bot topilmadi!")
                 return
-            
-            # Create language selection keyboard
-            keyboard = []
-            
-            # Always show Uzbek (available for everyone)
-            keyboard.append([InlineKeyboardButton("🇺🇿 O'zbek", callback_data="lang_uz")])
-            
-            # Show other languages only for Starter/Basic/Premium users
-            if db_user.subscription_type in ['starter', 'basic', 'premium', 'admin']:
+
+            customer = _get_or_create_customer(self.bot_id, user)
+            db.session.commit()
+
+            keyboard = [[InlineKeyboardButton("🇺🇿 O'zbek", callback_data="lang_uz")]]
+            # Language locking is keyed on the *bot owner's* subscription
+            # tier — end-users do not have their own subscription.
+            if _bot_owner_can_use_language(bot, 'ru'):
                 keyboard.append([InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru")])
                 keyboard.append([InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")])
             else:
                 keyboard.append([InlineKeyboardButton("🔒 Русский (Starter/Basic/Premium)", callback_data="lang_locked")])
                 keyboard.append([InlineKeyboardButton("🔒 English (Starter/Basic/Premium)", callback_data="lang_locked")])
-            
+
             reply_markup = InlineKeyboardMarkup(keyboard)
-            
-            current_lang = db_user.language
+
             lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
-            
+            current_lang = customer.language or 'uz'
             default_lang = "O'zbek"
-            message = f"🌐 Joriy til: {lang_names.get(current_lang, default_lang)}\n"
-            message += "Tilni tanlang:"
-            
+            message = (
+                f"🌐 Joriy til: {lang_names.get(current_lang, default_lang)}\n"
+                f"Tilni tanlang:"
+            )
+
             if update.message:
                 await update.message.reply_text(message, reply_markup=reply_markup)
-    
+
     async def language_callback(self, update: Update, context) -> None:
         """Handle language selection callback"""
         if not update or not update.callback_query:
             return
-        
+
         query = update.callback_query
         await query.answer()
-        
+
         if not query.from_user or not query.data:
             return
-        
-        user_id = str(query.from_user.id)
+
         language = query.data.split('_')[1] if '_' in query.data else None
-        
+
         if query.data == "lang_locked":
-            if query:
-                await query.edit_message_text("🔒 Bu til faqat Starter, Basic yoki Premium obunachi uchun mavjud!")
+            await query.edit_message_text("🔒 Bu til faqat Starter, Basic yoki Premium obunachi uchun mavjud!")
             return
-        
+
         if not language:
             return
-        
+
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         with app.app_context():
-            db_user = User.query.filter_by(telegram_id=user_id).first()
-            if db_user and db_user.can_use_language(language):
-                db_user.language = language
-                db.session.commit()
-                
-                lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
-                success_messages = {
-                    'uz': f"✅ Til {lang_names[language]} ga o'zgartirildi!",
-                    'ru': f"✅ Язык изменен на {lang_names[language]}!",
-                    'en': f"✅ Language changed to {lang_names[language]}!"
-                }
-                
-                if query:
-                    await query.edit_message_text(success_messages.get(language, success_messages['uz']))
-            else:
-                if query:
-                    await query.edit_message_text("❌ Bu tilni tanlash uchun obunangizni yangilang!")
+            bot = Bot.query.get(self.bot_id)
+            if not bot:
+                await query.edit_message_text("❌ Bot topilmadi!")
+                return
+
+            if not _bot_owner_can_use_language(bot, language):
+                await query.edit_message_text("❌ Bu tilni tanlash uchun bot egasi obunasini yangilashi kerak!")
+                return
+
+            customer = _get_or_create_customer(self.bot_id, query.from_user)
+            customer.language = language
+            db.session.commit()
+
+            lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
+            success_messages = {
+                'uz': f"✅ Til {lang_names[language]} ga o'zgartirildi!",
+                'ru': f"✅ Язык изменен на {lang_names[language]}!",
+                'en': f"✅ Language changed to {lang_names[language]}!",
+            }
+            await query.edit_message_text(success_messages.get(language, success_messages['uz']))
     
     
     async def handle_voice_message(self, update: Update, context) -> None:
@@ -590,35 +606,31 @@ class TelegramBot:
             return
         
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
-        
+
         with app.app_context():
-            # Get user info
-            db_user = User.query.filter_by(telegram_id=user_id).first()
-            if not db_user:
-                if update.message:
-                    await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
-                return
-            
-            # Get bot info
             bot = Bot.query.get(self.bot_id)
             if not bot:
                 if update.message:
                     await update.message.reply_text("❌ Bot topilmadi!")
                 return
-            
-            # Check subscription
-            if not db_user.subscription_active():
+
+            # End-user gate: the bot's owner must have an active subscription.
+            if not _bot_owner_subscription_active(bot):
                 if update.message:
-                    await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
+                    await update.message.reply_text("❌ Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).")
                 return
-            
+
+            customer = _get_or_create_customer(self.bot_id, update.effective_user)
+            db.session.commit()
+            customer_language = customer.language or 'uz'
+
             # Send typing indicator while processing
             try:
                 if update.effective_chat:
                     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action='typing')
             except Exception:
                 pass
-            
+
             try:
                 # Get file info and download
                 file_id = voice_data.get('file_id')
@@ -626,75 +638,75 @@ class TelegramBot:
                     if update.message:
                         await update.message.reply_text("❌ Ovoz fayli topilmadi!")
                     return
-                
+
                 # Get file info from Telegram API
                 file_info_url = f"{context.bot.base_url}/getFile"
                 file_info_response = requests.get(file_info_url, params={'file_id': file_id})
-                
+
                 if not file_info_response.json().get('ok'):
                     if update.message:
                         await update.message.reply_text("❌ Ovoz faylini olishda xatolik yuz berdi!")
                     return
-                
+
                 file_path = file_info_response.json()['result']['file_path']
                 file_url = f"https://api.telegram.org/file/bot{context.bot.token}/{file_path}"
-                
+
                 # Process the voice message using existing audio processor
                 try:
                     # Run the synchronous audio processing in executor to avoid blocking
                     loop = asyncio.get_event_loop()
                     transcribed_text = await loop.run_in_executor(
-                        None, lambda: download_and_process_audio(file_url, db_user.language)
+                        None, lambda: download_and_process_audio(file_url, customer_language)
                     )
-                    
+
                     if not transcribed_text or transcribed_text.strip() == "":
                         if update.message:
                             await update.message.reply_text("🎤 Ovoz xabari eshitilmadi yoki bo'sh. Iltimos, qaytadan urinib ko'ring.")
                         return
-                    
+
                     # Send transcription confirmation
                     if update.message:
                         await update.message.reply_text(f"🎤 Eshitildi: {transcribed_text}")
-                    
+
                     # Process transcribed text as a regular message
                     # Get knowledge base
                     try:
                         knowledge_base = process_knowledge_base(self.bot_id)
-                        
+
                         # Get recent chat history
                         recent_history = ""
                         history_entries = ChatHistory.query.filter_by(
-                            bot_id=self.bot_id, 
+                            bot_id=self.bot_id,
                             user_telegram_id=user_id
                         ).order_by(ChatHistory.created_at.desc()).limit(3).all()
-                        
+
                         if history_entries:
                             history_parts = []
                             for entry in reversed(history_entries):
                                 history_parts.append(f"Foydalanuvchi: {entry.message}")
                                 history_parts.append(f"Bot: {entry.response}")
                             recent_history = "\n".join(history_parts)
-                        
+
                         # Generate AI response for transcribed text
                         ai_response = get_ai_response(
                             message=transcribed_text,
                             bot_name=bot.name,
-                            user_language=db_user.language,
+                            user_language=customer_language,
                             knowledge_base=knowledge_base,
                             chat_history=recent_history
                         )
-                        
+
                         if ai_response:
                             # Clean response
                             from ai import validate_ai_response
                             cleaned_response = validate_ai_response(ai_response)
                             if not cleaned_response:
                                 cleaned_response = ai_response
-                            
+
                             # Send AI response
                             if update.message:
                                 await update.message.reply_text(cleaned_response)
-                            
+
                             # Save chat history
                             try:
                                 chat_history = ChatHistory()
@@ -702,8 +714,8 @@ class TelegramBot:
                                 chat_history.user_telegram_id = str(user_id)
                                 chat_history.message = transcribed_text[:1000]
                                 chat_history.response = cleaned_response[:2000]
-                                chat_history.language = db_user.language or 'uz'
-                                
+                                chat_history.language = customer_language
+
                                 db.session.add(chat_history)
                                 db.session.commit()
                                 
@@ -749,75 +761,39 @@ class TelegramBot:
         
         get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
         logger.info("DEBUG: Dependencies loaded")
-        
+
         with app.app_context():
-            # Get user info
-            db_user = User.query.filter_by(telegram_id=user_id).first()
-            if not db_user:
-                logger.info("DEBUG: User not found")
-                if update.message:
-                    await update.message.reply_text("❌ Foydalanuvchi topilmadi! /start buyrug'ini ishlating.")
-                return
-            
-            logger.info("DEBUG: User found")
-            
-            # Get bot info
             bot = Bot.query.get(self.bot_id)
             if not bot:
                 logger.info("DEBUG: Bot not found")
                 if update.message:
                     await update.message.reply_text("❌ Bot topilmadi!")
                 return
-            
-            logger.info("DEBUG: Bot found")
-            
-            # Track customer interaction
+
+            # End-user gate: only the bot owner needs an active subscription.
+            if not _bot_owner_subscription_active(bot):
+                if update.message:
+                    await update.message.reply_text("❌ Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).")
+                return
+
+            # Upsert the customer record (creates on first contact). End-user
+            # language/state lives here — never on the User table.
             try:
-                from models import BotCustomer
-                customer = BotCustomer.query.filter_by(
-                    bot_id=self.bot_id,
-                    platform='telegram',
-                    platform_user_id=user_id
-                ).first()
-                
-                if not customer:
-                    # Create new customer record
-                    user = update.effective_user
-                    customer = BotCustomer()
-                    customer.bot_id = self.bot_id
-                    customer.platform = 'telegram'
-                    customer.platform_user_id = user_id
-                    customer.first_name = user.first_name or ''
-                    customer.last_name = user.last_name or ''
-                    customer.username = user.username or ''
-                    customer.language = db_user.language
-                    customer.is_active = True
-                    customer.message_count = 1
-                    db.session.add(customer)
-                    logger.info(f"New customer created: {customer.display_name} for bot {self.bot_id}")
-                else:
-                    # Update existing customer
-                    customer.last_interaction = datetime.utcnow()
-                    customer.message_count += 1
-                    customer.is_active = True
-                    logger.info(f"Customer interaction updated: {customer.display_name}")
-                
+                customer = _get_or_create_customer(self.bot_id, update.effective_user)
+                customer.last_interaction = datetime.utcnow()
+                customer.message_count = (customer.message_count or 0) + 1
+                customer.is_active = True
                 db.session.commit()
+                logger.info(f"Customer interaction updated: {customer.display_name}")
             except Exception as customer_error:
                 logger.error(f"Failed to track customer interaction: {str(customer_error)}")
                 try:
                     db.session.rollback()
-                except:
+                except Exception:
                     pass
-            
-            # Check subscription
-            if not db_user.subscription_active():
-                logger.info("DEBUG: Subscription not active")
-                if update.message:
-                    await update.message.reply_text("❌ Obunangiz tugagan! Iltimos, obunani yangilang.")
-                return
-            
-            logger.info("DEBUG: Subscription active")
+                customer = _get_or_create_customer(self.bot_id, update.effective_user)
+
+            customer_language = customer.language or 'uz'
             
             # Send typing indicator while processing
             try:
@@ -865,7 +841,7 @@ class TelegramBot:
                 ai_response = get_ai_response(
                     message=message_text,
                     bot_name=bot.name,
-                    user_language=db_user.language,
+                    user_language=customer_language,
                     knowledge_base=knowledge_base,
                     chat_history=recent_history
                 )
@@ -929,7 +905,7 @@ class TelegramBot:
                             chat_history.user_telegram_id = str(user_id)  # Ensure string
                             chat_history.message = safe_message[:1000]  # Limit length
                             chat_history.response = safe_response[:2000]  # Limit length
-                            chat_history.language = db_user.language or 'uz'
+                            chat_history.language = customer_language
                             
                             db.session.add(chat_history)
                             db.session.commit()
@@ -1191,31 +1167,36 @@ def process_webhook_update(bot_id, bot_token, update_data):
             if not chat_id or not user_id:
                 return False
                 
-            # Foydalanuvchini topish yoki yaratish
             with app.app_context():
-                telegram_user = User.query.filter_by(telegram_id=str(user_id)).first()
-                if not telegram_user:
-                    # Yangi foydalanuvchi yaratish
-                    telegram_user = User()
-                    telegram_user.username = f"tg_{user_id}"
-                    telegram_user.email = f"telegram_{user_id}@botfactory.ai"
-                    telegram_user.telegram_id = str(user_id)
-                    telegram_user.language = 'uz'
-                    telegram_user.subscription_type = 'free'
-                    telegram_user.subscription_start_date = datetime.now()
-                    telegram_user.subscription_end_date = datetime.now() + timedelta(days=14)
-                    db.session.add(telegram_user)
-                    db.session.commit()
-                    
                 # Botni topish
                 bot = Bot.query.get(bot_id)
                 if not bot or not bot.telegram_token:
                     return False
-                    
-                # Obunani tekshirish
-                if not telegram_user.subscription_active():
-                    send_webhook_message(bot_token, chat_id, "Sizning obunangiz tugagan. Iltimos, yangilang!")
+
+                # End-user gate: only the bot OWNER needs an active subscription.
+                if not _bot_owner_subscription_active(bot):
+                    send_webhook_message(
+                        bot_token, chat_id,
+                        "Bu bot vaqtincha ishlamaydi (bot egasining obunasi tugagan).",
+                    )
                     return True
+
+                # Upsert BotCustomer for this end-user; their language and
+                # display name live here, NOT on the User table.
+                from types import SimpleNamespace
+                msg_from = message.get('from', {}) or {}
+                fake_user = SimpleNamespace(
+                    id=user_id,
+                    first_name=msg_from.get('first_name', ''),
+                    last_name=msg_from.get('last_name', ''),
+                    username=msg_from.get('username', ''),
+                )
+                customer = _get_or_create_customer(bot_id, fake_user)
+                customer.last_interaction = datetime.utcnow()
+                customer.message_count = (customer.message_count or 0) + 1
+                customer.is_active = True
+                db.session.commit()
+                customer_language = customer.language or 'uz'
                     
                 # Komandalarni qayta ishlash
                 if text.startswith('/start'):
@@ -1255,7 +1236,7 @@ def process_webhook_update(bot_id, bot_token, update_data):
                     ai_response = get_ai_response(
                         message=text,
                         bot_name=bot.name,
-                        user_language=telegram_user.language,
+                        user_language=customer_language,
                         knowledge_base=knowledge_base,
                         chat_history=chat_history
                     )
