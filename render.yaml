@@ -9,20 +9,17 @@ services:
         value: 3.11.0
       - key: SESSION_SECRET
         generateValue: true
+      # DATABASE_URL is provided manually via Render dashboard
+      # Expected format (Neon): postgresql://user:pass@ep-xxx-pooler.region.aws.neon.tech/db?sslmode=require
       - key: DATABASE_URL
-        fromDatabase:
-          name: botfactory-db
-          property: connectionString
+        sync: false
       - key: GOOGLE_API_KEY
         sync: false
-      - key: TELEGRAM_BOT_TOKEN  
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: TELEGRAM_BOT_TOKEN
         sync: false
       - key: START_BOT_MANAGER
         value: "false"
       - key: ALLOW_LEGACY_TELEGRAM_WEBHOOKS
         value: "false"
-
-databases:
-  - name: botfactory-db
-    databaseName: botfactory
-    user: botfactory_user
