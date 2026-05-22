@@ -535,8 +535,57 @@ def change_user_subscription():
     except Exception as e:
         db.session.rollback()
         flash('Obunani o\'zgartirishda xatolik yuz berdi!', 'error')
-    
+
     return redirect(url_for('main.admin'))
+
+
+@main_bp.route('/admin/user/<int:user_id>/delete', methods=['POST'])
+@login_required
+def admin_delete_user(user_id):
+    """Permanently delete a platform user. Cascades to their Bot rows via
+    User.bots' delete-orphan cascade; before issuing the delete we stop any
+    polling threads tied to those bots so background workers do not race
+    against a row that's about to disappear."""
+    if not current_user.is_admin:
+        flash('Sizda admin huquqi yo\'q!', 'error')
+        return redirect(url_for('main.dashboard'))
+
+    user = User.query.get_or_404(user_id)
+
+    # Safety: never let an admin nuke their own account from the panel —
+    # that locks the platform out of admin access entirely.
+    if user.id == current_user.id:
+        flash('O\'zingizni o\'chira olmaysiz!', 'error')
+        return redirect(url_for('main.admin'))
+
+    # Safety: protect other admin accounts; admins should be demoted first
+    # if the operator genuinely wants them gone.
+    if user.is_admin or user.subscription_type == 'admin':
+        flash('Admin foydalanuvchini o\'chirishdan oldin uning admin huquqini olib tashlang.', 'error')
+        return redirect(url_for('main.admin'))
+
+    username = user.username
+    try:
+        # Stop polling threads for every bot this user owns. Without this
+        # the worker keeps polling against a deleted bot_id.
+        for bot in list(user.bots):
+            try:
+                _stop_platform_bot(bot)
+            except Exception as stop_err:
+                logging.warning(
+                    f"Failed to stop polling for bot {bot.id} during user delete: {stop_err}"
+                )
+
+        db.session.delete(user)
+        db.session.commit()
+        flash(f"@{username} foydalanuvchisi (va uning botlari) o'chirildi.", 'success')
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"admin_delete_user failed for user {user_id}: {e}")
+        flash('Foydalanuvchini o\'chirishda xatolik yuz berdi.', 'error')
+
+    return redirect(url_for('main.admin'))
+
 
 def send_broadcast_messages(broadcast_id, message_text, target_type):
     """Send broadcast message to users"""

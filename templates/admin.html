@@ -217,9 +217,9 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         {% if user.subscription_type != 'admin' %}
-                                        <button class="btn btn-outline-warning" 
+                                        <button class="btn btn-outline-warning"
                                                 title="Obunani o'zgartirish"
-                                                data-bs-toggle="modal" 
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#changeSubscriptionModal"
                                                 data-user-id="{{ user.id }}"
                                                 data-user-name="@{{ user.username }}"
@@ -230,6 +230,17 @@
                                         <button class="btn btn-outline-secondary" title="Tahrirlash">
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                        {% if user.id != current_user.id and not user.is_admin and user.subscription_type != 'admin' %}
+                                        <form method="POST"
+                                              action="{{ url_for('main.admin_delete_user', user_id=user.id) }}"
+                                              class="d-inline"
+                                              onsubmit="return confirm('@{{ user.username }} foydalanuvchisini va uning barcha botlarini o‘chirishni xohlaysizmi? Bu amalni bekor qilib bo‘lmaydi!');">
+                                            {% include '_csrf.html' %}
+                                            <button type="submit" class="btn btn-outline-danger" title="O'chirish">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
                                     </div>
                                 </td>
                             </tr>
