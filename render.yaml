@@ -17,6 +17,10 @@ services:
         sync: false
       - key: TELEGRAM_BOT_TOKEN  
         sync: false
+      - key: START_BOT_MANAGER
+        value: "false"
+      - key: ALLOW_LEGACY_TELEGRAM_WEBHOOKS
+        value: "false"
 
 databases:
   - name: botfactory-db

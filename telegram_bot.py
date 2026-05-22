@@ -83,7 +83,7 @@ class TelegramHTTPBot:
                 data['reply_markup'] = reply_markup
         
         try:
-            response = requests.post(url, json=data)
+            response = requests.post(url, json=data, timeout=30)
             return response.json()
         except Exception as e:
             # Ultra-safe logging
@@ -103,7 +103,7 @@ class TelegramHTTPBot:
         try:
             import asyncio
             loop = asyncio.get_event_loop()
-            response = await loop.run_in_executor(None, lambda: requests.post(url, json=data))
+            response = await loop.run_in_executor(None, lambda: requests.post(url, json=data, timeout=30))
             return response.json()
         except Exception as e:
             try:
@@ -119,7 +119,7 @@ class TelegramHTTPBot:
             params['offset'] = offset
             
         try:
-            response = requests.get(url, params=params)
+            response = requests.get(url, params=params, timeout=35)
             return response.json()
         except Exception as e:
             # Ultra-safe logging
@@ -130,6 +130,8 @@ class TelegramHTTPBot:
             return {'ok': False, 'result': []}
             
     async def process_update(self, update_data):
+        http_bot = self
+
         # Create simplified Update object
         class SimpleUpdate:
             def __init__(self, data):
@@ -160,13 +162,13 @@ class TelegramHTTPBot:
             async def reply_text(self, text, reply_markup=None):
                 loop = asyncio.get_event_loop()
                 result = await loop.run_in_executor(
-                    None, lambda: bot_instance.send_message(self.chat.id, text, reply_markup)
+                    None, lambda: http_bot.send_message(self.chat.id, text, reply_markup)
                 )
                 return result
             
             async def reply_photo(self, photo, caption=None):
                 """Reply with photo via sendPhoto API"""
-                url = f"{bot_instance.base_url}/sendPhoto"
+                url = f"{http_bot.base_url}/sendPhoto"
                 try:
                     data = {
                         'chat_id': self.chat.id,
@@ -176,7 +178,7 @@ class TelegramHTTPBot:
                         data['caption'] = caption
                     
                     response = await asyncio.get_event_loop().run_in_executor(
-                        None, lambda: requests.post(url, json=data)
+                        None, lambda: requests.post(url, json=data, timeout=30)
                     )
                     return response.json()
                 except Exception as e:
@@ -206,11 +208,11 @@ class TelegramHTTPBot:
                 
             async def answer(self):
                 """Answer callback query via answerCallbackQuery API"""
-                url = f"{bot_instance.base_url}/answerCallbackQuery"
+                url = f"{http_bot.base_url}/answerCallbackQuery"
                 try:
                     loop = asyncio.get_event_loop()
                     response = await loop.run_in_executor(
-                        None, lambda: requests.post(url, json={'callback_query_id': self.id})
+                        None, lambda: requests.post(url, json={'callback_query_id': self.id}, timeout=30)
                     )
                     return response.json()
                 except Exception as e:
@@ -219,7 +221,7 @@ class TelegramHTTPBot:
                 
             async def edit_message_text(self, text):
                 """Edit message text via editMessageText API"""
-                url = f"{bot_instance.base_url}/editMessageText"
+                url = f"{http_bot.base_url}/editMessageText"
                 try:
                     data = {
                         'chat_id': self.message.get('chat', {}).get('id'),
@@ -228,7 +230,7 @@ class TelegramHTTPBot:
                     }
                     loop = asyncio.get_event_loop()
                     response = await loop.run_in_executor(
-                        None, lambda: requests.post(url, json=data)
+                        None, lambda: requests.post(url, json=data, timeout=30)
                     )
                     return response.json()
                 except Exception as e:
@@ -292,11 +294,10 @@ class TelegramApplication:
     def run_polling(self):
         # Simple polling implementation
         offset = None
-        global bot_instance
-        bot_instance = self.bot
+        self.bot.running = True
         
         logger.info("Starting bot polling...")
-        while True:
+        while self.bot.running:
             try:
                 updates = self.bot.get_updates(offset)
                 if updates.get('ok') and updates.get('result'):
@@ -1117,21 +1118,29 @@ class BotManager:
 bot_manager = BotManager()
 
 def validate_telegram_token(token):
-    """Telegram bot tokenini tekshirish"""
+    """Telegram bot tokenini tekshirish.
+    Returns (ok: bool, reason: str). reason is empty on success or a short
+    diagnostic when validation fails (e.g. 'format', '401 Unauthorized',
+    'network: <msg>')."""
     import requests
     try:
-        # Basic token format check
-        if not token or len(token) < 20:
-            return False
-            
-        response = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=10)
+        if not token or len(token) < 20 or ':' not in token:
+            return False, 'format'
+
+        response = requests.get(
+            f"https://api.telegram.org/bot{token}/getMe", timeout=10
+        )
         if response.status_code == 200:
             data = response.json()
-            return data.get('ok', False)
-        return False
+            if data.get('ok', False):
+                return True, ''
+            return False, f"api: {data.get('description', 'unknown error')}"
+        if response.status_code == 401:
+            return False, '401 Unauthorized — token revoked or wrong'
+        return False, f"http {response.status_code}"
     except Exception as e:
-        logger.warning(f"Token validation error: {e}")
-        return False
+        logger.warning(f"Token validation network error: {e}")
+        return False, f"network: {e}"
 
 def start_bot_automatically(bot_id, bot_token):
     """Botni avtomatik ishga tushirish"""
@@ -1139,10 +1148,16 @@ def start_bot_automatically(bot_id, bot_token):
         if not TELEGRAM_AVAILABLE:
             logger.warning(f"Cannot start bot {bot_id}: telegram library not available")
             return False
-            
+
         # Token validatsiyasi
-        if not validate_telegram_token(bot_token):
-            logger.error(f"Invalid token for bot {bot_id}")
+        ok, reason = validate_telegram_token(bot_token)
+        if not ok:
+            token_hint = (bot_token[:8] + '…') if bot_token else '<empty>'
+            logger.error(
+                f"Invalid Telegram token for bot {bot_id} "
+                f"(token_prefix={token_hint}, reason={reason}). "
+                f"Update the token in the dashboard."
+            )
             return False
             
         # Botni ishga tushirish

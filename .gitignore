@@ -1,6 +1,7 @@
 # Secrets and environment
 .env
 .env.*
+cookies.txt
 *.pem
 *.key
 

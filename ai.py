@@ -3,16 +3,23 @@ import logging
 import re
 from typing import Optional
 
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
+
 try:
-    import google.generativeai as genai
-    # Initialize Gemini client
+    from google import genai
+    from google.genai import types as genai_types
     api_key = os.environ.get("GOOGLE_API_KEY")
-    if api_key:
-        genai.configure(api_key=api_key)
-    GEMINI_AVAILABLE = True
+    _gemini_client = genai.Client(api_key=api_key) if api_key else None
+    GEMINI_AVAILABLE = _gemini_client is not None
+    if not GEMINI_AVAILABLE:
+        logging.warning("GOOGLE_API_KEY is not set — Gemini client unavailable")
+    else:
+        logging.info(f"Gemini client initialized with model: {GEMINI_MODEL}")
 except ImportError:
     GEMINI_AVAILABLE = False
-    logging.warning("Google Generative AI library not available. Install with: pip install google-generativeai")
+    _gemini_client = None
+    genai_types = None
+    logging.warning("google-genai library not available. Install with: pip install google-genai")
 
 def extract_price_information(knowledge_base: str) -> str:
     """
@@ -103,22 +110,23 @@ def get_ai_response(message: str, bot_name: str = "Chatbot Factory AI", user_lan
         full_prompt = f"{system_prompt}\n\nFoydalanuvchi savoli: {message}"
         
         # Generate response using Gemini with optimization settings
-        if not GEMINI_AVAILABLE:
+        if not GEMINI_AVAILABLE or _gemini_client is None:
             return get_fallback_response(user_language)
-            
-        # Use faster model configuration for quicker responses
-        generation_config = {
-            'temperature': 0.7,  # Slightly lower for faster generation
-            'max_output_tokens': 500,  # Limit output for speed
-            'top_p': 0.9,
-            'top_k': 40
-        }
-        
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(full_prompt, generation_config=generation_config)
-        
+
+        generation_config = genai_types.GenerateContentConfig(
+            temperature=0.7,
+            max_output_tokens=500,
+            top_p=0.9,
+            top_k=40,
+        )
+
+        response = _gemini_client.models.generate_content(
+            model=GEMINI_MODEL,
+            contents=full_prompt,
+            config=generation_config,
+        )
+
         if response.text:
-            # Return response as-is, let Telegram handler deal with encoding
             return response.text
         else:
             return get_fallback_response(user_language)

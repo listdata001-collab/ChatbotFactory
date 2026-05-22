@@ -187,9 +187,35 @@ class UzumAPI:
     def verify_callback(self, data):
         """Callback ni tasdiqlash"""
         try:
-            signature = data.get('signature', '')
-            # Signature verification logic
-            return True  # Placeholder
+            if not isinstance(data, dict):
+                return False
+
+            signature = str(data.get('signature', ''))
+            if not signature:
+                logger.warning("Uzum callback rejected: missing signature")
+                return False
+
+            if not self.secret_key:
+                logger.error("Uzum callback rejected: UZUM_SECRET_KEY is not configured")
+                return False
+
+            signed_payload = {
+                key: value for key, value in data.items()
+                if key != 'signature'
+            }
+            canonical_payload = json.dumps(
+                signed_payload,
+                sort_keys=True,
+                separators=(',', ':'),
+                ensure_ascii=False
+            )
+            expected = hmac.new(
+                self.secret_key.encode(),
+                canonical_payload.encode(),
+                hashlib.sha256
+            ).hexdigest()
+            received = signature.split('=', 1)[1] if signature.startswith('sha256=') else signature
+            return hmac.compare_digest(received, expected)
         except Exception as e:
             logger.error(f"Uzum callback tasdiqlashda xato: {str(e)}")
             return False
@@ -202,21 +228,20 @@ class PaymentProcessor:
         self.payme = PaymeAPI()
         self.click = ClickAPI()
         self.uzum = UzumAPI()
+        self.prices = {
+            'starter': 165000,
+            'basic': 290000,
+            'premium': 590000
+        }
     
     def create_payment(self, user_id, subscription_type, payment_method):
         """To'lov yaratish"""
         try:
             # Subscription narxlarini olish
-            prices = {
-                'starter': 165000,
-                'basic': 290000,
-                'premium': 590000
-            }
-            
-            if subscription_type not in prices:
+            if subscription_type not in self.prices:
                 return {'success': False, 'error': 'Noto\'g\'ri tarif turi'}
             
-            amount = prices[subscription_type]
+            amount = self.prices[subscription_type]
             
             # Payment record yaratish
             payment = Payment()
@@ -269,11 +294,32 @@ class PaymentProcessor:
             payment = Payment.query.get(payment_id)
             if not payment:
                 return {'success': False, 'error': 'To\'lov topilmadi'}
+
+            if payment.status == 'completed':
+                logger.info(f"To'lov allaqachon tasdiqlangan: {payment_id}")
+                return {'success': True, 'payment': payment, 'already_completed': True}
+
+            if payment.status != 'pending':
+                return {'success': False, 'error': 'To\'lov pending holatda emas'}
+
+            expected_amount = self.prices.get(payment.subscription_type or '')
+            if not expected_amount or int(payment.amount) != int(expected_amount):
+                logger.error(
+                    "Payment amount/subscription mismatch: "
+                    f"payment_id={payment.id}, amount={payment.amount}, "
+                    f"subscription={payment.subscription_type}"
+                )
+                return {'success': False, 'error': 'To\'lov ma\'lumotlari mos emas'}
             
             # To'lovni tasdiqlash
             payment.status = 'completed'
             if transaction_data:
-                payment.transaction_id = transaction_data.get('transaction_id', payment.transaction_id)
+                payment.transaction_id = (
+                    transaction_data.get('transaction_id')
+                    or transaction_data.get('payment_id')
+                    or transaction_data.get('merchant_trans_id')
+                    or payment.transaction_id
+                )
             
             # Foydalanuvchi obunasini yangilash
             user = User.query.get(payment.user_id)

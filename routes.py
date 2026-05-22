@@ -6,6 +6,8 @@ from werkzeug.utils import secure_filename
 import os
 import logging
 import requests
+import hmac
+import hashlib
 from datetime import datetime, timedelta
 import docx
 import pandas as pd
@@ -1082,6 +1084,111 @@ def dashboard_api():
         'subscription_active': current_user.subscription_active()
     })
 
+def _can_manage_bot(bot) -> bool:
+    return bool(current_user.is_admin or bot.user_id == current_user.id)
+
+def _start_platform_bot(bot) -> bool:
+    if bot.platform == 'Telegram' and bot.telegram_token:
+        from telegram_bot import start_bot_automatically
+        return bool(start_bot_automatically(bot.id, bot.telegram_token))
+    if bot.platform == 'Instagram' and bot.instagram_token:
+        from instagram_bot import instagram_manager
+        return bool(instagram_manager.start_bot(bot.id, bot.instagram_token))
+    if bot.platform == 'WhatsApp' and bot.whatsapp_token and bot.whatsapp_phone_id:
+        from whatsapp_bot import whatsapp_manager
+        return bool(whatsapp_manager.start_bot(bot.id, bot.whatsapp_token, bot.whatsapp_phone_id))
+    return False
+
+def _stop_platform_bot(bot) -> bool:
+    if bot.platform == 'Telegram':
+        from telegram_bot import bot_manager
+        return bool(bot_manager.stop_bot(bot.id))
+    if bot.platform == 'Instagram':
+        from instagram_bot import instagram_manager
+        return bool(instagram_manager.stop_bot(bot.id))
+    if bot.platform == 'WhatsApp':
+        from whatsapp_bot import whatsapp_manager
+        return bool(whatsapp_manager.stop_bot(bot.id))
+    return False
+
+@main_bp.route('/api/bot/<int:bot_id>/toggle', methods=['POST'])
+@login_required
+def api_toggle_bot(bot_id):
+    bot = Bot.query.get_or_404(bot_id)
+    if not _can_manage_bot(bot):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    data = request.get_json(silent=True) or {}
+    should_be_active = bool(data.get('active'))
+
+    try:
+        success = _start_platform_bot(bot) if should_be_active else _stop_platform_bot(bot)
+        if not success:
+            return jsonify({'success': False, 'error': 'Bot holatini o\'zgartirib bo\'lmadi'}), 400
+
+        bot.is_active = should_be_active
+        db.session.commit()
+        return jsonify({'success': True, 'is_active': bot.is_active})
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"API bot toggle error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Bot holatini yangilashda xatolik'}), 500
+
+@main_bp.route('/api/bot/<int:bot_id>/restart', methods=['POST'])
+@login_required
+def api_restart_bot(bot_id):
+    bot = Bot.query.get_or_404(bot_id)
+    if not _can_manage_bot(bot):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    try:
+        _stop_platform_bot(bot)
+        success = _start_platform_bot(bot)
+        bot.is_active = success
+        db.session.commit()
+        return jsonify({'success': success, 'is_active': bot.is_active})
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"API bot restart error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Botni qayta ishga tushirishda xatolik'}), 500
+
+@main_bp.route('/api/bot/<int:bot_id>/test', methods=['POST'])
+@login_required
+def api_test_bot(bot_id):
+    bot = Bot.query.get_or_404(bot_id)
+    if not _can_manage_bot(bot):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    if bot.platform != 'Telegram' or not bot.telegram_token:
+        return jsonify({'success': False, 'error': 'Test xabar hozircha faqat Telegram botlar uchun'}), 400
+
+    if not current_user.telegram_id:
+        return jsonify({'success': False, 'error': 'Telegram ID sozlanmagan'}), 400
+
+    success = send_telegram_message_sync(
+        bot.telegram_token,
+        current_user.telegram_id,
+        f"✅ {bot.name} test xabari muvaffaqiyatli yuborildi."
+    )
+    return jsonify({'success': success})
+
+@main_bp.route('/api/bot/<int:bot_id>/delete', methods=['DELETE'])
+@login_required
+def api_delete_bot(bot_id):
+    bot = Bot.query.get_or_404(bot_id)
+    if not _can_manage_bot(bot):
+        return jsonify({'success': False, 'error': 'Access denied'}), 403
+
+    try:
+        _stop_platform_bot(bot)
+        db.session.delete(bot)
+        db.session.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"API bot delete error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Botni o\'chirishda xatolik'}), 500
+
 @main_bp.route('/bot/<int:bot_id>/delete', methods=['POST'])
 @login_required
 def delete_bot(bot_id):
@@ -1314,9 +1421,18 @@ def telegram_webhook(bot_id):
     try:
         # Bot mavjudligini tekshirish
         bot = Bot.query.get_or_404(bot_id)
+
+        expected_secret = get_telegram_webhook_secret(bot)
+        received_secret = request.headers.get('X-Telegram-Bot-Api-Secret-Token', '')
+        allow_legacy = os.environ.get('ALLOW_LEGACY_TELEGRAM_WEBHOOKS', '').lower() in {'1', 'true', 'yes'}
+        if expected_secret and not hmac.compare_digest(received_secret, expected_secret):
+            if not allow_legacy:
+                logging.warning(f"Telegram webhook rejected for bot {bot_id}: invalid secret token")
+                return jsonify({'error': 'Invalid webhook secret'}), 403
+            logging.warning(f"Telegram webhook accepted without secret for bot {bot_id} because legacy mode is enabled")
         
         # Webhook ma'lumotlarini olish
-        update_data = request.get_json()
+        update_data = request.get_json(silent=True)
         
         if not update_data:
             return jsonify({'error': 'No data received'}), 400
@@ -1383,6 +1499,20 @@ def get_webhook_url(bot_id):
         # Fallback - Render URL
         return f"https://chatbotfactory.onrender.com/webhook/telegram/{bot_id}"
 
+def get_telegram_webhook_secret(bot):
+    """Derive a stable per-bot Telegram webhook secret token."""
+    base_secret = os.environ.get('TELEGRAM_WEBHOOK_SECRET') or os.environ.get('SESSION_SECRET')
+    bot_token = getattr(bot, 'telegram_token', None)
+    bot_id = getattr(bot, 'id', None)
+    if not base_secret or not bot_token or not bot_id:
+        return None
+
+    return hmac.new(
+        base_secret.encode(),
+        f"{bot_id}:{bot_token}".encode(),
+        hashlib.sha256
+    ).hexdigest()
+
 def set_telegram_webhook(bot_token, webhook_url):
     """Telegram API orqali webhook o'rnatish"""
     try:
@@ -1392,8 +1522,13 @@ def set_telegram_webhook(bot_token, webhook_url):
             'max_connections': 40,
             'allowed_updates': ['message', 'callback_query']
         }
+
+        bot = Bot.query.filter_by(telegram_token=bot_token).first()
+        secret_token = get_telegram_webhook_secret(bot) if bot else None
+        if secret_token:
+            payload['secret_token'] = secret_token
         
-        response = requests.post(api_url, json=payload)
+        response = requests.post(api_url, json=payload, timeout=30)
         result = response.json()
         
         if result.get('ok'):

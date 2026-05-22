@@ -237,6 +237,15 @@ function initializeAnimations() {
 }
 
 // Utility functions
+function escapeHTML(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function showToast(message, type = 'info') {
     const toastContainer = document.getElementById('toast-container') || createToastContainer();
     const toast = document.createElement('div');
@@ -244,7 +253,7 @@ function showToast(message, type = 'info') {
     toast.setAttribute('role', 'alert');
     toast.innerHTML = `
         <div class="d-flex">
-            <div class="toast-body">${message}</div>
+            <div class="toast-body">${escapeHTML(message)}</div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
         </div>
     `;
@@ -425,7 +434,7 @@ function updateFileUploadDisplay(input, file) {
     if (displayElement && displayElement.classList.contains('file-upload-display')) {
         displayElement.innerHTML = `
             <i class="fas fa-file-text me-2"></i>
-            ${file.name} (${formatFileSize(file.size)})
+            ${escapeHTML(file.name)} (${formatFileSize(file.size)})
         `;
     }
 }
@@ -438,10 +447,11 @@ function previewKnowledgeFile(file) {
         const preview = document.getElementById('knowledge-preview');
         if (preview) {
             const content = e.target.result;
+            const previewText = content.substring(0, 500) + (content.length > 500 ? '...' : '');
             preview.innerHTML = `
                 <h6>Fayl preview:</h6>
                 <div class="border p-3 bg-light">
-                    <pre class="mb-0">${content.substring(0, 500)}${content.length > 500 ? '...' : ''}</pre>
+                    <pre class="mb-0">${escapeHTML(previewText)}</pre>
                 </div>
             `;
         }

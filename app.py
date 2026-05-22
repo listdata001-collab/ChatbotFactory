@@ -9,6 +9,12 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy import create_engine, text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Professional logging tizimini ishga tushirish
 try:
     from logging_config import setup_logging, error_tracker, ContextLogger
@@ -115,6 +121,13 @@ logger.info("🔍 Starting preflight database selection...")
 is_production = os.environ.get('RENDER') or os.environ.get('DATABASE_URL', '').startswith('postgres')
 database_url = os.environ.get("DATABASE_URL")
 
+app.config.update(
+    MAX_CONTENT_LENGTH=int(os.environ.get("MAX_CONTENT_LENGTH", 16 * 1024 * 1024)),
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE=os.environ.get("SESSION_COOKIE_SAMESITE", "Lax"),
+    SESSION_COOKIE_SECURE=bool(is_production),
+)
+
 # Test PostgreSQL connection if available
 if database_url and not database_url.startswith('sqlite'):
     logger.info(f"🔌 Testing PostgreSQL connection...")
@@ -157,8 +170,8 @@ if database_url and not database_url.startswith('sqlite'):
         # PostgreSQL connection failed - fall back to SQLite
         logger.warning(f"❌ PostgreSQL connection failed: {result}")
         if is_production:
-            logger.error("🚨 PRODUCTION: PostgreSQL unavailable - using SQLite fallback")
-            logger.error("⚠️ WARNING: SQLite in production may cause data loss on ephemeral storage")
+            logger.error("🚨 PRODUCTION: PostgreSQL unavailable - refusing SQLite fallback")
+            raise RuntimeError("Production database is unavailable; refusing SQLite fallback")
         else:
             logger.info("🔄 Development: PostgreSQL unavailable - using SQLite fallback")
         
@@ -217,6 +230,9 @@ csrf.exempt(app.view_functions['main.telegram_webhook'])
 csrf.exempt(app.view_functions['payment.payme_webhook'])
 csrf.exempt(app.view_functions['payment.click_webhook'])
 csrf.exempt(app.view_functions['payment.uzum_callback'])
+csrf.exempt(app.view_functions['instagram.instagram_webhook'])
+csrf.exempt(app.view_functions['whatsapp.whatsapp_webhook'])
+csrf.exempt(app.view_functions['marketing.sms_callback'])
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -286,28 +302,36 @@ with app.app_context():
                 logger.error(f"❌ Emergency fallback also failed: {retry_error}")
                 raise
     
-    # Initialize Bot Manager - Start all active bots polling in background
+    # Initialize Bot Manager - disabled by default in production web workers.
+    # Production should use platform webhooks or a single dedicated worker process
+    # to avoid multiple Gunicorn workers polling the same Telegram bots.
     try:
-        logger.info("🤖 Initializing BotFactory AI Bot Manager...")
-        from bot_manager import initialize_bot_manager
-        
-        if is_production:
-            # Production: Check API keys before initializing bot manager
-            api_keys_present = {
-                'GOOGLE_API_KEY': bool(os.environ.get('GOOGLE_API_KEY')),
-                'TELEGRAM_BOT_TOKEN': bool(os.environ.get('TELEGRAM_BOT_TOKEN'))
-            }
-            missing_apis = [k for k, v in api_keys_present.items() if not v]
-            if missing_apis:
-                logger.warning(f"⚠️ Missing API keys in production: {missing_apis}")
-                logger.warning("⚠️ Bot functionality will be limited until API keys are added to Render.com")
-        
-        global_bot_manager = initialize_bot_manager()
-        
-        if global_bot_manager:
-            logger.info("✅ Bot manager successfully initialized - all active bots will start polling!")
+        default_start_manager = 'false' if is_production else 'true'
+        start_bot_manager = os.environ.get('START_BOT_MANAGER', default_start_manager).lower() in {'1', 'true', 'yes'}
+
+        if start_bot_manager:
+            logger.info("🤖 Initializing BotFactory AI Bot Manager...")
+            from bot_manager import initialize_bot_manager
+
+            if is_production:
+                # Production: Check API keys before initializing bot manager
+                api_keys_present = {
+                    'GOOGLE_API_KEY': bool(os.environ.get('GOOGLE_API_KEY')),
+                    'TELEGRAM_BOT_TOKEN': bool(os.environ.get('TELEGRAM_BOT_TOKEN'))
+                }
+                missing_apis = [k for k, v in api_keys_present.items() if not v]
+                if missing_apis:
+                    logger.warning(f"⚠️ Missing API keys in production: {missing_apis}")
+                    logger.warning("⚠️ Bot functionality will be limited until API keys are added to Render.com")
+
+            global_bot_manager = initialize_bot_manager()
+
+            if global_bot_manager:
+                logger.info("✅ Bot manager successfully initialized - all active bots will start polling!")
+            else:
+                logger.warning("⚠️ Bot manager initialization failed - bots will not auto-start")
         else:
-            logger.warning("⚠️ Bot manager initialization failed - bots will not auto-start")
+            logger.info("Bot manager auto-start disabled for this process")
             
     except Exception as bot_manager_error:
         logger.error(f"❌ Critical error initializing bot manager: {bot_manager_error}")

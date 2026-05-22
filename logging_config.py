@@ -3,6 +3,7 @@ Professional logging konfiguratsiyasi Chatbot Factory AI uchun
 """
 
 import os
+import sys
 import logging
 import logging.config
 from datetime import datetime
@@ -78,6 +79,11 @@ LOGGING_CONFIG: Dict[str, Any] = {
 def setup_logging() -> None:
     """Logging tizimini sozlash"""
     try:
+        if hasattr(sys.stdout, 'reconfigure'):
+            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+        if hasattr(sys.stderr, 'reconfigure'):
+            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
         # Logs papkasini yaratish
         os.makedirs('logs', exist_ok=True)
         

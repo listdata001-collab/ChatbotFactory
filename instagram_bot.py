@@ -2,9 +2,12 @@ import os
 import json
 import logging
 import requests
+import hmac
+import hashlib
 from typing import Dict, List, Optional, Any, Union
 from datetime import datetime
 from flask import Blueprint, request, jsonify, url_for
+from flask_login import login_required, current_user
 from app import db, app
 from models import User, Bot, ChatHistory
 from ai import get_ai_response, process_knowledge_base
@@ -15,6 +18,44 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 instagram_bp = Blueprint('instagram', __name__)
+
+def _can_manage_bot(bot: Bot) -> bool:
+    """Return True when the current web user owns this bot or is an admin."""
+    return bool(
+        current_user.is_authenticated and
+        (current_user.is_admin or bot.user_id == current_user.id)
+    )
+
+def _get_app_secret() -> str:
+    """Meta webhook signature secret, shared by Instagram/WhatsApp if desired."""
+    return (
+        os.environ.get('INSTAGRAM_APP_SECRET')
+        or os.environ.get('META_APP_SECRET')
+        or ''
+    )
+
+def _verify_meta_signature(raw_body: bytes) -> bool:
+    """Verify Meta's X-Hub-Signature-256 header when a secret is configured."""
+    app_secret = _get_app_secret()
+    if not app_secret:
+        logger.warning("INSTAGRAM_APP_SECRET/META_APP_SECRET is not configured; webhook signature check skipped")
+        return True
+
+    received = request.headers.get('X-Hub-Signature-256', '')
+    if not received.startswith('sha256='):
+        return False
+
+    expected = hmac.new(app_secret.encode(), raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(received.split('=', 1)[1], expected)
+
+def _get_or_create_runtime_bot(bot_model: Bot) -> Optional['InstagramBot']:
+    """Use the running bot if present, otherwise build a stateless handler for webhooks."""
+    runtime_bot = instagram_manager.get_bot(bot_model.id)
+    if runtime_bot:
+        return runtime_bot
+    if not bot_model.instagram_token:
+        return None
+    return InstagramBot(bot_model.instagram_token, bot_model.id)
 
 class InstagramBot:
     """Instagram bot integratsiyasi"""
@@ -396,20 +437,28 @@ instagram_manager = InstagramBotManager()
 def instagram_webhook(bot_id):
     """Instagram webhook endpoint"""
     try:
+        bot_model = Bot.query.get(bot_id)
+        if not bot_model:
+            return 'Bot not found', 404
+
         if request.method == 'GET':
             # Webhook verification
             verify_token = request.args.get('hub.verify_token')
             challenge = request.args.get('hub.challenge')
-            
-            bot = instagram_manager.get_bot(bot_id)
-            if bot and verify_token == bot.verify_token:
+
+            expected_token = os.environ.get('INSTAGRAM_VERIFY_TOKEN', 'botfactory_instagram_2024')
+            if verify_token == expected_token:
                 return str(challenge)
             else:
                 return 'Verification failed', 403
         
         elif request.method == 'POST':
+            raw_body = request.get_data()
+            if not _verify_meta_signature(raw_body):
+                return 'Invalid signature', 403
+
             # Message processing
-            data = request.get_json()
+            data = request.get_json(silent=True)
             
             if data and 'entry' in data:
                 for entry in data['entry']:
@@ -417,7 +466,7 @@ def instagram_webhook(bot_id):
                         for messaging_event in entry['messaging']:
                             sender_id = messaging_event['sender']['id']
                             
-                            bot = instagram_manager.get_bot(bot_id)
+                            bot = _get_or_create_runtime_bot(bot_model)
                             if not bot:
                                 continue
                             
@@ -437,11 +486,14 @@ def instagram_webhook(bot_id):
         return 'Internal Server Error', 500
 
 @instagram_bp.route('/start/<int:bot_id>', methods=['POST'])
+@login_required
 def start_instagram_bot(bot_id):
     """Instagram botni ishga tushirish"""
     try:
         with app.app_context():
             bot = Bot.query.get_or_404(bot_id)
+            if not _can_manage_bot(bot):
+                return jsonify({'success': False, 'error': 'Ruxsat yo\'q'}), 403
             
             if not bot.instagram_token:
                 return jsonify({'success': False, 'error': 'Instagram token topilmadi'})
@@ -460,11 +512,14 @@ def start_instagram_bot(bot_id):
         return jsonify({'success': False, 'error': str(e)})
 
 @instagram_bp.route('/stop/<int:bot_id>', methods=['POST'])
+@login_required
 def stop_instagram_bot(bot_id):
     """Instagram botni to'xtatish"""
     try:
         with app.app_context():
             bot = Bot.query.get_or_404(bot_id)
+            if not _can_manage_bot(bot):
+                return jsonify({'success': False, 'error': 'Ruxsat yo\'q'}), 403
             
             success = instagram_manager.stop_bot(bot_id)
             
@@ -480,6 +535,7 @@ def stop_instagram_bot(bot_id):
         return jsonify({'success': False, 'error': str(e)})
 
 @instagram_bp.route('/status/<int:bot_id>')
+@login_required
 def instagram_bot_status(bot_id):
     """Instagram bot holatini tekshirish"""
     try:
@@ -487,6 +543,10 @@ def instagram_bot_status(bot_id):
         
         with app.app_context():
             bot = Bot.query.get(bot_id)
+            if not bot:
+                return jsonify({'error': 'Bot topilmadi'}), 404
+            if not _can_manage_bot(bot):
+                return jsonify({'error': 'Ruxsat yo\'q'}), 403
             
             return jsonify({
                 'bot_id': bot_id,

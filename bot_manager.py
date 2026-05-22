@@ -154,8 +154,13 @@ class BotManager:
             # Update status
             self.active_bots[bot_key]['status'] = 'stopping'
             
-            # For Telegram bots, there's no clean stop method in our implementation
-            # The thread will continue until process ends
+            bot_instance = self.active_bots[bot_key].get('instance')
+            if bot_instance and hasattr(bot_instance, 'application'):
+                try:
+                    bot_instance.application.bot.running = False
+                except Exception as stop_error:
+                    logger.warning(f"Could not signal bot {bot_key} to stop: {stop_error}")
+
             logger.info(f"🛑 Marked bot {bot_key} for shutdown")
             
             # Remove from active bots
@@ -180,6 +185,9 @@ class BotManager:
         for bot_key in list(self.active_bots.keys()):
             try:
                 self.active_bots[bot_key]['status'] = 'shutting_down'
+                bot_instance = self.active_bots[bot_key].get('instance')
+                if bot_instance and hasattr(bot_instance, 'application'):
+                    bot_instance.application.bot.running = False
                 logger.info(f"🛑 Stopping bot: {bot_key}")
             except Exception as e:
                 logger.error(f"❌ Error during bot shutdown {bot_key}: {e}")

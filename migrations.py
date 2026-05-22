@@ -18,14 +18,14 @@ def add_performance_indices():
             # User table indices
             indices_to_create = [
                 # User lookups
-                "CREATE INDEX IF NOT EXISTS idx_user_telegram_id ON user(telegram_id)",
-                "CREATE INDEX IF NOT EXISTS idx_user_username ON user(username)",
-                "CREATE INDEX IF NOT EXISTS idx_user_email ON user(email)",
-                "CREATE INDEX IF NOT EXISTS idx_user_subscription ON user(subscription_type, subscription_end_date)",
+                'CREATE INDEX IF NOT EXISTS idx_user_telegram_id ON "user"(telegram_id)',
+                'CREATE INDEX IF NOT EXISTS idx_user_username ON "user"(username)',
+                'CREATE INDEX IF NOT EXISTS idx_user_email ON "user"(email)',
+                'CREATE INDEX IF NOT EXISTS idx_user_subscription ON "user"(subscription_type, subscription_end_date)',
                 
                 # Bot table indices
                 "CREATE INDEX IF NOT EXISTS idx_bot_user_id ON bot(user_id)",
-                "CREATE INDEX IF NOT EXISTS idx_bot_token ON bot(token)",
+                "CREATE INDEX IF NOT EXISTS idx_bot_telegram_token ON bot(telegram_token)",
                 "CREATE INDEX IF NOT EXISTS idx_bot_active ON bot(is_active)",
                 
                 # Chat history indices (most critical for performance)
@@ -44,8 +44,9 @@ def add_performance_indices():
                 "CREATE INDEX IF NOT EXISTS idx_payment_created ON payment(created_at DESC)",
                 
                 # Composite indices for common queries
-                "CREATE INDEX IF NOT EXISTS idx_user_subscription_active ON user(subscription_type, subscription_end_date, is_active)",
+                'CREATE INDEX IF NOT EXISTS idx_user_subscription_active ON "user"(subscription_type, subscription_end_date, is_active)',
                 "CREATE INDEX IF NOT EXISTS idx_chat_recent_history ON chat_history(bot_id, user_telegram_id, created_at DESC)",
+                "CREATE INDEX IF NOT EXISTS idx_customer_bot_platform ON bot_customer(bot_id, platform, platform_user_id)",
             ]
             
             for index_sql in indices_to_create:

@@ -4,7 +4,6 @@ import logging
 import tempfile
 import requests
 from pathlib import Path
-import google.generativeai as genai
 from google.cloud import speech
 from ai import get_ai_response
 

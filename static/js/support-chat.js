@@ -974,11 +974,17 @@ class SupportChatBot {
         const chatBody = document.getElementById('chat-body');
         const messageDiv = document.createElement('div');
         messageDiv.className = 'chat-message user';
-        
-        messageDiv.innerHTML = `
-            <div class="message-bubble">${content}</div>
-            <div class="message-time">${this.getCurrentTime()}</div>
-        `;
+
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.textContent = content;
+
+        const time = document.createElement('div');
+        time.className = 'message-time';
+        time.textContent = this.getCurrentTime();
+
+        messageDiv.appendChild(bubble);
+        messageDiv.appendChild(time);
         
         chatBody.appendChild(messageDiv);
         chatBody.scrollTop = chatBody.scrollHeight;
