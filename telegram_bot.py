@@ -193,6 +193,8 @@ class TelegramHTTPBot:
                 self.id = data['id']
                 self.username = data.get('username', '')
                 self.first_name = data.get('first_name', '')
+                self.last_name = data.get('last_name', '')
+                self.language_code = data.get('language_code', '')
                 
         class SimpleChat:
             def __init__(self, data):
@@ -372,11 +374,15 @@ def _get_or_create_customer(bot_id, telegram_user, default_language='uz'):
     """Look up the BotCustomer for a (bot, telegram user) pair, creating one
     on first contact. End-user state (display name, language, message count,
     last interaction) lives on BotCustomer — NOT on the User table. The User
-    table is reserved for platform users (admins, paid bot owners)."""
+    table is reserved for platform users (admins, paid bot owners).
+
+    Uses getattr() with defaults so any user-like object (the lightweight
+    SimpleUser used by polling, raw dicts repackaged via SimpleNamespace,
+    etc.) is accepted without raising AttributeError on optional fields."""
     from models import BotCustomer
     from app import db
 
-    platform_user_id = str(telegram_user.id)
+    platform_user_id = str(getattr(telegram_user, 'id', '') or '')
     customer = BotCustomer.query.filter_by(
         bot_id=bot_id,
         platform='telegram',
@@ -388,9 +394,9 @@ def _get_or_create_customer(bot_id, telegram_user, default_language='uz'):
             bot_id=bot_id,
             platform='telegram',
             platform_user_id=platform_user_id,
-            first_name=telegram_user.first_name or '',
-            last_name=telegram_user.last_name or '',
-            username=telegram_user.username or '',
+            first_name=getattr(telegram_user, 'first_name', '') or '',
+            last_name=getattr(telegram_user, 'last_name', '') or '',
+            username=getattr(telegram_user, 'username', '') or '',
             language=default_language,
             is_active=True,
             message_count=0,
@@ -508,39 +514,46 @@ class TelegramBot:
 
         user = update.effective_user
 
-        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
-        with app.app_context():
-            bot = Bot.query.get(self.bot_id)
-            if not bot:
-                if update.message:
+        try:
+            get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+            with app.app_context():
+                bot = Bot.query.get(self.bot_id)
+                if not bot:
                     await update.message.reply_text("❌ Bot topilmadi!")
-                return
+                    return
 
-            customer = _get_or_create_customer(self.bot_id, user)
-            db.session.commit()
+                customer = _get_or_create_customer(self.bot_id, user)
+                db.session.commit()
 
-            keyboard = [[InlineKeyboardButton("🇺🇿 O'zbek", callback_data="lang_uz")]]
-            # Language locking is keyed on the *bot owner's* subscription
-            # tier — end-users do not have their own subscription.
-            if _bot_owner_can_use_language(bot, 'ru'):
-                keyboard.append([InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru")])
-                keyboard.append([InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")])
-            else:
-                keyboard.append([InlineKeyboardButton("🔒 Русский (Starter/Basic/Premium)", callback_data="lang_locked")])
-                keyboard.append([InlineKeyboardButton("🔒 English (Starter/Basic/Premium)", callback_data="lang_locked")])
+                keyboard = [[InlineKeyboardButton("🇺🇿 O'zbek", callback_data="lang_uz")]]
+                # Language locking is keyed on the *bot owner's* subscription
+                # tier — end-users do not have their own subscription.
+                if _bot_owner_can_use_language(bot, 'ru'):
+                    keyboard.append([InlineKeyboardButton("🇷🇺 Русский", callback_data="lang_ru")])
+                    keyboard.append([InlineKeyboardButton("🇺🇸 English", callback_data="lang_en")])
+                else:
+                    keyboard.append([InlineKeyboardButton("🔒 Русский (Starter/Basic/Premium)", callback_data="lang_locked")])
+                    keyboard.append([InlineKeyboardButton("🔒 English (Starter/Basic/Premium)", callback_data="lang_locked")])
 
-            reply_markup = InlineKeyboardMarkup(keyboard)
+                reply_markup = InlineKeyboardMarkup(keyboard)
 
-            lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
-            current_lang = customer.language or 'uz'
-            default_lang = "O'zbek"
-            message = (
-                f"🌐 Joriy til: {lang_names.get(current_lang, default_lang)}\n"
-                f"Tilni tanlang:"
-            )
+                lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
+                current_lang = customer.language or 'uz'
+                default_lang = "O'zbek"
+                message = (
+                    f"🌐 Joriy til: {lang_names.get(current_lang, default_lang)}\n"
+                    f"Tilni tanlang:"
+                )
 
-            if update.message:
                 await update.message.reply_text(message, reply_markup=reply_markup)
+        except Exception as cmd_err:
+            logger.error(f"/language handler error: {cmd_err}", exc_info=True)
+            try:
+                await update.message.reply_text(
+                    "❌ Til menyusini ochishda xatolik yuz berdi. Qaytadan urinib ko'ring."
+                )
+            except Exception:
+                pass
 
     async def language_callback(self, update: Update, context) -> None:
         """Handle language selection callback"""
@@ -562,28 +575,35 @@ class TelegramBot:
         if not language:
             return
 
-        get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
-        with app.app_context():
-            bot = Bot.query.get(self.bot_id)
-            if not bot:
-                await query.edit_message_text("❌ Bot topilmadi!")
-                return
+        try:
+            get_ai_response, process_knowledge_base, User, Bot, ChatHistory, db, app = get_dependencies()
+            with app.app_context():
+                bot = Bot.query.get(self.bot_id)
+                if not bot:
+                    await query.edit_message_text("❌ Bot topilmadi!")
+                    return
 
-            if not _bot_owner_can_use_language(bot, language):
-                await query.edit_message_text("❌ Bu tilni tanlash uchun bot egasi obunasini yangilashi kerak!")
-                return
+                if not _bot_owner_can_use_language(bot, language):
+                    await query.edit_message_text("❌ Bu tilni tanlash uchun bot egasi obunasini yangilashi kerak!")
+                    return
 
-            customer = _get_or_create_customer(self.bot_id, query.from_user)
-            customer.language = language
-            db.session.commit()
+                customer = _get_or_create_customer(self.bot_id, query.from_user)
+                customer.language = language
+                db.session.commit()
 
-            lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
-            success_messages = {
-                'uz': f"✅ Til {lang_names[language]} ga o'zgartirildi!",
-                'ru': f"✅ Язык изменен на {lang_names[language]}!",
-                'en': f"✅ Language changed to {lang_names[language]}!",
-            }
-            await query.edit_message_text(success_messages.get(language, success_messages['uz']))
+                lang_names = {'uz': "O'zbek", 'ru': "Русский", 'en': "English"}
+                success_messages = {
+                    'uz': f"✅ Til {lang_names[language]} ga o'zgartirildi!",
+                    'ru': f"✅ Язык изменен на {lang_names[language]}!",
+                    'en': f"✅ Language changed to {lang_names[language]}!",
+                }
+                await query.edit_message_text(success_messages.get(language, success_messages['uz']))
+        except Exception as cb_err:
+            logger.error(f"language_callback error: {cb_err}", exc_info=True)
+            try:
+                await query.edit_message_text("❌ Tilni o'zgartirishda xatolik yuz berdi.")
+            except Exception:
+                pass
     
     
     async def handle_voice_message(self, update: Update, context) -> None:
