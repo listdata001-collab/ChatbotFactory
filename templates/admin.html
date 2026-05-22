@@ -233,10 +233,12 @@
                                         {% if user.id != current_user.id and not user.is_admin and user.subscription_type != 'admin' %}
                                         <form method="POST"
                                               action="{{ url_for('main.admin_delete_user', user_id=user.id) }}"
-                                              class="d-inline"
-                                              onsubmit="return confirm('@{{ user.username }} foydalanuvchisini va uning barcha botlarini o‘chirishni xohlaysizmi? Bu amalni bekor qilib bo‘lmaydi!');">
+                                              class="d-inline js-delete-user-form">
                                             {% include '_csrf.html' %}
-                                            <button type="submit" class="btn btn-outline-danger" title="O'chirish">
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger"
+                                                    title="O'chirish"
+                                                    data-username="@{{ user.username }}">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -699,8 +701,22 @@ document.addEventListener('DOMContentLoaded', function() {
             'admin': '<span class="badge bg-success">Admin</span>'
         };
         
-        document.getElementById('modal_current_subscription').innerHTML = 
+        document.getElementById('modal_current_subscription').innerHTML =
             subscriptionBadges[currentSubscription] || currentSubscription;
+    });
+
+    // Delete-user confirmation. We hang the prompt off a data attribute on
+    // the button so the Uzbek text (which contains apostrophes) never has
+    // to be embedded inside an inline onsubmit="..." JS string.
+    document.querySelectorAll('.js-delete-user-form').forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            var btn = form.querySelector('button[data-username]');
+            var name = btn ? btn.dataset.username : 'foydalanuvchini';
+            var msg = name + " va uning barcha botlarini o'chirishni xohlaysizmi? Bu amalni bekor qilib bo'lmaydi.";
+            if (!window.confirm(msg)) {
+                event.preventDefault();
+            }
+        });
     });
 });
 </script>
